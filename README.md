@@ -1,2 +1,3 @@
 # ZinterPL
-An interpreter based of c &amp; assembly for old and slow device
+An interpreter based of c and assembly
+changes applyed here new to github
