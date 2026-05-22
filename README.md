@@ -57,7 +57,67 @@ Every data reference in Zinter follows a consistent pattern:
 | `k`         | immediate char literal         |
 | `f`         | file (for import)              |
 
-Shorthand syntax (without explicit token wrappers) is also supported in most contexts — Zinterpreter resolves names automatically via `is_what()`.
+---
+
+### Minimal syntax — writing without token wrappers
+
+The explicit `&type&name&` form is always valid, but in most contexts it is entirely optional. Zinterpreter calls `is_what()` at runtime to look up a bare name across all declared variables, arrays, and matrices, and infers the correct type automatically.
+
+This means the two styles are fully equivalent everywhere except declarations:
+
+```
+# explicit token syntax
+print_ &i&myvar&:
+[0]myarray = &i&myvar&:
+println_ &s&"hello"&:
+
+# minimal syntax — same result
+print_ myvar:
+[0]myarray = myvar:
+println_ "hello":
+```
+
+The only place where the explicit form is **required** is in `int_` and `char_` declarations, because the type prefix carries the shape of the data being declared (scalar, array, or matrix) and Zinterpreter has no other way to know it before the name exists:
+
+```
+int_ &i&myvar&:          # required: declares a scalar int
+int_ &i[10]&myarray&:    # required: declares an int array of size 10
+int_ &i[4][4]&mymatrix&: # required: declares a 4×4 int matrix
+```
+
+Everywhere else — assignments, I/O, function arguments, indices — you can drop the wrappers and just use the name, with optional `[idx]` or `[row][col]` prefixes for arrays and matrices:
+
+```
+print_ myvar:
+print_ [2]myarray:
+print_ [1][3]mymatrix:
+[0]myarray = myvar:
+[0][1]mymatrix = [2]myarray:
+```
+
+---
+
+### Space handling
+
+Zinter has a deliberately simple rule: **spaces are meaningless outside of string literals.**
+
+During the read phase, the entire source file is compacted into a continuous buffer — every space outside of `"..."` is dropped before a single instruction is parsed. This means indentation, alignment, and spacing are purely cosmetic and have zero effect on execution:
+
+```
+# these three lines are identical to Zinterpreter
+int_ &i&myvar&:
+int_   &i&  myvar  &:
+i n t _ & i & m y v a r & :
+```
+
+Inside a string literal delimited by double quotes, spaces are preserved exactly as written:
+
+```
+println_ &s&"hello world"&:   # prints: hello world
+println_ &s&"helloworld"&:    # prints: helloworld
+```
+
+The practical benefit is that source files can be written in any style — compact, heavily indented, spread across lines — and the interpreter treats them identically. There is no significant whitespace, no indentation requirement, and no line-length concern.
 
 ---
 
