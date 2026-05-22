@@ -1,0 +1,5 @@
+od_ printf(no){
+
+    println_ "CIAO DA PRINTF":
+    return_:
+}
