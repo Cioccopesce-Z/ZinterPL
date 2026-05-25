@@ -1,31 +1,37 @@
-& i/n/k/l/c/f/s[idx]/i[idx]/l[idx]/s[idx][idx]/i[idx][idx]/l[idx][idx] &  nome  &
-                    ^
-                    |
-            questa è una struttura dati in Z 
-            quello contenuto tra i primi due &
-            indica il tipo di dato:
-            
-    i = integer
-    n = numero intero
-    l = float 
-    c = char solo per variabiili
-    k = carattere diretto
-    s = array di char o string solo per array
-    f = file <--- NOT IMPLEMENTED
-    s[idx] = indica un array di char e idx la posizione o la dimensione quando viene dichiarato
-    i[idx] = indica un array di integer e idx la posizione o dimensione
-        ^
-        |
-        idx puo essere se variabile: i/s[&i&var_name&], se reg: i/s[rN] o se numero int: i/s[N] 
+
+        per comodita successivamente ci si riferira a matrici variabili e array come "dati" o "dato"
 
 
---> &i&nome_variabile&  indica una variabile integer 
+per sintassi estesa ci si riferisce al modo di chiamare un dato specificando ta && il tipo:
 
---> &s[15]&nome_variabile&  indica un array di string di 15 celle
+        & i/n/k/l/c/f/s[idx]/i[idx]/l[idx]/s[idx][idx]/i[idx][idx]/l[idx][idx] &  nome  &
+                        ^
+                        |
+                questa è una struttura dati in Z 
+                quello contenuto tra i primi due &
+                indica il tipo di dato:
+                
+        i = integer
+        n = numero intero
+        l = float 
+        c = char solo per variabiili
+        k = carattere diretto
+        s = array di char o string solo per array
+        f = file
+        s[idx] = indica un array di char e idx la posizione o la dimensione quando viene dichiarato
+        i[idx] = indica un array di integer e idx la posizione o dimensione
+                ^
+                |
+                idx puo essere se variabile: i/s[&i&var_name&] o se numero int: i/s[N] 
 
-la sintassi esplicita detta (&i&var&) non é necessaria (&i&var& = var)se non per le dichiarazioni int_ var non va bene 
 
-per comodita successivamente ci si riferira a matrici variabili e array come "dati" o "dato"
+        --> &i&nome_variabile&  indica una variabile integer 
+
+        --> &s[15]&nome_variabile&  indica un array di string di 15 celle
+
+tuttavia non è necessaria se non per le dichiarazioni di dati con int_ o char_ infatti si puo usare dirrettamente il nome 
+e l'interprete è in grado di ddedurre il tipo
+
 
 ======elementi base========
 ogni funzione va terminata con ":" anche int ecc...
@@ -34,6 +40,8 @@ gli spazi non contano nulla a meno che non siano tra "" solo in quel caso vengon
         esempio: int_ var: == in t_ va r: ma "in t_" var: è diverso da in t_ var:
 
 il main del programma è la funzione __start(arg){        } l'esecuzione inizia da qui
+le funzioni possono essere scritte anche dopo start
+
 
 ==========funzioni matematiche=========== 
 al posto delle variabili, dove logico, si possono mettere anche arr o num (non si puo salvare in un numero o immediate char)
@@ -41,21 +49,25 @@ al posto delle variabili, dove logico, si possono mettere anche arr o num (non s
 [idx]name + var2:              viene aggiunto a var1/array in pos idx var2
 var1 = var2 + var3:          la somma di var2 e var3 va in var1 
 
-ma anche 
-od_ somma{ return_ var2 + var3: }
-var1 = __somma:
+var1 = __somma():
 
-ecc...
+un altro modo per assegnare:
 
-le funzioni matematiche possono anche essere con sintassi senza &type&name& ma basta name
+set_to_variable/array/matrix_ name,type,index(only for array and matrix),index2(only for matrix),value,cvalue:
+                                   ^
+                                   |
+                                imposta un valore(accetta come value o cvalue anche variabili matrici e array) ad ogni tipo 
+                                di dato variabili/matrici/array, possono essere usate variabili come indici perr array e matrici
+                                se si usa un dato int si deve mettere un place_holder in cvalue
+                                ogni dato usato come indice viene forzato a integer 
 
 ============funzioni logiche=============
 tutto quello contenuto negli if/for/while o in generale ! > < == sono funzioni che ritornano 0 o 1
 e i cicli semplicemente eseguono ogni vola la funzione
 
-if_( name !<>= name){      } <--- si possono concatenare con "and"(&&) o || 
+if_( name !<>= name){      } <--- si possono concatenare con nd (and) o || (or) 
 else_ {     }
-for_( name !<>= name, + / - / * / "/" &i&name& &i/n&name&){   } 
+for_( name !<>= name, name + - * / name){   } 
 while_( name !<>= name){  }
 
 =========dichiarazioni==========
@@ -89,8 +101,8 @@ print_ [idx]name  // print_ []name <-- scrive come stringa
 print_ name
 print_ [idx]&name
 
-println_ (stessa cosa ma va a capo prima di scrivere)
-lnprint_ (stessa cosa ma va a capo dopo avere scritto)
+lnprint_ (stessa cosa ma va a capo prima di scrivere)
+println_ (stessa cosa ma va a capo dopo avere scritto)
 
 ========function=======
 
@@ -98,30 +110,19 @@ per dichiarare: od_ name(arg){
                                 }
 
 per chiamarle:  __ name(arg): (se non restituiscono niente)
-                __ name(arg, arg2, arg3) --&i&var0& --&i&var1& --&i&var2& : (se restituisce uno o piu valori)
-                var = __name(arg): 
 
-return NULL / &i&var&/ var /&n&number& <--- se viene ritornato NULL la funzione puo essere chiama anche se non ce 
-                                    non ce nessun punto dove salvare il valore che restituisce
+                var = __name(arg): (se restituiscono un valore)
 
+return NULL / : <--- se viene ritornato NULL la funzione puo essere chiama anche se non ce 
+                    non ce nessun punto dove salvare il valore che restituisce
+return_ NULL: è uguale a return_:
 
 ========conditions=========
 vanno chiuse con :
 
 var1 = var2   assegna a var1 il valore di var2
 
-set_to_variable/array/matrix_ name,type,index(only for array and matrix),index2(only for matrix),value,cvalue:
-                                   ^
-                                   |
-                                imposta un valore(accetta come value o cvalue anche variabili matrici e array) ad ogni tipo 
-                                di dato variabili/matrici/array, possono essere usate variabili come indici perr array e matrici
-                                se si usa un dato int si deve mettere un place_holder in cvalue
-                                ogni dato usato come indice viene forzato a integer 
-
-var1 == var2 è una funzione che restituisce 0 se var1 è var2 o 1 se sono diverse
-
-s== &s&var1& &s&var2& è una funzione che restituisce 0 se var1 è var2 o 1 se sono diverse ma per stringhe 
-                      ma anche senza &&& dato che è piu libera la sintassi
+var1 == var2 è una funzione che restituisce 1 se var1 è var2 o 0 se sono diverse
 
 =========librerie/system================
 va chiusa con :
@@ -130,7 +131,6 @@ tutte le funzioni sono racchiuse in #{
 
 e alla fine di prima dell`ultima parentesi tonda va scritto "exec_:" che sposta l'esecuzione a start
 funzioni:
-        - import_ &f&nome_libreira.Zlib&:   <-- si potra fare riferimento nel codice a delle funzioni scritte nelle librerie
-        - exec_ sposta l`esecuzione a start
+        - exec_ sposta l`esecuzione a __start
         - debug_ df/dt attiva internamente il debug (dt) o lo disattiva (df) 
         

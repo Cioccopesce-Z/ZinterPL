@@ -1,0 +1,3 @@
+__start(){
+          println_ &s&"hello world"&:
+}
