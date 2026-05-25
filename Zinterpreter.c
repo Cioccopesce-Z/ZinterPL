@@ -13,11 +13,17 @@
 #define tru 1
 #define fal 0
 #define base_memory 256
+#define error_int -99
+#define error_char §§
 
 
 int line_idx_program = 0;
 int place_holder = 0;
 int deb = tru;
+
+static char return_type = 0; 
+static void *return_value = NULL;
+static int   return_hit   = 0;
 
 //pre dichiarazione
 typedef struct decl_var decl_var;
@@ -224,7 +230,7 @@ VM vm;
 // ==== PREDEFINED FUNCTION =========
 void parse(int idx_line_temp, int  eventual_end_line);
 int starts_with(const char *str, const char *prefix);
-void* exec_funarg(char *name_plus_args);
+void* exec_funarg(char *name_plus_args, int is_return);
 
 /* 1 int 2 char 3 float 0 not*/
 int is_var_(const char *name) {
@@ -324,10 +330,12 @@ int is_function_(const char *name_or_declaration){
     return tru; // non è una function
 }
 
-/* variable array matrix function,i c/s l*/
+/* variable array matrix function n c , n i c/s/k l*/
 void is_what(char name_result[]) {
+
     int base_type;
     if(deb) printf("is what generally called with: %s \n",name_result);
+
     if ((base_type = is_var_(name_result)) != 0) {
         if (base_type == 1) { strcpy(name_result, "variable.i"); return; }
         else if (base_type == 2) { strcpy(name_result, "variable.c"); return; }
@@ -346,6 +354,14 @@ void is_what(char name_result[]) {
     else if ((base_type = is_function_(name_result)) != 0) {
         if(deb) printf("is what for function called with: %s after is_function calling\n",name_result);
         strcpy(name_result, "function.v"); return; 
+    }
+    else if( isdigit(name_result[0]) ){
+        if(deb) printf("is what for number called with: %s after isdigit calling\n",name_result);
+        strcpy(name_result, "n.n"); return;
+    }
+    else if( isalpha(name_result[0]) ){
+        if(deb) printf("is what for character called with: %s after isalpha calling\n",name_result);
+        strcpy(name_result, "c.k"); return;
     }
     strcpy(name_result, "-1.-1");
 }
@@ -589,7 +605,7 @@ void* get_index(char data_sruct_name[]) {
     }
 
     else if(strstr(data_sruct_name,"__") || starts_with(data_sruct_name,"od_")){
-        return exec_funarg(data_sruct_name);
+        return exec_funarg(data_sruct_name,fal);
     }
 
     return NULL; // numero immediato o errore
@@ -1314,6 +1330,7 @@ void exec_lnprint(char *text){
 }
 
 void exec_println(char *text){
+    if(deb) printf("entered in println\n");
     char buffer[128];
     snprintf(buffer, sizeof(buffer), "print_%s", text + 8);
     exec_print(buffer);
@@ -1337,8 +1354,6 @@ int system_setup(){
 
     if(deb) printf("system_setup called\n");
 
-    
-    
 
     int st_ip = 0;
 
@@ -1426,16 +1441,7 @@ int system_setup(){
         }
 
         else if(strcmp(function,"import") == 0){
-            char type;
-            char file_name[16];
-            sscanf(arguments,"&%c&%15[^&]&",&type,file_name);
-            if(type != 'f') { printf("ERROR: cannot import a data that's not a file type, line %s \n",program[st_ip].instruction); return -1; }
-
-            else if(type == 'f'){
-                FILE *file = fopen(file_name, "r");
-                if (!file) { printf("WARNING: no file available for %s \nwont be added any library\n",file_name); st_ip++; goto restart; }
-                printf("Libraries are not implemented\n");
-            }
+            printf("WARNING: function import are no longer supported in this build, if you want to add a .Zlib file call it with the interpreter -filename.Zlib\nwont be added any library\n");
         }
         st_ip ++;
     }
@@ -1462,6 +1468,8 @@ void exec_while(char *text){
     int current_line = global_ip;
 
 }
+
+//end condizioni logiche
 
 
 int check_if_same_type(char arg1[], char arg2[]){
@@ -1649,76 +1657,278 @@ static int types_match(char l, char right) {
     return check_if_same_type(ls, rs);
 }
 
-void exec_function_called(){
-
+int check_return(int line) {
+    if (line-1 == line_idx_program) {
+        if(deb) printf("ERROR: return outside a function %s line: %d global_ip: %d line_idx: %d\n",program[global_ip].instruction,line,global_ip,line_idx_program);
+        return fal;
+    }
+    return tru;
 }
 
+void* exec_funarg(char *name_plus_args, int is_return) {
 
-//type ret: 0 no ret, 1 one ret, 2 more than one ret
-void* exec_funarg(char *name_plus_args){
-    
-    if(deb) printf("DEBUG: funarg chiamata con name+args: %s\n",name_plus_args);
+    int no_value_to_return = fal; //una funazione base ritorna 1 valore
 
-    int current_line = global_ip;
-    static int standard_return = -1;
-    char name[16] = {0};
-    char args[64] = {0};
-
-    /*QUI VENGONO DISTINTI I VARI TIPI DI CHIAMATA DI UNA FUNZIONE: NON RITORNA ARGOMENTI _NAME
-                                                                    RITORNA UN ARGOMENTO CON VAR = _NAME
-                                                                    RITORNA + ARGOMENTI _NAME() --VAR --VAR
-    */
-    //E PER OGNUNA CASISTICA SI DA UN CODICE IN ORDINE 0 = NO RETURN
-                                                    // 1 = UN RETURN CON =
-                                                    // 2 = RITORNO CON + VAR
-
-    //SEARCH FUNC NAME
-    if(strstr(name_plus_args,"__")){
-        sscanf(name_plus_args,"__%15[^(](%63[^)])",name,args); // __name(args)
+    //IF START
+    if(strstr(name_plus_args,"start")){
+        return pt_place_holder;
     }
 
-    else{
-        strcpy(name,name_plus_args);
-    }
+    // ======= IF RETURN ==========
+    if (is_return) {
+        if(deb) printf("DEBUG: funarg called with is_return line: %s\n", name_plus_args);
 
+        char buffer[128] = {0};
+        sscanf(name_plus_args, "return_%127s", buffer);   // FIX: source corretto
 
-    if(deb) printf("function to start analyse in funarg as: %s\n",name);
+        if (strlen(buffer) == 0 || strcmp(buffer, "NULL") == 0) {
+            if(deb) printf("WARNING: no item to return\n");
+            return_value = NULL;
+            return_hit   = 1;
+            return NULL;
+        }
+        else if (strstr(buffer, "--")) {
+            if(deb) printf("WARNING: more than one item to return\n");
+            return_value = pt_place_holder;
+            return_hit   = 1;
+            return pt_place_holder;
+        }
+        else {
+            void *ret = NULL;
+            char bin[32] = {0};
+            strncpy(bin, buffer, sizeof(bin) - 1);
+            is_what(bin);
 
-    int st_ip = 0, end_ip = 0;
+            char genre[16] = {0};
+            char type = 0;
+            sscanf(bin, "%15[^.].%c", genre, &type);
 
-    for(int i = 0; i < return_state; i++ ){
-        if(strcmp( state_stack[i].nome_function+3,name) == 0){
-            
-            st_ip = state_stack[i].posizione_ritorno;
-            end_ip = state_stack[i].posizione_skip;
+            return_type = type;
 
+            if (strchr(buffer, '&')) {
+                ret = get_index(buffer);
+            } else {
+                ret = resolve(type, buffer);
+            }
+
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
         }
     }
 
-    if(deb) printf("function found as: %s start as: %d end as: %d\n",name,st_ip,end_ip);
+    // ======= CALL FUNCTION ==========
+    else {
+        if(deb) printf("DEBUG: funarg chiamata con name+args: %s\n", name_plus_args);
 
-    //parse(st_ip,end_ip);
-    return &standard_return;                         
+        char name[32] = {0};
+        char args[64] = {0};
+
+        if (strstr(name_plus_args, "__")) {
+            sscanf(name_plus_args, "__%31[^(](%63[^)])", name, args);
+            no_value_to_return = tru;
+        }
+        else {
+            strncpy(name, name_plus_args, sizeof(name) - 1);
+        }
+
+        if(deb) printf("function to start analyse in funarg as: %s, return_state %d\n", name, return_state);
+
+        int st_ip = 0, end_ip = 0;
+
+        int i;
+
+        for (i = 0; i < return_state; i++) {
+            if(deb) printf("i: %d, return_state: %d, name: %s, state_stack[%d]: %s\n",i,return_state,name,i,state_stack[i].nome_function);
+            if (strcmp(state_stack[i].nome_function + 3, name) == 0) {
+                st_ip  = state_stack[i].posizione_ritorno;
+                end_ip = state_stack[i].posizione_skip;
+                break;
+            }
+        }
+
+        if (i == return_state) {
+            printf("ERROR: function %s not found\n", name);
+            return NULL;
+        }
+
+        if(deb) printf("function found: %s  start: %d  end: %d\n", name, st_ip, end_ip);
+
+        int svaed_ip = global_ip;
+
+        // reset prima di entrare: ogni chiamata parte pulita
+        return_hit   = 0;
+        return_value = NULL;
+
+        parse(st_ip, end_ip);
+
+        // dopo parse il valore è in return_value; reset il flag per il chiamante
+        void *ret = return_value;
+        return_hit   = 0;
+        return_value = NULL;
+
+        global_ip = svaed_ip;
+
+        if(deb) printf("correctly went out parse from funarg, return: %p\n", ret);
+        return ret;
+    }
 }
 
-int check_return(int eventual_end_line, int all_end_line){
-    if(eventual_end_line == all_end_line){
-        printf("ERROR: return outside a function\n");
-        return fal;
+// fix anche in math_plus: stessa firma e stessi cast
+int math_plus(char *operation, int called_by_parse) {
+    char lop[24] = {0}, rop[24] = {0};
+    if(deb) printf("DEBUG: math_plus chiamata con %s\n", operation);
+    if(called_by_parse) { printf("ERROR: arithmetic needs = to save result\n"); return error_int; }
+
+    if(sscanf(operation, "%23[^+]+%23s", lop, rop) != 2) {
+        printf("ERROR: failed parse in math_plus %s\n", operation); return error_int;
     }
-    else{
-        return tru;
+
+    char junk[16], ltype = 0, rtype = 0;
+    int lopv = 0, ropv = 0;
+
+    if(strchr(lop,'&')) {
+        sscanf(lop, "&%c&%23[^&]&", &ltype, lop);
+    } else {
+        char clop[24]; strcpy(clop,lop); is_what(clop);
+        sscanf(clop, "%15[^.].%c", junk, &ltype);
     }
-    
+    if(ltype=='i')      lopv = *(int   *)resolve(ltype,lop);
+    else if(ltype=='l') lopv = (int)*(float*)resolve(ltype,lop);
+    else { printf("WARNING: cant operate arithmetically with char %s\n",lop); }
+
+    if(strchr(rop,'&')) {
+        sscanf(rop, "&%c&%23[^&]&", &rtype, rop);
+    } else {
+        char crop[24]; strcpy(crop,rop); is_what(crop);
+        sscanf(crop, "%15[^.].%c", junk, &rtype);
+    }
+    if(rtype=='i')      ropv = *(int   *)resolve(rtype,rop);
+    else if(rtype=='l') ropv = (int)*(float*)resolve(rtype,rop);
+    else { printf("WARNING: cant operate arithmetically with char %s\n",rop); }
+
+    if(!types_match(ltype,rtype)) { printf("ERROR: type mismatch in math_plus\n"); return error_int; }
+    return lopv + ropv;
 }
 
-void* exec_return(char *text){
-    char name[64];
-    if(strchr(name,'-')){
-        printf("DEB: more argument for returning \n");
-        int count = 0;
-        while(*text) { if(*text == '-') count++; text++; }
+int math_min(char *operation, int called_by_parse) {
+    char lop[24] = {0}, rop[24] = {0};
+    if(deb) printf("DEBUG: math_min chiamata con %s\n", operation);
+    if(called_by_parse) { printf("ERROR: arithmetic needs = to save result\n"); return error_int; }
+
+    if(sscanf(operation, "%23[^-]-%23s", lop, rop) != 2) {
+        printf("ERROR: failed parse in math_min %s\n", operation); return error_int;
     }
+
+    char junk[16], ltype = 0, rtype = 0;
+    int lopv = 0, ropv = 0;
+
+    if(strchr(lop,'&')) {
+        sscanf(lop, "&%c&%23[^&]&", &ltype, lop);
+    } else {
+        char clop[24]; strcpy(clop,lop); is_what(clop);
+        sscanf(clop, "%15[^.].%c", junk, &ltype);
+    }
+    if(ltype=='i')      lopv = *(int   *)resolve(ltype,lop);
+    else if(ltype=='l') lopv = (int)*(float*)resolve(ltype,lop);
+    else { printf("WARNING: cant operate arithmetically with char %s\n",lop); }
+
+    if(strchr(rop,'&')) {
+        sscanf(rop, "&%c&%23[^&]&", &rtype, rop);
+    } else {
+        char crop[24]; strcpy(crop,rop); is_what(crop);
+        sscanf(crop, "%15[^.].%c", junk, &rtype);
+    }
+    if(rtype=='i')      ropv = *(int   *)resolve(rtype,rop);
+    else if(rtype=='l') ropv = (int)*(float*)resolve(rtype,rop);
+    else { printf("WARNING: cant operate arithmetically with char %s\n",rop); }
+
+    if(!types_match(ltype,rtype)) { printf("ERROR: type mismatch in math_min\n"); return error_int; }
+    return lopv - ropv;
+}
+
+int math_times(char *operation, int called_by_parse) {
+    char lop[24] = {0}, rop[24] = {0};
+    if(deb) printf("DEBUG: math_times chiamata con %s\n", operation);
+    if(called_by_parse) { printf("ERROR: arithmetic needs = to save result\n"); return error_int; }
+
+    if(sscanf(operation, "%23[^*]*%23s", lop, rop) != 2) {
+        printf("ERROR: failed parse in math_times %s\n", operation); return error_int;
+    }
+
+    char junk[16], ltype = 0, rtype = 0;
+    int lopv = 0, ropv = 0;
+
+    if(strchr(lop,'&')) {
+        sscanf(lop, "&%c&%23[^&]&", &ltype, lop);
+    } else {
+        char clop[24]; strcpy(clop,lop); is_what(clop);
+        sscanf(clop, "%15[^.].%c", junk, &ltype);
+    }
+    if(ltype=='i')      lopv = *(int   *)resolve(ltype,lop);
+    else if(ltype=='l') lopv = (int)*(float*)resolve(ltype,lop);
+    else { printf("WARNING: cant operate arithmetically with char %s\n",lop); }
+
+    if(strchr(rop,'&')) {
+        sscanf(rop, "&%c&%23[^&]&", &rtype, rop);
+    } else {
+        char crop[24]; strcpy(crop,rop); is_what(crop);
+        sscanf(crop, "%15[^.].%c", junk, &rtype);
+    }
+    if(rtype=='i')      ropv = *(int   *)resolve(rtype,rop);
+    else if(rtype=='l') ropv = (int)*(float*)resolve(rtype,rop);
+    else { printf("WARNING: cant operate arithmetically with char %s\n",rop); }
+
+    if(!types_match(ltype,rtype)) { printf("ERROR: type mismatch in math_times\n"); return error_int; }
+    return lopv * ropv;
+}
+
+int math_slash(char *operation, int called_by_parse) {
+    char lop[24] = {0}, rop[24] = {0};
+    if(deb) printf("DEBUG: math_slash chiamata con %s\n", operation);
+    if(called_by_parse) { printf("ERROR: arithmetic needs = to save result\n"); return error_int; }
+
+    if(sscanf(operation, "%23[^/]/%23s", lop, rop) != 2) {
+        printf("ERROR: failed parse in math_slash %s\n", operation); return error_int;
+    }
+
+    char junk[16], ltype = 0, rtype = 0;
+    int lopv = 0, ropv = 0;
+
+    if(strchr(lop,'&')) {
+        sscanf(lop, "&%c&%23[^&]&", &ltype, lop);
+    } else {
+        char clop[24]; strcpy(clop,lop); is_what(clop);
+        sscanf(clop, "%15[^.].%c", junk, &ltype);
+    }
+    if(ltype=='i')      lopv = *(int   *)resolve(ltype,lop);
+    else if(ltype=='l') lopv = (int)*(float*)resolve(ltype,lop);
+    else { printf("WARNING: cant operate arithmetically with char %s\n",lop); }
+
+    if(strchr(rop,'&')) {
+        sscanf(rop, "&%c&%23[^&]&", &rtype, rop);
+    } else {
+        char crop[24]; strcpy(crop,rop); is_what(crop);
+        sscanf(crop, "%15[^.].%c", junk, &rtype);
+    }
+    if(rtype=='i')      ropv = *(int   *)resolve(rtype,rop);
+    else if(rtype=='l') ropv = (int)*(float*)resolve(rtype,rop);
+    else { printf("WARNING: cant operate arithmetically with char %s\n",rop); }
+
+    if(!types_match(ltype,rtype)) { printf("ERROR: type mismatch in math_slash\n"); return error_int; }
+    if(ropv == 0) { printf("ERROR: division by zero\n"); return error_int; }
+    return lopv / ropv;
+}
+
+int is_math(char *operand) {
+    if(deb) printf("DEBUG: is_math chiamata con %s\n", operand);
+
+    if(strchr(operand,'+')) return math_plus (operand, fal);
+    if(strchr(operand,'-')) return math_min  (operand, fal);
+    if(strchr(operand,'*')) return math_times(operand, fal);
+    if(strchr(operand,'/')) return math_slash(operand, fal);
+
+    return error_int;  // non è math
 }
 
 void exec_equal(char *text) {
@@ -1809,7 +2019,22 @@ void exec_equal(char *text) {
         char lenc[128];
         snprintf(lenc, sizeof(lenc), "&%c[%d][%d]&%s&", ltype, li, lj, left_name);
 
-        if (right_operand[0] == '\'') { /*matr x k*/
+        int math_res = is_math(right_operand);
+        if(math_res != error_int) {
+            if(deb) printf("[CHECK] matr x math | left: [%s][%s]%s | right: %s\n", left_i, left_j, left_name, right_operand);
+            if(ltype=='i'){
+                int *dest = (int*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return; }
+                *dest = math_res;
+            } else if(ltype=='l'){
+                float *dest = (float*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return; }
+                *dest = (float)math_res;
+            }
+            return;
+        }
+
+        else if (right_operand[0] == '\'') { /*matr x k*/
             if(deb) printf("[CHECK] matr x k | left: [%s][%s]%s | right: %s\n",
                    left_i, left_j, left_name, right_operand);
             if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch matrix/char\n"); return; }
@@ -1862,6 +2087,28 @@ void exec_equal(char *text) {
                 char *src  = (char *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return; }
                 *dest = *src;
+            }
+        }
+        else if (strstr(right_operand, "__")) { /*matr x func*/
+            if(deb) printf("[CHECK] matr x func | left: [%s][%s]%s | right: %s\n",
+                left_i, left_j, left_name, right_operand);
+           if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch matrix/function\n"); return; }
+
+            void *ret = get_index(right_operand);
+            if (!ret) { printf("ERROR: null pointer from function\n"); return; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return; }
+                *dest = *(int *)ret;
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return; }
+                *dest = *(float *)ret;
+            } else if (ltype == 's') {
+                char *dest = (char *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return; }
+                *dest = *(char *)ret;
             }
         }
         else { /*matr x var*/
@@ -2032,7 +2279,21 @@ void exec_equal(char *text) {
         char lenc[128];
         snprintf(lenc, sizeof(lenc), "&%c[%d]&%s&", ltype, li, left_name);
 
-        if (right_operand[0] == '\'') { /*arr x k*/
+        int math_res = is_math(right_operand);
+        if(math_res != error_int) {
+            if(deb) printf("[CHECK] arr x math | left: [%s]%s | right: %s\n", left_i, left_name, right_operand);
+            if(ltype=='i'){
+                int *dest = (int*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return; }
+                *dest = math_res;
+            } else if(ltype=='l'){
+                float *dest = (float*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return; }
+                *dest = (float)math_res;
+            }
+            return;
+        }
+        else if (right_operand[0] == '\'') { /*arr x k*/
             if(deb) printf("[CHECK] arr x k | left: [%s]%s | right: %s\n", left_i, left_name, right_operand);
             if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch array/char\n"); return; }
             char *dest = (char *)get_index(lenc);
@@ -2050,6 +2311,28 @@ void exec_equal(char *text) {
                 float *dest = (float *)get_index(lenc);
                 if (!dest) { printf("ERROR: null pointer\n"); return; }
                 *dest = (float)atof(right_operand);
+            }
+        }
+        else if (strstr(right_operand, "__")) { /*arr x func*/
+            if(deb) printf("[CHECK] arr x func | left: [%s]%s | right: %s\n",
+                left_i, left_name, right_operand);
+                if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch array/function\n"); return; }
+
+            void *ret = get_index(right_operand);
+            if (!ret) { printf("ERROR: null pointer from function\n"); return; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return; }
+                *dest = *(int *)ret;
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return; }
+                *dest = *(float *)ret;
+            } else if (ltype == 's') {
+                char *dest = (char *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return; }
+                *dest = *(char *)ret;
             }
         }
         else { /*arr x var*/
@@ -2126,7 +2409,26 @@ void exec_equal(char *text) {
     /*VARIABILI*/
     else if (!strchr(left_operand, ']') && (!strchr(right_operand, ']') || strstr(right_operand,"__")) ) {
 
-        if (right_operand[0] == '\'') { /*var x k*/
+        int math_res = is_math(right_operand);
+        if(math_res != error_int) {
+            sscanf(left_operand, "%63s", left_name);
+            if(deb) printf("[CHECK] var x math | left: %s | right: %s\n", left_name, right_operand);
+            char bin[16]; char ltdata[16]={0}; char ltype=0;
+            strcpy(bin,left_name); is_what(bin);
+            sscanf(bin,"%15[^.].%c",ltdata,&ltype);
+            if(strcmp(ltdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",left_name); return; }
+            if(ltype=='i'){
+                int *dest = (int*)resolve(ltype,left_name);
+                if(!dest){ printf("ERROR: null pointer\n"); return; }
+                *dest = math_res;
+            } else if(ltype=='l'){
+                float *dest = (float*)resolve(ltype,left_name);
+                if(!dest){ printf("ERROR: null pointer\n"); return; }
+                *dest = (float)math_res;
+            }
+            return;
+        }
+        else if (right_operand[0] == '\'') { /*var x k*/
             sscanf(left_operand, "%63s", left_name);
             if(deb) printf("[CHECK] var x k | left: %s | right: %s\n", left_name, right_operand);
 
@@ -2180,7 +2482,7 @@ void exec_equal(char *text) {
             sscanf(bin, "%15[^.].%c", ltdata, &ltype);
             if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return; }
 
-            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch var/function\n"); return; }
+            if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch var/function\n"); return; }
 
             if (ltype == 'i') {
                 int *dest = (int *)resolve(ltype, left_name);
@@ -2238,35 +2540,47 @@ void exec_equal(char *text) {
     }
 }
 
-void parse(int idx_line_temp, int  eventual_end_line){
+void parse(int start_line, int  eventual_end_line){
+
     if(eventual_end_line == -1) eventual_end_line = line_idx_program;
-    global_ip = idx_line_temp;
-    if(deb) printf("parse chiamato con global_ip: %d e line_idx_program: %d\n",global_ip,line_idx_program);
-    while( (global_ip <= line_idx_program) || (global_ip <= eventual_end_line) ){
+    global_ip = start_line;
+    if(deb) printf("parse chiamato con global_ip: %d e line_idx_program: %d\n",global_ip,eventual_end_line);
+
+
+    while( !return_hit && (global_ip <= eventual_end_line) ){
+
         if(deb) printf("\nlinea analizzata: %d %s\n",global_ip, program[global_ip].instruction);
 
         if( starts_with (program[global_ip].instruction, "//") ) { /*comment do nothing*/ }
+        else if( starts_with (program[global_ip].instruction, "print_") ){ exec_print(program[global_ip].instruction);/*stampa carattere a terminale */ }
+        else if( starts_with (program[global_ip].instruction, "lnprint_") ){ exec_lnprint(program[global_ip].instruction);/*va a capo stampa carattere a terminale */ }
+        else if( starts_with (program[global_ip].instruction, "println_") ){ exec_println(program[global_ip].instruction);/*stampa carattere a terminale e va a capo */ }
+        else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction);/*va a capo stampa carattere a terminale e va a capo */ }
         else if( strstr (program[global_ip].instruction, "==") ){ /*see older build*/ }
         else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction);}
         else if( starts_with (program[global_ip].instruction, "#") ){ /*funzioni di sistema e interprete tipo import o kill*/ }
-        else if( starts_with (program[global_ip].instruction, "return_") ){/*ritorna uno o piu valori*/ }
-        else if( starts_with (program[global_ip].instruction, "od") ){ /*dichiara funzione vd_ ma non ha gran senso*/ }
-        else if( starts_with (program[global_ip].instruction, "__") ){ exec_function_called(program[global_ip].instruction);/*chiama funzione oppure semplicemente sposta l'esecuizione ad una riga e imposta un ritorno (pipe e fork) */ }
+        else if( starts_with (program[global_ip].instruction, "od") ){ /*dichiara funzione od (open door) ma non ha gran senso*/ }
+        else if( starts_with (program[global_ip].instruction, "__") ){ exec_funarg(program[global_ip].instruction, fal); }
         else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); /*dichiara var int  */ }
         else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); /*dichiara var char */ }
         else if( starts_with (program[global_ip].instruction, "if_") ){/*inizia if_ */ }
         else if( starts_with (program[global_ip].instruction, "else_") ){/*else */ }
         else if( starts_with (program[global_ip].instruction, "for_") ){/*inizia for */ }
         else if( starts_with (program[global_ip].instruction, "while_") ){/*inizia while */ }
-        else if( starts_with (program[global_ip].instruction, "return_") && check_return(eventual_end_line,line_idx_program) == tru){ exec_return(program[global_ip].instruction); }
-        else if( starts_with (program[global_ip].instruction, "set_to_") ){ exec_set_to(program[global_ip].instruction);/*va a settare una matrice predichiarata */ }
+        else if ( starts_with(program[global_ip].instruction, "return_") && check_return(eventual_end_line) == tru ) {
+            exec_funarg(program[global_ip].instruction, tru); /* return_hit è ora 1 quindi il while esce al prossimo controllo */}
+        else if( starts_with (program[global_ip].instruction, "set_to_") ){ exec_set_to(program[global_ip].instruction); }
+        else if( strstr (program[global_ip].instruction, "++") ){ /*operazione ++ di sicuro perche cicli gia parsati*/}
+        else if( strstr (program[global_ip].instruction, "--") ){ /*operazione -- di sicuro perche cicli gia parsati*/}
+        else if( strchr (program[global_ip].instruction, '+') ){ /*operazione + di sicuro perche cicli gia parsati*/}
+        else if( strchr (program[global_ip].instruction, '-') ){ /*operazione - di sicuro perche cicli gia parsati*/}
+        else if( strchr (program[global_ip].instruction, '*') ){ /*operazione * di sicuro perche cicli gia parsati*/}
+        else if( strchr (program[global_ip].instruction, '/') ){ /*operazione / di sicuro perche cicli gia parsati*/}
         else if( starts_with (program[global_ip].instruction, "scan_") ){/*legge carattere da schermo */ }
-        else if( starts_with (program[global_ip].instruction, "print_") ){ exec_print(program[global_ip].instruction);/*stampa carattere a terminale */ }
-        else if( starts_with (program[global_ip].instruction, "lnprint_") ){ exec_lnprint(program[global_ip].instruction);/*va a capo stampa carattere a terminale */ }
-        else if( starts_with (program[global_ip].instruction, "println_") ){ exec_println(program[global_ip].instruction);/*stampa carattere a terminale e va a capo */ }
-        else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction);/*va a capo stampa carattere a terminale e va a capo */ }
         global_ip++;
     }
+
+    return_hit = fal;
 }
 
 void build_state() {
@@ -2293,7 +2607,7 @@ void build_state() {
 
                 j++;
             }
-
+            if(deb) printf("program[%d].instruction: %s\n",i,program[i].instruction);
             state_stack[return_state].codice = return_state;
             state_stack[return_state].posizione_ritorno = i;
             if( starts_with(program[i].instruction,"if_") ) strcpy(state_stack[return_state].nome_function, "if_");
@@ -2303,7 +2617,7 @@ void build_state() {
             else if( starts_with(program[i].instruction,"__start") ) strcpy(state_stack[return_state].nome_function, "__start");
             else if( starts_with(program[i].instruction,"od_") ){ 
                      char bin[64], bin_name[16], name[24]; 
-                     sscanf(program[i].instruction,"od_%15[^(](%63s",bin_name,bin);
+                     sscanf(program[i].instruction, "od_%15[^ (]", bin_name);
                      sprintf(name,"od_%s",bin_name); //SINGOLA
                      strcpy(state_stack[return_state].nome_function, name); 
                      }
@@ -2429,26 +2743,87 @@ void run_test(){
  
 }
 
+void copy_file(FILE *src, FILE *dst){
+
+    char buffer[1024];
+    size_t n;
+
+    while((n = fread(buffer, 1, sizeof(buffer), src)) > 0){
+
+        for(size_t i = 0; i < n; i++){
+
+            // ignora eventuali '\0'
+            if(buffer[i] != '\0'){
+                fputc(buffer[i], dst);
+            }
+        }
+    }
+}
+
+void importlib(const char *libfile, const char *codefile){
+
+    FILE *lib = fopen(libfile, "rb");
+    if(!lib){
+        printf("ERROR: impossibile aprire libreria %s\n", libfile);
+        return;
+    }
+
+    FILE *code = fopen(codefile, "rb");
+    if(!code){
+        printf("ERROR: impossibile aprire codice %s\n", codefile);
+        fclose(lib);
+        return;
+    }
+
+    FILE *tmp = fopen(".__temp__.Zinter", "wb");
+    if(!tmp){
+        printf("ERROR: impossibile creare file temporaneo\n");
+        fclose(lib);
+        fclose(code);
+        return;
+    }
+
+    copy_file(code, tmp);
+    fputc('\n', tmp);
+    copy_file(lib, tmp);
+
+    fclose(lib);
+    fclose(code);
+    fclose(tmp);
+
+    remove(codefile);
+    rename(".__temp__.Zinter", codefile);
+}
 
 int main(int argc, char *argv[]) {
     memset(&vm, 0, sizeof(VM));
 
-    if(argc >= 3) {
-        
+    if(argc >= 3){
 
-        const char *dot = strrchr(argv[2], '.');
-        
-
-        if (!dot || strcmp(dot, ".Zinter") != 0) {
-            printf("errore: formato file non supportato\n");
-            return 0;
-        }
-
+        //DEBUG FUNCTION SETUP
         if(strcmp("-df",argv[1]) == 0) deb = fal;
         else if(strcmp("-dt",argv[1]) == 0) deb = tru;
 
-        char *code = read_code_from_file(argv[2]);
+        //SOURCEFILE SETUP
+        const char *dot = strrchr(argv[2], '.');
+        if (!dot || strcmp(dot, ".Zinter") != 0) {
+            printf("ERROR: formato file non supportato\n");
+            return 0;
+        }
+        
+        //SETTING UP LIBRARIES
+        if(argc >=4){
+            for(int i = 3; i<argc; i++){
+                if(strstr(argv[i],".Zlib")){
+                    importlib(argv[i]+1,argv[2]);
+                }
+            }
+        }
+        
 
+        
+        //STARTING THE FLOW
+        char *code = read_code_from_file(argv[2]);
         format_code(code);
 
         if(deb) printf("USCITO DA FORMAT_CODE \n\n\n");
@@ -2456,7 +2831,7 @@ int main(int argc, char *argv[]) {
         build_state();
 
         if(deb) {
-
+ 
         int i=0;
 
         while(i<=line_idx_program){
@@ -2477,17 +2852,17 @@ int main(int argc, char *argv[]) {
 
         
         //=====inizia parse e esecuzione======
-           
-        /*
-        while( strcmp(state_stack[st_ip].nome_function,"__start") != 0 ){
-            st_ip++;
-        }
-        */
-        
 
-        int n = system_setup();
-        if(n == -1){ printf("ERROR: see preview error from system_setup \n"); return 0;}
-        else{ parse(n,-1); }
+        int st = system_setup();
+        int ed = -1;
+        for(int i = 0; i<return_state; i++){
+            if(strcmp(state_stack[i].nome_function,"__start") == 0){
+                ed = state_stack[i].posizione_skip;
+            }
+        }
+        if(deb) printf("\n\nendline: %d\n\n",ed);
+        if(st == -1){ printf("ERROR: see preview error from system_setup \n"); return 0;}
+        else{ parse(st,ed); }
         
 
 
@@ -2495,12 +2870,12 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    if(argc==1){
+    if(argc<3){
         printf("need to add arguments \n");
-        printf("in order: ./Zinterpreter -debug file_name.Zinter \n");
-        printf("                 ^          ^        \n");
-        printf("                 |          |        \n");
-        printf("           or your compiler |        \n");
+        printf("in order: ./Zinterpreter -debug file_name.Zinter -library \n");
+        printf("                 ^          ^                        ^\n");
+        printf("                 |          |                        |\n");
+        printf("           or your compiler |                    eventual file_name.Zlib \n");
         printf("              version       |        \n");
         printf("                           -df ==debug false  \n");
         printf("                           -dt ==debug true  \n");
@@ -2508,11 +2883,12 @@ int main(int argc, char *argv[]) {
         
         printf("\n");
         printf("           A test will now be executed:\n");
+        run_test();
+        // =====================FINE SET TEST===================
+    
     }
 
 
-    run_test();
-    // =====================FINE SET TEST===================
     
     return 0;
 }
