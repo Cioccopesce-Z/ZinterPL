@@ -34,42 +34,39 @@ typedef struct decl_var_char decl_var_char;
 struct decl_var {
     char name[max_name_lettere];
     int value;
-    decl_var* pointer;
 };
 
 //struct for float var
 struct decl_fl_var {
     char name[max_name_lettere];
     float value;
-    decl_fl_var* pointer;
 };
 
 //struct for char var
 struct decl_var_char {
     char name[max_name_lettere];
     char value;
-    decl_var_char* pointer;
 };
 
 
 //struct for int array declaration
 typedef struct {
     char name[max_name_lettere];
-    int array_int[max_number_of_cell]; // Array(simulato) dentro la struct
+    int *array_int; // Array(simulato) dentro la struct
     int size;
 } decl_arr;
 
 //struct for float array declaration
 typedef struct {
     char name[max_name_lettere];
-    float array_int[max_number_of_cell]; // Array(simulato) dentro la struct
+    float *array_int; // Array(simulato) dentro la struct
     int size;
 } decl_fl_arr;
 
 //struct for char array declaration
 typedef struct {
     char name[max_name_lettere];
-    char array_int[max_lenght_of_string]; // Array(simulato) dentro la struct
+    char *array_int; // Array(simulato) dentro la struct
     int size;
 } decl_char_arr;
 
@@ -77,7 +74,7 @@ typedef struct {
 //struct for int matrix declaration
 typedef struct {
     char name[max_name_lettere];
-    int matrix_int[max_number_of_cell][max_number_of_cell]; // matrice(simulato) dentro la struct
+    int *data;
     int size_first;
     int size_sec;
 } decl_matr;
@@ -85,7 +82,7 @@ typedef struct {
 //struct for float matrix declaration
 typedef struct {
     char name[max_name_lettere];
-    float matrix_fl_int[max_number_of_cell][max_number_of_cell]; // matrice(simulato) dentro la struct
+    float *data;
     int size_first;
     int size_sec;
 } decl_fl_matr;
@@ -93,7 +90,7 @@ typedef struct {
 //struct for char matrix declaration
 typedef struct {
     char name[max_name_lettere];
-    char matrix_str_int[max_number_of_cell][max_number_of_cell]; // matrice(simulato) dentro la struct
+    char *data;
     int size_first;
     int size_sec;
 } decl_char_matr;
@@ -113,7 +110,7 @@ typedef struct {
     int posizione_skip; //per if e while e for
 } program_state;
 
-//evita conflitti se si hanno piu intepreti aperti
+
 typedef struct {
 
     // ===== variabili =====
@@ -252,7 +249,19 @@ int is_var_(const char *name) {
     return 0; // non è una variabile
 }
 /* 1 int 2 char 3 float 0 not*/
-int is_arr_(const char *name) {
+int is_arr_(const char *gname) {
+
+    char name[32];
+    strcpy(name,gname);
+    char junk[24];
+
+    if(strchr(name,'[')){
+        char buffer[24];
+        sscanf(name,"%[^]]]%s",junk,buffer);
+        strcpy(name,buffer);
+    }
+    if(deb) printf("DEBUG: is_arr name: %s\n",name);
+
     for (int i = 0; i < array_count; i++) {
         if (strcmp(array[i].name, name) == 0) {
             return 1; // è una arr int
@@ -271,7 +280,18 @@ int is_arr_(const char *name) {
     return 0; // non è un array
 }
 /* 1 int 2 char 3 float 0 not*/
-int is_matrix_(const char *name) {
+int is_matrix_(const char *gname) {
+
+    char name[32];
+    char junk[24];
+    strcpy(name,gname);
+    if(strchr(name,'[')){
+        char buffer[24];
+        sscanf(name,"%[^]]]%s",junk,buffer);
+        sscanf(buffer,"%[^]]]%s",junk,name);
+    }
+    if(deb) ("DEBUG: is_matrix name: %s\n",name);
+
     for (int i = 0; i < matrix_count; i++) {
         if (strcmp(matrix[i].name, name) == 0) {
             return 1; // è una matrice int
@@ -427,7 +447,7 @@ void* get_index(char data_sruct_name[]) {
                 if(strcmp(matrix[i].name, mat_name) == 0) {
                     if(row >= 0 && row < matrix[i].size_first &&
                     col >= 0 && col < matrix[i].size_sec)
-                        return &matrix[i].matrix_int[row][col];
+                        return &matrix[i].data[row * matrix[i].size_sec + col];
                     printf("OUT OF BOUNDS matrice int '%s' [%d][%d]\n", mat_name, row, col);
                     return NULL;
                 }
@@ -438,7 +458,7 @@ void* get_index(char data_sruct_name[]) {
                 if(strcmp(fl_matrix[i].name, mat_name) == 0) {
                     if(row >= 0 && row < fl_matrix[i].size_first &&
                     col >= 0 && col < fl_matrix[i].size_sec)
-                        return &fl_matrix[i].matrix_fl_int[row][col];
+                        return &fl_matrix[i].data[row * matrix[i].size_sec + col];
                     printf("OUT OF BOUNDS matrice float '%s' [%d][%d]\n", mat_name, row, col);
                     return NULL;
                 }
@@ -449,7 +469,7 @@ void* get_index(char data_sruct_name[]) {
                 if(strcmp(char_matrix[i].name, mat_name) == 0) {
                     if(row >= 0 && row < char_matrix[i].size_first &&
                     col >= 0 && col < char_matrix[i].size_sec)
-                        return &char_matrix[i].matrix_str_int[row][col];
+                        return &char_matrix[i].data[row * matrix[i].size_sec + col];
                     printf("OUT OF BOUNDS matrice char '%s' [%d][%d]\n", mat_name, row, col);
                     return NULL;
                 }
@@ -611,59 +631,79 @@ void* get_index(char data_sruct_name[]) {
     return NULL; // numero immediato o errore
 }
 
-void* resolve(char type, char *name){
+void* resolve(char rtype, char *gname){
     char buffer[64];
-    snprintf(buffer, sizeof(buffer), "&%c&%s&", type, name);
+    char name[32];
+    char type[24];
+    char junk[24];
+    strcpy(name, gname);
+    type[0] = rtype;
+    type[1] = '\0';
+
+    if(strchr(name,'[') && is_arr_(name) != 0){
+        sscanf(name, "%[^]]]%s", junk, buffer);
+        strcat(type, junk);
+        strcat(type, "]");
+        strcpy(name, buffer);  
+    }
+    else if(strchr(name,'[') && is_matrix_(name) != 0){
+        sscanf(name, "%[^]]]%s", junk, buffer);
+        strcat(type, junk);
+        strcat(type, "]");     
+        sscanf(buffer, "%[^]]]%s", junk, name);
+        strcat(type, junk);
+        strcat(type, "]");     
+    }
+
+    snprintf(buffer, sizeof(buffer), "&%s&%s&", type, name);
+    if(deb) printf("DEBUG: resolve resault: start: (%s),(%s) end: %s\n",type,gname,buffer);
     
-    if(type == 'i' || type == 'n')
+    if(strchr(type,'i') || strchr(type,'n'))
         return (int *)get_index(buffer);
-    if(type == 's' || type == 'k' || type == 'c')
+    if(strchr(type,'s') || strchr(type,'k') || strchr(type,'c'))
         return (char *)get_index(buffer);
-    if(type == 'l')
+    if(strchr(type,'l'))
         return (float *)get_index(buffer); 
     return NULL;
 }
 
 //declare matrix variable and array
-void declare_matrix(char name[], char type, int size_one, int size_two) {
+void declare_matrix(char name[], char type, int s1, int s2) {
 
-    //matrix int
-    if(type =='i'){
+    if (type == 'i') {
         strcpy(matrix[matrix_count].name, name);
-        matrix[matrix_count].size_first = size_one;
-        matrix[matrix_count].size_sec = size_two;
-
+        matrix[matrix_count].size_first = s1;
+        matrix[matrix_count].size_sec   = s2;
+        matrix[matrix_count].data = calloc(s1 * s2, sizeof(int));
+        if (!matrix[matrix_count].data) {
+            printf("ERROR: malloc fallita per matrice int '%s'\n", name);
+            return;
+        }
         matrix_count++;
-
-        if(matrix_count >= max_number_of_var) {
-            printf("Attenzione: numero massimo di matrici int raggiunto.\n");
-        }
     }
 
-    //matrix float
-    if(type =='l'){
+    else if (type == 'l') {
         strcpy(fl_matrix[fl_matrix_count].name, name);
-        fl_matrix[fl_matrix_count].size_first = size_one;
-        fl_matrix[fl_matrix_count].size_sec = size_two;
-
-        fl_matrix_count++;
-
-        if(fl_matrix_count >= max_number_of_var) {
-            printf("Attenzione: numero massimo di matrici fl raggiunto.\n");
+        fl_matrix[fl_matrix_count].size_first = s1;
+        fl_matrix[fl_matrix_count].size_sec   = s2;
+        fl_matrix[fl_matrix_count].data = calloc(s1 * s2, sizeof(float));
+        if (!fl_matrix[fl_matrix_count].data) {
+            printf("ERROR: malloc fallita per matrice float '%s'\n", name);
+            return;
         }
+        fl_matrix_count++;
     }
 
-    //matrix char
-    if(type =='s'){
+    else if (type == 's') {
         strcpy(char_matrix[char_matrix_count].name, name);
-        char_matrix[char_matrix_count].size_first = size_one;
-        char_matrix[char_matrix_count].size_sec = size_two;
-
-        char_matrix_count++;
-
-        if(char_matrix_count >= max_number_of_var) {
-            printf("Attenzione: numero massimo di matrici char raggiunto.\n");
+        char_matrix[char_matrix_count].size_first = s1;
+        char_matrix[char_matrix_count].size_sec   = s2;
+        char_matrix[char_matrix_count].data = calloc(s1 * s2, sizeof(char));
+        if (!char_matrix[char_matrix_count].data) {
+            printf("ERROR: malloc fallita per matrice char '%s'\n", name);
+            return;
         }
+        char_matrix_count++;
     }
 }
 
@@ -673,7 +713,6 @@ void declare_variable(char name[], char type) {
     if(type =='i'){
         strcpy(variable[variable_count].name, name);
         variable[variable_count].value = 0;
-        variable[variable_count].pointer = &variable[variable_count];
 
         variable_count++;
 
@@ -686,7 +725,6 @@ void declare_variable(char name[], char type) {
     if(type =='l'){
         strcpy(fl_variable[fl_variable_count].name, name);
         fl_variable[fl_variable_count].value = 0;
-        fl_variable[fl_variable_count].pointer = &fl_variable[variable_count];
         
         fl_variable_count++;
 
@@ -699,7 +737,6 @@ void declare_variable(char name[], char type) {
     if(type =='c'){
         strcpy(char_variable[char_variable_count].name, name);
         char_variable[char_variable_count].value = 0;
-        char_variable[char_variable_count].pointer = &char_variable[variable_count];
 
         char_variable_count++;
 
@@ -711,57 +748,36 @@ void declare_variable(char name[], char type) {
 
 void declare_array(char name[], char type, int size) {
 
-    if(type =='i'){
-
+    if (type == 'i') {
         strcpy(array[array_count].name, name);
-
-        if(size > max_number_of_cell) {
-            size = max_number_of_cell; // Limita la dimensione dell'array
-            printf("Attenzione: la dimensione dell'int_array '%s' è stata limitata a %d.\n", name, max_number_of_cell);
+        array[array_count].size     = size;
+        array[array_count].array_int = calloc(size, sizeof(int));
+        if (!array[array_count].array_int) {
+            printf("ERROR: malloc fallita per array int '%s'\n", name);
+            return;
         }
-
-        array[array_count].size = size;
-
-        for (int i = 0; i < size; i++) {
-            array[array_count].array_int[i] = 0; // Inizializza a 0
-        }
-
         array_count++;
     }
 
-    if(type =='l'){
-
+    else if (type == 'l') {
         strcpy(fl_array[fl_array_count].name, name);
-
-        if(size > max_number_of_cell) {
-            size = max_number_of_cell; // Limita la dimensione dell'array
-            printf("Attenzione: la dimensione dell'fl_array '%s' è stata limitata a %d.\n", name, max_number_of_cell);
+        fl_array[fl_array_count].size     = size;
+        fl_array[fl_array_count].array_int = calloc(size, sizeof(float));
+        if (!fl_array[fl_array_count].array_int) {
+            printf("ERROR: malloc fallita per array float '%s'\n", name);
+            return;
         }
-
-        fl_array[fl_array_count].size = size;
-
-        for (int i = 0; i < size; i++) {
-            fl_array[fl_array_count].array_int[i] = 0; // Inizializza a 0
-        }
-
         fl_array_count++;
     }
 
-    if(type =='s'){
-
+    else if (type == 's') {
         strcpy(char_array[char_array_count].name, name);
-
-        if(size > max_number_of_cell) {
-            size = max_number_of_cell; // Limita la dimensione dell'array
-            printf("Attenzione: la dimensione dell'char_array '%s' è stata limitata a %d.\n", name, max_number_of_cell);
+        char_array[char_array_count].size     = size;
+        char_array[char_array_count].array_int = calloc(size, sizeof(char));
+        if (!char_array[char_array_count].array_int) {
+            printf("ERROR: malloc fallita per array char '%s'\n", name);
+            return;
         }
-
-        char_array[char_array_count].size = size;
-
-        for (int i = 0; i < size; i++) {
-            char_array[char_array_count].array_int[i] = 0; // Inizializza a 0
-        }
-
         char_array_count++;
     }
 }
@@ -872,7 +888,7 @@ void set_to_matrix(char name[], char type, int row, int col, float value, char c
             if(strcmp(matrix[i].name, name) == 0) {
                 if(row >= 0 && row < matrix[i].size_first &&
                    col >= 0 && col < matrix[i].size_sec) {
-                    matrix[i].matrix_int[row][col] = (int)value;
+                    matrix[i].data[row * matrix[i].size_sec + col] = (int)value;
                 } else {
                     printf("Errore: indici [%d][%d] fuori dai limiti per la matrice int '%s'.\n", row, col, name);
                 }
@@ -886,7 +902,7 @@ void set_to_matrix(char name[], char type, int row, int col, float value, char c
             if(strcmp(fl_matrix[i].name, name) == 0) {
                 if(row >= 0 && row < fl_matrix[i].size_first &&
                    col >= 0 && col < fl_matrix[i].size_sec) {
-                    fl_matrix[i].matrix_fl_int[row][col] = value;
+                    fl_matrix[i].data[row * matrix[i].size_sec + col] = value;
                 } else {
                     printf("Errore: indici [%d][%d] fuori dai limiti per la matrice float '%s'.\n", row, col, name);
                 }
@@ -900,7 +916,7 @@ void set_to_matrix(char name[], char type, int row, int col, float value, char c
             if(strcmp(char_matrix[i].name, name) == 0) {
                 if(row >= 0 && row < char_matrix[i].size_first &&
                    col >= 0 && col < char_matrix[i].size_sec) {
-                    char_matrix[i].matrix_str_int[row][col] = cvalue;
+                    char_matrix[i].data[row * matrix[i].size_sec + col] = cvalue;
                 } else {
                     printf("Errore: indici [%d][%d] fuori dai limiti per la matrice char '%s'.\n", row, col, name);
                 }
@@ -1931,6 +1947,615 @@ int is_math(char *operand) {
     return error_int;  // non è math
 }
 
+int exec_conf(char *text){
+
+    char left_operand[32] = {0};
+    char right_operand[32] = {0};
+
+    if (text[0] == '=' && text[1] == '=') {
+        printf("ERROR: im crying operation not allowed\n"); return error_int;
+    }
+    else if (text[strlen(text)-1] == '=' && text[strlen(text)-2] == '=') {
+        printf("ERROR: im crying operation not allowed\n"); return error_int;
+    }
+    else {
+        int n = sscanf(text, "%23[^=]==%23s", left_operand, right_operand);
+        if(deb) printf("\ntext: %s, left op: %s, right op: %s\n", text, left_operand, right_operand);
+        if (n < 2) { printf("ERROR: parse error in x==x: %s\n", text); return error_int; }
+    }
+
+    char left_name[64]  = {0};
+    char right_name[64] = {0};
+    char left_i[16]     = {0};
+    char right_i[16]    = {0};
+    char left_j[16]     = {0};
+    char right_j[16]    = {0};
+
+
+    /*MATRIX*/
+    if (strstr(left_operand, "][") && strstr(right_operand, "][")) { /*matr x matr*/
+        sscanf(left_operand,  "[%[^]]][%[^]]]%63s", left_i,  left_j,  left_name);
+        sscanf(right_operand, "[%[^]]][%[^]]]%63s", right_i, right_j, right_name);
+        if(deb) printf("[CHECK] matr x matr | left: [%s][%s]%s | right: [%s][%s]%s\n",
+               left_i, left_j, left_name, right_i, right_j, right_name);
+
+        char bin[16];
+        char ltdata[16] = {0}; char ltype = 0;
+        char rtdata[16] = {0}; char rtype = 0;
+
+        strcpy(bin, left_name);  is_what(bin);
+        sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+        if (strcmp(ltdata, "matrix") != 0) { printf("ERROR: %s is not a matrix\n", left_name); return error_int; }
+
+        strcpy(bin, right_name); is_what(bin);
+        sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+        if (strcmp(rtdata, "matrix") != 0) { printf("ERROR: %s is not a matrix\n", right_name); return error_int; }
+
+        if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+        int li = resolve_index(left_i),  lj = resolve_index(left_j);
+        int ri = resolve_index(right_i), rj = resolve_index(right_j);
+        if (li < 0 || lj < 0 || ri < 0 || rj < 0) return error_int;
+
+        char lenc[128], renc[128];
+        snprintf(lenc, sizeof(lenc), "&%c[%d][%d]&%s&", ltype, li, lj, left_name);
+        snprintf(renc, sizeof(renc), "&%c[%d][%d]&%s&", rtype, ri, rj, right_name);
+
+        if (ltype == 'i') {
+            int *dest = (int *)get_index(lenc);
+            int *src  = (int *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        } else if (ltype == 'l') {
+            float *dest = (float *)get_index(lenc);
+            float *src  = (float *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        } else if (ltype == 's') {
+            char *dest = (char *)get_index(lenc);
+            char *src  = (char *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        }
+    }
+
+    else if (strstr(left_operand, "][") && !strstr(right_operand, "][")) { /*matr x boh*/
+        sscanf(left_operand, "[%[^]]][%[^]]]%63s", left_i, left_j, left_name);
+
+        char bin[16];
+        char ltdata[16] = {0}; char ltype = 0;
+        strcpy(bin, left_name); is_what(bin);
+        sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+        if (strcmp(ltdata, "matrix") != 0) { printf("ERROR: %s is not a matrix\n", left_name); return error_int; }
+
+        int li = resolve_index(left_i), lj = resolve_index(left_j);
+        if (li < 0 || lj < 0) return error_int;
+
+        char lenc[128];
+        snprintf(lenc, sizeof(lenc), "&%c[%d][%d]&%s&", ltype, li, lj, left_name);
+
+        int math_res = is_math(right_operand);
+        if(math_res != error_int) {
+            if(deb) printf("[CHECK] matr x math | left: [%s][%s]%s | right: %s\n", left_i, left_j, left_name, right_operand);
+            if(ltype=='i'){
+                int *dest = (int*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                *dest = math_res;
+            } else if(ltype=='l'){
+                float *dest = (float*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                *dest = (float)math_res;
+            }
+            return error_int;
+        }
+
+        else if (right_operand[0] == '\'') { /*matr x k*/
+            if(deb) printf("[CHECK] matr x k | left: [%s][%s]%s | right: %s\n",
+                   left_i, left_j, left_name, right_operand);
+            if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch matrix/char\n"); return error_int; }
+            char *dest = (char *)get_index(lenc);
+            if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+            *dest = right_operand[1];
+        }
+        else if (isdigit((unsigned char)right_operand[0])) { /*matr x n*/
+            if(deb) printf("[CHECK] matr x n | left: [%s][%s]%s | right: %s\n",
+                   left_i, left_j, left_name, right_operand);
+            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch matrix/number\n"); return error_int; }
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = atoi(right_operand);
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = (float)atof(right_operand);
+            }
+        }
+        else if (strchr(right_operand, ']')) { /*matr x arr*/
+            sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
+            if(deb) printf("[CHECK] matr x arr | left: [%s][%s]%s | right: [%s]%s\n",
+                   left_i, left_j, left_name, right_i, right_name);
+
+            char rtdata[16] = {0}; char rtype = 0;
+            strcpy(bin, right_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+            if (strcmp(rtdata, "array") != 0) { printf("ERROR: %s is not an array\n", right_name); return error_int; }
+            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+            int ri = resolve_index(right_i);
+            if (ri < 0) return error_int;
+            char renc[128];
+            snprintf(renc, sizeof(renc), "&%c[%d]&%s&", rtype, ri, right_name);
+
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                int *src  = (int *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                float *src  = (float *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 's') {
+                char *dest = (char *)get_index(lenc);
+                char *src  = (char *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            }
+        }
+        else if (strstr(right_operand, "__")) { /*matr x func*/
+            if(deb) printf("[CHECK] matr x func | left: [%s][%s]%s | right: %s\n",
+                left_i, left_j, left_name, right_operand);
+           if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch matrix/function\n"); return error_int; }
+
+            void *ret = get_index(right_operand);
+            if (!ret) { printf("ERROR: null pointer from function\n"); return error_int; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(int *)ret;
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(float *)ret;
+            } else if (ltype == 's') {
+                char *dest = (char *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(char *)ret;
+            }
+        }
+        else { /*matr x var*/
+            sscanf(right_operand, "%63s", right_name);
+            if(deb) printf("[CHECK] matr x var | left: [%s][%s]%s | right: %s\n",
+                   left_i, left_j, left_name, right_name);
+
+            char rtdata[16] = {0}; char rtype = 0;
+            strcpy(bin, right_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+            if (strcmp(rtdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", right_name); return error_int; }
+            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                int *src  = (int *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                float *src  = (float *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 's') {
+                char *dest = (char *)get_index(lenc);
+                char *src  = (char *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            }
+        }
+    }
+
+    else if (!strstr(left_operand, "][") && strstr(right_operand, "][")) { /*boh x matr*/
+        sscanf(right_operand, "[%[^]]][%[^]]]%63s", right_i, right_j, right_name);
+
+        char bin[16];
+        char rtdata[16] = {0}; char rtype = 0;
+        strcpy(bin, right_name); is_what(bin);
+        sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+        if (strcmp(rtdata, "matrix") != 0) { printf("ERROR: %s is not a matrix\n", right_name); return error_int; }
+
+        int ri = resolve_index(right_i), rj = resolve_index(right_j);
+        if (ri < 0 || rj < 0) return error_int;
+        char renc[128];
+        snprintf(renc, sizeof(renc), "&%c[%d][%d]&%s&", rtype, ri, rj, right_name);
+
+        if (strchr(left_operand, ']')) { /*arr x matr*/
+            sscanf(left_operand, "[%[^]]]%63s", left_i, left_name);
+            if(deb) printf("[CHECK] arr x matr | left: [%s]%s | right: [%s][%s]%s\n",
+                   left_i, left_name, right_i, right_j, right_name);
+
+            char ltdata[16] = {0}; char ltype = 0;
+            strcpy(bin, left_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+            if (strcmp(ltdata, "array") != 0) { printf("ERROR: %s is not an array\n", left_name); return error_int; }
+            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+            int li = resolve_index(left_i);
+            if (li < 0) return error_int;
+            char lenc[128];
+            snprintf(lenc, sizeof(lenc), "&%c[%d]&%s&", ltype, li, left_name);
+
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                int *src  = (int *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                float *src  = (float *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 's') {
+                char *dest = (char *)get_index(lenc);
+                char *src  = (char *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            }
+        }
+        else { /*var x matr*/
+            sscanf(left_operand, "%63s", left_name);
+            if(deb) printf("[CHECK] var x matr | left: %s | right: [%s][%s]%s\n",
+                   left_name, right_i, right_j, right_name);
+
+            char ltdata[16] = {0}; char ltype = 0;
+            strcpy(bin, left_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)resolve(ltype, left_name);
+                int *src  = (int *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 'l') {
+                float *dest = (float *)resolve(ltype, left_name);
+                float *src  = (float *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 'c') {
+                char *dest = (char *)resolve(ltype, left_name);
+                char *src  = (char *)get_index(renc);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            }
+        }
+    }
+
+    /*ARRAY*/
+    else if (strchr(left_operand, ']') && strchr(right_operand, ']')) { /*arr x arr*/
+        sscanf(left_operand,  "[%[^]]]%63s", left_i,  left_name);
+        sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
+        if(deb) printf("[CHECK] arr x arr | left: [%s]%s | right: [%s]%s\n",
+               left_i, left_name, right_i, right_name);
+
+        char bin[16];
+        char ltdata[16] = {0}; char ltype = 0;
+        char rtdata[16] = {0}; char rtype = 0;
+
+        strcpy(bin, left_name);  is_what(bin);
+        sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+        if (strcmp(ltdata, "array") != 0) { printf("ERROR: %s is not an array\n", left_name); return error_int; }
+
+        strcpy(bin, right_name); is_what(bin);
+        sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+        if (strcmp(rtdata, "array") != 0) { printf("ERROR: %s is not an array\n", right_name); return error_int; }
+
+        if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+        int li = resolve_index(left_i);
+        int ri = resolve_index(right_i);
+        if (li < 0 || ri < 0) return error_int;
+
+        char lenc[128], renc[128];
+        snprintf(lenc, sizeof(lenc), "&%c[%d]&%s&", ltype, li, left_name);
+        snprintf(renc, sizeof(renc), "&%c[%d]&%s&", rtype, ri, right_name);
+
+        if (ltype == 'i') {
+            int *dest = (int *)get_index(lenc);
+            int *src  = (int *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        } else if (ltype == 'l') {
+            float *dest = (float *)get_index(lenc);
+            float *src  = (float *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        } else if (ltype == 's' || ltype == 'c') {
+            char *dest = (char *)get_index(lenc);
+            char *src  = (char *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        }
+    }
+
+    else if (strchr(left_operand, ']') && !strchr(right_operand, ']')) { /*arr x boh*/
+        sscanf(left_operand, "[%[^]]]%63s", left_i, left_name);
+
+        char bin[16];
+        char ltdata[16] = {0}; char ltype = 0;
+        strcpy(bin, left_name); is_what(bin);
+        sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+        if (strcmp(ltdata, "array") != 0) { printf("ERROR: %s is not an array\n", left_name); return error_int; }
+
+        int li = resolve_index(left_i);
+        if (li < 0) return error_int;
+        char lenc[128];
+        snprintf(lenc, sizeof(lenc), "&%c[%d]&%s&", ltype, li, left_name);
+
+        int math_res = is_math(right_operand);
+        if(math_res != error_int) {
+            if(deb) printf("[CHECK] arr x math | left: [%s]%s | right: %s\n", left_i, left_name, right_operand);
+            if(ltype=='i'){
+                int *dest = (int*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                *dest = math_res;
+            } else if(ltype=='l'){
+                float *dest = (float*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                *dest = (float)math_res;
+            }
+            return error_int;
+        }
+        else if (right_operand[0] == '\'') { /*arr x k*/
+            if(deb) printf("[CHECK] arr x k | left: [%s]%s | right: %s\n", left_i, left_name, right_operand);
+            if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch array/char\n"); return error_int; }
+            char *dest = (char *)get_index(lenc);
+            if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+            *dest = right_operand[1];
+        }
+        else if (isdigit((unsigned char)right_operand[0])) { /*arr x n*/
+            if(deb) printf("[CHECK] arr x n | left: [%s]%s | right: %s\n", left_i, left_name, right_operand);
+            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch array/number\n"); return error_int; }
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = atoi(right_operand);
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = (float)atof(right_operand);
+            }
+        }
+        else if (strstr(right_operand, "__")) { /*arr x func*/
+            if(deb) printf("[CHECK] arr x func | left: [%s]%s | right: %s\n",
+                left_i, left_name, right_operand);
+                if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch array/function\n"); return error_int; }
+
+            void *ret = get_index(right_operand);
+            if (!ret) { printf("ERROR: null pointer from function\n"); return error_int; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(int *)ret;
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(float *)ret;
+            } else if (ltype == 's') {
+                char *dest = (char *)get_index(lenc);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(char *)ret;
+            }
+        }
+        else { /*arr x var*/
+            sscanf(right_operand, "%63s", right_name);
+            if(deb) printf("[CHECK] arr x var | left: [%s]%s | right: %s\n", left_i, left_name, right_name);
+
+            char rtdata[16] = {0}; char rtype = 0;
+            strcpy(bin, right_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+            if (strcmp(rtdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", right_name); return error_int; }
+            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)get_index(lenc);
+                int *src  = (int *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 'l') {
+                float *dest = (float *)get_index(lenc);
+                float *src  = (float *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 's' || ltype == 'c') {
+                char *dest = (char *)get_index(lenc);
+                char *src  = (char *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            }
+        }
+    }
+
+    else if (!strchr(left_operand, ']') && strchr(right_operand, ']')) { /*var x arr*/
+        sscanf(left_operand,  "%63s",        left_name);
+        sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
+        if(deb) printf("[CHECK] var x arr | left: %s | right: [%s]%s\n", left_name, right_i, right_name);
+
+        char bin[16];
+        char ltdata[16] = {0}; char ltype = 0;
+        char rtdata[16] = {0}; char rtype = 0;
+
+        strcpy(bin, left_name);  is_what(bin);
+        sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+        if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+
+        strcpy(bin, right_name); is_what(bin);
+        sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+        if (strcmp(rtdata, "array") != 0) { printf("ERROR: %s is not an array\n", right_name); return error_int; }
+
+        if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+        int ri = resolve_index(right_i);
+        if (ri < 0) return error_int;
+        char renc[128];
+        snprintf(renc, sizeof(renc), "&%c[%d]&%s&", rtype, ri, right_name);
+
+        if (ltype == 'i') {
+            int *dest = (int *)resolve(ltype, left_name);
+            int *src  = (int *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        } else if (ltype == 'l') {
+            float *dest = (float *)resolve(ltype, left_name);
+            float *src  = (float *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        } else if (ltype == 's' || ltype == 'c') {
+            char *dest = (char *)resolve(ltype, left_name);
+            char *src  = (char *)get_index(renc);
+            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+            if(*dest == *src) return tru; else return fal;
+        }
+    }
+
+    /*VARIABILI*/
+    else if (!strchr(left_operand, ']') && (!strchr(right_operand, ']') || strstr(right_operand,"__")) ) {
+
+        int math_res = is_math(right_operand);
+        if(math_res != error_int) {
+            sscanf(left_operand, "%63s", left_name);
+            if(deb) printf("[CHECK] var x math | left: %s | right: %s\n", left_name, right_operand);
+            char bin[16]; char ltdata[16]={0}; char ltype=0;
+            strcpy(bin,left_name); is_what(bin);
+            sscanf(bin,"%15[^.].%c",ltdata,&ltype);
+            if(strcmp(ltdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",left_name); return error_int; }
+            if(ltype=='i'){
+                int *dest = (int*)resolve(ltype,left_name);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                *dest = math_res;
+            } else if(ltype=='l'){
+                float *dest = (float*)resolve(ltype,left_name);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                *dest = (float)math_res;
+            }
+            return error_int;
+        }
+        else if (right_operand[0] == '\'') { /*var x k*/
+            sscanf(left_operand, "%63s", left_name);
+            if(deb) printf("[CHECK] var x k | left: %s | right: %s\n", left_name, right_operand);
+
+            char bin[16];
+            char ltdata[16] = {0}; char ltype = 0;
+            strcpy(bin, left_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+            if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch var/char\n"); return error_int; }
+
+            char *dest = (char *)resolve(ltype, left_name);
+            if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+            *dest = right_operand[1];
+        }
+
+        else if (isdigit((unsigned char)right_operand[0])) { /*var x n*/
+            sscanf(left_operand, "%63s", left_name);
+            if(deb) printf("[CHECK] var x n | left: %s | right: %s\n", left_name, right_operand);
+
+            char bin[16];
+            char ltdata[16] = {0}; char ltype = 0;
+            strcpy(bin, left_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch var/number\n"); return error_int; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)resolve(ltype, left_name);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = atoi(right_operand);
+            } else if (ltype == 'l') {
+                float *dest = (float *)resolve(ltype, left_name);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = (float)atof(right_operand);
+            }
+        }
+
+        else if (strstr(right_operand,"__")) { /*var x __function*/
+            sscanf(left_operand, "%63s", left_name);
+            sscanf(right_operand, "%63s", right_name);
+            if(deb) printf("[CHECK] var x func | left: %s | right: %s\n", left_name, right_operand);
+
+            char bin[16];
+            char rtdata[16] = {0}; char rtype = 0;
+            strcpy(bin, right_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+            if (strcmp(rtdata, "function") != 0) { printf("ERROR: %s is not a function\n", right_name); return error_int; }
+
+            char ltdata[16] = {0}; char ltype = 0;
+            strcpy(bin, left_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+
+            if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch var/function\n"); return error_int; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)resolve(ltype, left_name);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(int *)get_index(right_name);
+            } 
+            else if (ltype == 'l') {
+                float *dest = (float *)resolve(ltype, left_name);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(float *)get_index(right_name);
+            } 
+            else if (ltype == 'c') {
+                char *dest = (char *)resolve(ltype, left_name);
+                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
+                *dest = *(char *)get_index(right_name);
+            }
+        }
+
+        else { /*var x var*/
+            sscanf(left_operand,  "%63s", left_name);
+            sscanf(right_operand, "%63s", right_name);
+            if(deb) printf("[CHECK] var x var | left: %s | right: %s\n", left_name, right_name);
+
+            char bin[16];
+            char ltdata[16] = {0}; char ltype = 0;
+            char rtdata[16] = {0}; char rtype = 0;
+
+            strcpy(bin, left_name);  is_what(bin);
+            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+
+            strcpy(bin, right_name); is_what(bin);
+            sscanf(bin, "%15[^.].%c", rtdata, &rtype);
+            if (strcmp(rtdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", right_name); return error_int; }
+
+            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+
+            if (ltype == 'i') {
+                int *dest = (int *)resolve(ltype, left_name);
+                int *src  = (int *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 'l') {
+                float *dest = (float *)resolve(ltype, left_name);
+                float *src  = (float *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            } else if (ltype == 'c') {
+                char *dest = (char *)resolve(ltype, left_name);
+                char *src  = (char *)resolve(rtype, right_name);
+                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+                if(*dest == *src) return tru; else return fal;
+            }
+        }
+    }
+}
+
+
 void exec_equal(char *text) {
 
     char left_operand[32] = {0};
@@ -2540,6 +3165,195 @@ void exec_equal(char *text) {
     }
 }
 
+
+void *exec_plus_plus(char *text) {
+
+    char lop[16] = {0};
+    char rop[16] = {0};
+    int has_rop = (sscanf(text, "%15[^+]++%15s", lop, rop) == 2);
+    if (!has_rop)
+        sscanf(text, "%15[^+]++", lop);
+
+    // tipo di lop
+    char buffer[16], junk[16]; char type = 0;
+    strcpy(buffer, lop);
+    is_what(buffer);
+    sscanf(buffer, "%15[^.].%c", junk, &type);
+    if(deb) printf("DEBUG: plusplus lop=%s type=%c has_rop=%d rop=%s\n", lop, type, has_rop, rop);
+
+    // valore di rop (default 1)
+    int ropv = 1;
+    if (has_rop) {
+        char rbuffer[16]; char rtype = 0;
+        strcpy(rbuffer, rop);
+        is_what(rbuffer);
+        sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
+        int *rptr = (int *)resolve(rtype, rop);
+        if (!rptr) { printf("ERROR: cannot resolve rop '%s' in ++\n", rop); return pt_place_holder; }
+        ropv = *rptr;
+    }
+
+    // INT: somma diretta
+    if (type == 'i') {
+        int *dest = (int *)resolve(type, lop);
+        if (!dest) { printf("ERROR: resolve failed for '%s' in ++\n", lop); return pt_place_holder; }
+        *dest += ropv;
+        return dest;
+    }
+
+    // CHAR ARRAY: copia arr[src] in arr[src+ropv]
+    else if (type == 's') {
+        char idx_str[8] = {0}, arr_name[16] = {0};
+        if (sscanf(lop, "[%7[^]]]%15s", idx_str, arr_name) != 2) {
+            printf("ERROR: cannot parse array index from '%s' in ++\n", lop);
+            return pt_char_place_holder;
+        }
+        int src_idx = resolve_index(idx_str);
+        int dst_idx = src_idx + ropv;
+
+        char buf_src[32], buf_dst[32];
+        snprintf(buf_src, sizeof(buf_src), "&s[%d]&%s&", src_idx, arr_name);
+        snprintf(buf_dst, sizeof(buf_dst), "&s[%d]&%s&", dst_idx, arr_name);
+
+        char *src = (char *)get_index(buf_src);
+        char *dst = (char *)get_index(buf_dst);
+        if (!src || !dst) { printf("ERROR: out of bounds in ++ char array '%s' [%d]->[%d]\n", arr_name, src_idx, dst_idx); return pt_char_place_holder; }
+        *dst = *src;
+        return src;
+    }
+
+    else {
+        printf("ERROR: type mismatch on ++ operation, line: %s\n", text);
+        return pt_char_place_holder;
+    }
+}
+
+void *exec_min_min(char *text) {
+
+    char lop[16] = {0};
+    char rop[16] = {0};
+    int has_rop = (sscanf(text, "%15[^-]--%15s", lop, rop) == 2);
+    if (!has_rop)
+        sscanf(text, "%15[^-]--", lop);
+
+    // tipo di lop
+    char buffer[16], junk[16]; char type = 0;
+    strcpy(buffer, lop);
+    is_what(buffer);
+    sscanf(buffer, "%15[^.].%c", junk, &type);
+    if(deb) printf("DEBUG: minmin lop=%s type=%c has_rop=%d rop=%s\n", lop, type, has_rop, rop);
+
+    // valore di rop (default 1)
+    int ropv = 1;
+    if (has_rop) {
+        char rbuffer[16]; char rtype = 0;
+        strcpy(rbuffer, rop);
+        is_what(rbuffer);
+        sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
+        int *rptr = (int *)resolve(rtype, rop);
+        if (!rptr) { printf("ERROR: cannot resolve rop '%s' in --\n", rop); return pt_place_holder; }
+        ropv = *rptr;
+    }
+
+    // INT: sottrazione diretta
+    if (type == 'i') {
+        int *dest = (int *)resolve(type, lop);
+        if (!dest) { printf("ERROR: resolve failed for '%s' in --\n", lop); return pt_place_holder; }
+        *dest -= ropv;
+        return dest;
+    }
+
+    // CHAR ARRAY: copia arr[src] in arr[src-ropv]
+    else if (type == 's') {
+        char idx_str[8] = {0}, arr_name[16] = {0};
+        if (sscanf(lop, "[%7[^]]]%15s", idx_str, arr_name) != 2) {
+            printf("ERROR: cannot parse array index from '%s' in --\n", lop);
+            return pt_char_place_holder;
+        }
+        int src_idx = resolve_index(idx_str);
+        int dst_idx = src_idx - ropv;
+
+        if (dst_idx < 0) {
+            printf("ERROR: -- underflow su char array '%s' [%d - %d]\n", arr_name, src_idx, ropv);
+            return pt_char_place_holder;
+        }
+
+        char buf_src[32], buf_dst[32];
+        snprintf(buf_src, sizeof(buf_src), "&s[%d]&%s&", src_idx, arr_name);
+        snprintf(buf_dst, sizeof(buf_dst), "&s[%d]&%s&", dst_idx, arr_name);
+
+        char *src = (char *)get_index(buf_src);
+        char *dst = (char *)get_index(buf_dst);
+        if (!src || !dst) { printf("ERROR: out of bounds in -- char array '%s' [%d]->[%d]\n", arr_name, src_idx, dst_idx); return pt_char_place_holder; }
+        *dst = *src;
+        return src;
+    }
+
+    else {
+        printf("ERROR: type mismatch on -- operation, line: %s\n", text);
+        return pt_char_place_holder;
+    }
+}
+
+int exec_status(char *text) {
+
+    printf("memory occupied VM: %zuKB %zuMB\n", sizeof(VM)/1024, sizeof(VM)/1024/1024);
+
+    if(strstr(text,"clear") || strstr(text,"clr") || strstr(text,"cls")) {
+
+        int confirmed = 0;
+
+        if(strchr(text,'y')) {
+            confirmed = 1;
+        } else {
+            char dec;
+            printf("WARNING: this operation will erase all variables/arrays/matrices. Are you sure? (y/n) ");
+            scanf(" %c", &dec);
+            if(dec == 'y') confirmed = 1;
+        }
+
+        if(!confirmed) return 0;
+
+        for(int i = 0; i < array_count; i++)
+            if(array[i].array_int) { free(array[i].array_int); array[i].array_int = NULL; }
+
+        for(int i = 0; i < fl_array_count; i++)
+            if(fl_array[i].array_int) { free(fl_array[i].array_int); fl_array[i].array_int = NULL; }
+
+        for(int i = 0; i < char_array_count; i++)
+            if(char_array[i].array_int) { free(char_array[i].array_int); char_array[i].array_int = NULL; }
+
+        for(int i = 0; i < matrix_count; i++)
+            if(matrix[i].data) { free(matrix[i].data); matrix[i].data = NULL; }
+
+        for(int i = 0; i < fl_matrix_count; i++)
+            if(fl_matrix[i].data) { free(fl_matrix[i].data); fl_matrix[i].data = NULL; }
+
+        for(int i = 0; i < char_matrix_count; i++)
+            if(char_matrix[i].data) { free(char_matrix[i].data); char_matrix[i].data = NULL; }
+
+        memset(variable,      0, sizeof(variable));
+        memset(fl_variable,   0, sizeof(fl_variable));
+        memset(char_variable, 0, sizeof(char_variable));
+        memset(array,         0, sizeof(array));
+        memset(fl_array,      0, sizeof(fl_array));
+        memset(char_array,    0, sizeof(char_array));
+        memset(matrix,        0, sizeof(matrix));
+        memset(fl_matrix,     0, sizeof(fl_matrix));
+        memset(char_matrix,   0, sizeof(char_matrix));
+        memset(r,             0, sizeof(r));
+        memset(cr,            0, sizeof(cr));
+
+        variable_count = 0;    fl_variable_count = 0;   char_variable_count = 0;
+        array_count = 0;       fl_array_count = 0;      char_array_count = 0;
+        matrix_count = 0;      fl_matrix_count = 0;     char_matrix_count = 0;
+
+        printf("LOG: memory cleared\n");
+    }
+
+    return 0;
+}
+
 void parse(int start_line, int  eventual_end_line){
 
     if(eventual_end_line == -1) eventual_end_line = line_idx_program;
@@ -2553,10 +3367,11 @@ void parse(int start_line, int  eventual_end_line){
 
         if( starts_with (program[global_ip].instruction, "//") ) { /*comment do nothing*/ }
         else if( starts_with (program[global_ip].instruction, "print_") ){ exec_print(program[global_ip].instruction);/*stampa carattere a terminale */ }
+        else if( starts_with (program[global_ip].instruction, "status_") ){ exec_status(program[global_ip].instruction);/*stampa carattere a terminale */ }
         else if( starts_with (program[global_ip].instruction, "lnprint_") ){ exec_lnprint(program[global_ip].instruction);/*va a capo stampa carattere a terminale */ }
         else if( starts_with (program[global_ip].instruction, "println_") ){ exec_println(program[global_ip].instruction);/*stampa carattere a terminale e va a capo */ }
         else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction);/*va a capo stampa carattere a terminale e va a capo */ }
-        else if( strstr (program[global_ip].instruction, "==") ){ /*see older build*/ }
+        else if( strstr (program[global_ip].instruction, "==") ){ exec_conf(program[global_ip].instruction);/*see older build*/ }
         else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction);}
         else if( starts_with (program[global_ip].instruction, "#") ){ /*funzioni di sistema e interprete tipo import o kill*/ }
         else if( starts_with (program[global_ip].instruction, "od") ){ /*dichiara funzione od (open door) ma non ha gran senso*/ }
@@ -2570,12 +3385,8 @@ void parse(int start_line, int  eventual_end_line){
         else if ( starts_with(program[global_ip].instruction, "return_") && check_return(eventual_end_line) == tru ) {
             exec_funarg(program[global_ip].instruction, tru); /* return_hit è ora 1 quindi il while esce al prossimo controllo */}
         else if( starts_with (program[global_ip].instruction, "set_to_") ){ exec_set_to(program[global_ip].instruction); }
-        else if( strstr (program[global_ip].instruction, "++") ){ /*operazione ++ di sicuro perche cicli gia parsati*/}
-        else if( strstr (program[global_ip].instruction, "--") ){ /*operazione -- di sicuro perche cicli gia parsati*/}
-        else if( strchr (program[global_ip].instruction, '+') ){ /*operazione + di sicuro perche cicli gia parsati*/}
-        else if( strchr (program[global_ip].instruction, '-') ){ /*operazione - di sicuro perche cicli gia parsati*/}
-        else if( strchr (program[global_ip].instruction, '*') ){ /*operazione * di sicuro perche cicli gia parsati*/}
-        else if( strchr (program[global_ip].instruction, '/') ){ /*operazione / di sicuro perche cicli gia parsati*/}
+        else if( strstr (program[global_ip].instruction, "++") ){ exec_plus_plus(program[global_ip].instruction);/*operazione ++ di sicuro perche cicli gia parsati*/}
+        else if( strstr (program[global_ip].instruction, "--") ){ exec_min_min(program[global_ip].instruction); /*operazione -- di sicuro perche cicli gia parsati*/}
         else if( starts_with (program[global_ip].instruction, "scan_") ){/*legge carattere da schermo */ }
         global_ip++;
     }
@@ -2757,6 +3568,7 @@ void copy_file(FILE *src, FILE *dst){
                 fputc(buffer[i], dst);
             }
         }
+
     }
 }
 
@@ -2820,8 +3632,6 @@ int main(int argc, char *argv[]) {
             }
         }
         
-
-        
         //STARTING THE FLOW
         char *code = read_code_from_file(argv[2]);
         format_code(code);
@@ -2863,8 +3673,6 @@ int main(int argc, char *argv[]) {
         if(deb) printf("\n\nendline: %d\n\n",ed);
         if(st == -1){ printf("ERROR: see preview error from system_setup \n"); return 0;}
         else{ parse(st,ed); }
-        
-
 
         free(code);
         return 0;

@@ -27,7 +27,7 @@ od_ prodotto(){
     int_ &i&a&:
     int_ &i&b&:
     a = 6:
-    b = 7:
+    b = 7&:
     int_ &i&res&:
     res = a * b:
     return_ res:
@@ -125,6 +125,58 @@ __start(){
     println_:
     //=== MATH IN VAR ===:
     println_ &s&"=== MATH IN VAR ==="&:
+
+    int_ &i&plusplus&:
+
+    plusplus = 3:
+    print_ plusplus: println_ &s&" 3 - plusplus"&:
+
+    plusplus++:
+    print_ plusplus: println_ &s&" 4 - plusplus++"&:
+
+    plusplus--:
+    print_ plusplus: println_ &s&" 3 - plusplus--"&:
+
+    plusplus++2:
+    print_ plusplus: println_ &s&" 5 - plusplus++2"&:
+
+    plusplus--4:
+    print_ plusplus: println_ &s&" 1 - plusplus--4"&:
+
+    println_:
+
+    int_ &i[3]&parr&:
+
+    [0]parr = 3:
+    print_ [0]parr: println_ &s&" 3 - [0]parr"&:
+
+    [0]parr++:
+    print_ [0]parr: println_ &s&" 4 - [0]parr++"&:
+
+    [0]parr--:
+    print_ [0]parr: println_ &s&" 3 - [0]parr--"&:
+
+    [0]parr++2:
+    print_ [0]parr: println_ &s&" 5 - [0]parr++2"&:
+
+    [0]parr--4:
+    print_ [0]parr: println_ &s&" 1 - [0]parr--4"&:
+
+    println_:
+
+    char_ &s[5]&carr&:
+
+    [0]carr = 'F':
+    print_ [0]carr: println_ &s&" F - [0]carr"&:
+
+    [0]carr++:
+    print_ [1]carr: println_ &s&" F - [1]carr++"&:
+
+    [1]carr++3:
+    print_ [4]carr: println_ &s&" F - [4]carr++"&:
+    
+    println_:
+
     v0 = 10:
     v1 = 3:
 
@@ -242,5 +294,6 @@ __start(){
     print_ [0]sarr: println_ &s&" M - smat[1][1] in sarr[0]"&:
     
     println_ &s&"start finito"&:
+    status_:
     println_:
 }
