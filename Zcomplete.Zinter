@@ -3,6 +3,13 @@
     exec_:
 }
 
+od_ retretfunc(){
+
+    int_ &i&inner&:
+    return_ __differenza():
+
+}
+
 od_ somma(){
     int_ &i&a&:
     int_ &i&b&:
@@ -43,6 +50,12 @@ od_ divisione(){
     return_ res:
 }
 
+od_ testargs(&i&a&!&i&b&){
+    int_&i&risultato&:
+    risultato=a+b:
+    return_ risultato:
+}
+
 od_ hello(){
     println_ &s&"hello from void function"&:
     return_:
@@ -81,6 +94,11 @@ __start(){
     __hello():
 
     println_:
+    //=== ARGS FUNCTION ===:
+    println_ &s&"=== ARGS FUNCTION ==="&:
+    print_ __testargs(10!20): println_ &s&" 30 - testargs(10!20)"&:
+
+    println_:
     //=== FUNCTION IN VAR ===:
     println_ &s&"=== FUNCTION IN VAR ==="&:
     v0 = __somma():
@@ -109,6 +127,13 @@ __start(){
 
     [0]sarr = __get_char():
     print_ [0]sarr: println_ &s&" Z - get_char() in sarr[0]"&:
+
+    println_:
+    //=== FUNCTION IN FUNCTION ===:
+    println_ &s&"=== FUNCTION IN FUNCTION ==="&:
+    print_ __retretfunc():
+    println_ &s&" 6 - differenza() in retretfunc()"&:
+
 
     println_:
     //=== FUNCTION IN MATR ===:
