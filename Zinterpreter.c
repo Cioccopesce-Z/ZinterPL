@@ -1712,9 +1712,9 @@ static int types_match(char l, char right) {
     return check_if_same_type(ls, rs);
 }
 
-int check_return(int line) {
+int check_deven(int line) {
     if (line-1 == line_idx_program) {
-        if(deb) printf("ERROR: return outside a function %s line: %d global_ip: %d line_idx: %d\n",program[global_ip].instruction,line,global_ip,line_idx_program);
+        if(deb) printf("ERROR: deven outside a function %s line: %d global_ip: %d line_idx: %d\n",program[global_ip].instruction,line,global_ip,line_idx_program);
         return fal;
     }
     return tru;
@@ -1734,16 +1734,16 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         if(deb) printf("DEBUG: funarg called with is_return line: %s\n", name_plus_args);
 
         char buffer[128] = {0};
-        sscanf(name_plus_args, "return_%127s", buffer);   // FIX: source corretto
+        sscanf(name_plus_args, "deven_%127s", buffer);   // FIX: source corretto
 
         if (strlen(buffer) == 0 || strcmp(buffer, "NULL") == 0) {
-            if(deb) printf("WARNING: no item to return\n");
+            if(deb) printf("WARNING: no item to deven\n");
             return_value = NULL;
             return_hit   = 1;
             return NULL;
         }
         else if (strstr(buffer, "--")) {
-            if(deb) printf("WARNING: more than one item to return\n");
+            if(deb) printf("WARNING: more than one item to deven\n");
             return_value = pt_place_holder;
             return_hit   = 1;
             return pt_place_holder;
@@ -3685,7 +3685,7 @@ int exec_status(char *text) {
         } else {
             char dec;
             printf("WARNING: this operation will erase all variables/arrays/matrices. Are you sure? (y/n) ");
-            scanf(" %c", &dec);
+            scanf("%c", &dec);
             if(dec == 'y') confirmed = 1;
         }
 
@@ -3750,14 +3750,14 @@ void parse(int start_line, int  eventual_end_line){
         else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction);/*va a capo stampa carattere a terminale e va a capo */ }
         else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction);}
         else if( starts_with (program[global_ip].instruction, "#") ){ /*funzioni di sistema e interprete tipo import o kill*/ }
-        else if( starts_with (program[global_ip].instruction, "od") ){ /*dichiara funzione od (open door) ma non ha gran senso*/ }
+        else if( starts_with (program[global_ip].instruction, "od_") ){ /*dichiara funzione od (open door) ma non ha gran senso*/ }
         else if( starts_with (program[global_ip].instruction, "__") ){ exec_funarg(program[global_ip].instruction, fal); }
         else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); /*dichiara var int  */ }
         else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); /*dichiara var char */ }
         else if( starts_with (program[global_ip].instruction, "if_") ){/*inizia if_ */ }
         else if( starts_with (program[global_ip].instruction, "else_") ){/*else */ }
-        else if( starts_with (program[global_ip].instruction, "for_") ){/*inizia for */ }
-        else if( starts_with (program[global_ip].instruction, "while_") ){/*inizia while */ }
+        else if( starts_with (program[global_ip].instruction, "per_") ){/*inizia for */ }
+        else if( starts_with (program[global_ip].instruction, "fke_") ){/*inizia while */ }
         else if( strstr(program[global_ip].instruction,"==") ||
                 strstr(program[global_ip].instruction,"^=") ||
                 strstr(program[global_ip].instruction,">>") ||
@@ -3775,7 +3775,7 @@ void parse(int start_line, int  eventual_end_line){
                     else if(strchr(ins,'<'))  strcpy(detected_op,"<");
                     exec_conf(program[global_ip].instruction, detected_op);
                 }
-        else if ( starts_with(program[global_ip].instruction, "return_") && check_return(eventual_end_line) == tru ) {
+        else if ( starts_with(program[global_ip].instruction, "deven_") && check_deven(eventual_end_line) == tru ) {
             exec_funarg(program[global_ip].instruction, tru); /* return_hit è ora 1 quindi il while esce al prossimo controllo */}
         else if( starts_with (program[global_ip].instruction, "set_to_") ){ exec_set_to(program[global_ip].instruction); }
         else if( strstr (program[global_ip].instruction, "++") ){ exec_plus_plus(program[global_ip].instruction);/*operazione ++ di sicuro perche cicli gia parsati*/}
