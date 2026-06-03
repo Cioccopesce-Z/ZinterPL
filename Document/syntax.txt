@@ -1,695 +1,209 @@
-for convenience variables, arrays and matrices are referred to as "data"
+Z LANGUAGE - SYNTAX REFERENCE
+==============================
 
-========================================================
-BASIC RULES
-========================================================
+variables, arrays aet matrices are referred to as "data"
+every instruction ends with :
+spaces are ignored except inside ""
+execution starts from __start(){ }
 
-every instruction must end with :
+=DATA TYPES=
+i  = integer variable
+l  = float variable
+c  = char variable
+s  = char array / string
+f  = file
+n  = immediate integer (read only)
+k  = immediate char (read only)
 
-example:
+=EXTENDED SYNTAX (for declarations)=
+&type&name&
+&i&var&         integer variable
+&l&var&         float variable
+&c&var&         char variable
+&i[N]&arr&      int array of N
+&l[N]&arr&      float array of N
+&s[N]&arr&      char array / string of N
+&i[R][C]&mat&   int matrix R x C
+&l[R][C]&mat&   float matrix R x C
+&s[R][C]&mat&   char matrix R x C
+idx can be a constant N or a variable: &i&var_name&
 
-a = 5:
-print_ a:
-return_:
-
-spaces are ignored except inside strings
-
-example:
-
-a = 5:
-
-is equivalent to:
-
-a         =         5:
-
-but:
-
-"hello world"
-
-keeps spaces
-
-execution starts from:
-
-__start(){
-
-}
-
-functions may be declared before or after __start
-
-========================================================
-DATA TYPES
-========================================================
-
-all declared data can later be referenced simply by its name.
-
-example:
-
-int_ &i&counter&:
-
-later:
-
-counter = 5:
-print_ counter:
-
-the interpreter normally deduces the type automatically.
-
-types:
-
-i = integer
-l = float
-c = char variable
-s = char array / string
-f = file
-
-immediate types:
-
-n = immediate integer
-k = immediate char
-
-examples:
-
-&i&number&
-&l&temperature&
-&c&letter&
-&f&file&
-
-&i[10]&numbers&
-&l[10]&floats&
-&s[50]&text&
-
-&i[5][5]&matrix&
-&l[5][5]&float_matrix&
-&s[5][5]&char_matrix&
-
-========================================================
-DECLARATIONS
-========================================================
-
+=DECLARATIONS=
 int_ &i&var&:
-int_ &i[size]&arr&:
-int_ &i[rows][cols]&mat&:
-
-float_ &l&var&:
-float_ &l[size]&arr&:
-float_ &l[rows][cols]&mat&:
-
+int_ &i[N]&arr&:
+int_ &i[R][C]&mat&:
+float_ &l&var&:          (not yet implemented, use int_ with l type)
 char_ &c&var&:
-char_ &s[size]&arr&:
-char_ &s[rows][cols]&mat&:
+char_ &s[N]&arr&:
+char_ &s[R][C]&mat&:
 
-========================================================
-DATA ACCESS
-========================================================
+=DATA ACCESS=
+var               direct name
+[idx]arr          array element
+[r][c]mat         matrix element
+idx can be a constant or an integer variable
 
-variable:
-
-var
-
-array:
-
-[index]arr
-
-matrix:
-
-[row][col]mat
-
-indexes may be constants:
-
-[0]arr
-
-[0][0]mat
-
-or integer variables:
-
-[idx]arr
-
-[row][col]mat
-
-indexes are always interpreted as integers.
-
-========================================================
-ASSIGNMENT
-========================================================
-
-variable:
-
+=ASSIGNMENT (=)=
+var = value:
+[idx]arr = value:
+[r][c]mat = value:
+value can be: number, variable, array element, matrix element, function return
+examples:
 a = 10:
 a = b:
+[0]arr = a:
+[r][c]mat = [idx]arr:
 a = __func():
 
-array:
-
-[0]arr = 10:
-[idx]arr = value:
-[0]arr = __func():
-
-matrix:
-
-[0][0]mat = 10:
-[row][col]mat = value:
-[0][0]mat = __func():
-
+=ALTERNATIVE ASSIGNMENT=
+set_to_variable_ name,type,value,cvalue:
+set_to_array_    name,type,idx,value,cvalue:
+set_to_matrix_   name,type,idx1,idx2,value,cvalue:
+use @ as placeholder for unused value or cvalue
 examples:
+set_to_variable_ a,i,10,@:
+set_to_array_ arr,i,0,10,@:
+set_to_matrix_ mat,i,0,0,42,@:
 
-a = b:
-
-[0]arr = a:
-
-[0][0]mat = [0]arr:
-
-[0]arr = [0][0]mat:
-
-========================================================
-MATH OPERATORS
-========================================================
-
-supported:
-
-+
--
-*
-/
-
-examples:
-
-c = a + b:
-c = a - b:
-c = a * b:
-c = a / b:
-
-operands may be:
-
-numbers
-variables
-array elements
-matrix elements
-function returns
-
-examples:
-
+=MATH OPERATORS=
+supported: + - * /
 result = a + b:
-
+result = a - b:
+result = a * b:
+result = a / b:
+operands can be numbers, variables, array/matrix elements, function returns
 result = [0]arr + [1]arr:
-
 result = __func() + 5:
 
-========================================================
-INCREMENT / DECREMENT
-========================================================
-
-variables:
-
-var++:
-var--:
-
-var++5:
-var--5:
-
-arrays:
-
-[0]arr++:
-[0]arr--:
-
-[0]arr++5:
-[0]arr--5:
-
-for arrays:
-
-[index]arr++
-
-copies the content of the selected cell into the next cell.
-
-example:
-
-[0]arr = 50:
-
-[0]arr++:
-
-result:
-
-[1]arr = 50
-
-char arrays behave the same way:
-
-[0]text = 'F':
-
-[0]text++:
-
-result:
-
-[1]text = 'F'
-
-========================================================
-INPUT
-========================================================
-
-scan_ var:
-scan_ [idx]arr:
-scan_ [row][col]mat:
-
-string mode:
-
-scan_ []text:
-
-examples:
-
-scan_ age:
-
-scan_ [0]numbers:
-
-scan_ []name:
-
-========================================================
-OUTPUT
-========================================================
-
-print_ var:
-print_ [idx]arr:
-print_ [row][col]mat:
-
-string mode:
-
-print_ []text:
-
-examples:
-
-print_ age:
-
-print_ [0]numbers:
-
-print_ []name:
-
-========================================================
-NEWLINE PRINT
-========================================================
-
-newline after output:
-
-println_ value:
-
-newline before output:
-
-lnprint_ value:
-
-newline only:
-
-println_:
-lnprint_:
-
-========================================================
-FUNCTIONS
-========================================================
-
-declaration:
-
-od_ name(){
-
-}
-
-with arguments:
-
-od_ sum(&i&a&!&i&b&){
-
-}
-
-arguments are separated by !
-
-========================================================
-FUNCTION CALLS
-========================================================
-
-void call:
-
-__hello():
-
-call with return:
-
-result = __sum():
-
-call with arguments:
-
-__sum(10!20):
-
-result = __sum(a!b):
-
-functions may be used:
-
-inside assignments
-inside arrays
-inside matrices
-inside print_
-inside return_
-
-examples:
-
-a = __sum():
-
-[0]arr = __sum():
-
-[0][0]mat = __sum():
-
-print_ __sum():
-
-return_ __sum():
-
-========================================================
-RETURN
-========================================================
-
-empty return:
-
-return_:
-
-return_ NULL:
-
-return value:
-
-return_ value:
-
-return function:
-
-return_ __func():
-
-========================================================
-COMPARISON OPERATORS
-========================================================
-
-==   equal
-
-^=   different
-
->    greater
-
-<    lower
-
+=INCREMENT / DECREMENT=
+var++:           var += 1
+var--:           var -= 1
+var++N:          var += N  (N can be variable)
+var--N:          var -= N
+[idx]arr++:      copies arr[idx] into arr[idx+1]
+[idx]arr--:      copies arr[idx] into arr[idx-1]
+[idx]arr++N:     copies arr[idx] into arr[idx+N]
+
+=COMPARISON OPERATORS=
+==   equal              returns 1 (true) or 0 (false)
+^=   not equal
+>    greater than
+<    less than
 >>   greater or equal
+<<   less or equal
+these are used inside if_ fke_ for_ or as standalone expressions
 
-<<   lower or equal
-
-all comparisons return:
-
-1 = true
-0 = false
-
-examples:
-
-a == b
-
-a ^= b
-
-a >> b
-
-a << b
-
-========================================================
-IF
-========================================================
+=IF=
 
 if_(condition){
-
 }
-
 else_{
-
 }
-
-logical operators:
-
-nd
-||
-
+logical operators: et (and)   || (or)
 examples:
+if_(a>b){ }
+if_(a>b et c<d){ }
+if_(a==b || c==d){ }
+condition operators: == ^= > < >> <<
 
-if_(a>b){
-
+=WHILE=
+fke_(condition){
 }
-
-if_(a>b nd c<d){
-
-}
-
-if_(a==b || c==d){
-
-}
-
-========================================================
-WHILE
-========================================================
-
-while_(condition){
-
-}
-
 example:
-
-while_(a<10){
-
+fke_(a<10){
     a++:
-
 }
 
-========================================================
-FOR
-========================================================
-
-syntax:
-
+=FOR=
 for_(condition!operation){
-
 }
-
 examples:
+for_(i<10!i++){ } the variable count is always declared automatically
+for_(i^=100!i++2){ }
+operation is any valid increment/decrement or assignment
 
-for_(i<10!i++){
-
-}
-
-for_(i^=100!i++2){
-
-}
-
-========================================================
-STRINGS
-========================================================
-
-strings are char arrays.
-
+=FUNCTIONS=
 declaration:
+od_ name(){
+}
+with arguments (separated by !):
+od_ sum(&i&a&!&i&b&){
+}
+argument format: &type&name&
 
-char_ &s[50]&text&:
+call (void):
+__name():
+call (with return):
+result = __name():
+call with arguments:
+__name(10!20):
+result = __name(a!b):
+functions can be used in: assignments, print_, deven_
 
-single character:
+=RETURN=
+deven_:          empty return (same as deven_ NULL)
+deven_ NULL:
+deven_ value:
+deven_ [idx]arr:
+deven_ [r][c]mat:
+deven_ __func():
 
-[0]text
+=INPUT=
+scan_ var:
+scan_ [idx]arr:
+scan_ [r][c]mat:
+scan_ []arr:      reads whole string till sendkey
 
-whole string:
+=OUTPUT=
+print_ var:
+print_ [idx]arr:
+print_ [r][c]mat:
+print_ []arr:             prints whole string
+print_ &s&"text"&:        prints literal text
+print_ &s&&:              prints a space
+println_ value:           prints value then newline
+lnprint_ value:           newline then prints value
+println_:                 newline only
+lnprint_:                 newline only
 
-[]text
+=STATUS=
+status_:          prints interpreter memory usage aet internal state
+status_ clr:      clears all variables/arrays/matrices (asks confirmation)
+status_ clry:     clears all without confirmation
 
-examples:
-
-scan_ []text:
-
-print_ []text:
-
-========================================================
-MATRICES
-========================================================
-
-declaration:
-
-int_ &i[3][3]&mat&:
-
-float_ &l[3][3]&fmat&:
-
-char_ &s[3][3]&smat&:
-
-access:
-
-[0][0]mat
-
-[row][col]mat
-
-examples:
-
-[0][0]mat = 5:
-
-print_ [0][0]mat:
-
-========================================================
-STATUS
-========================================================
-
-status_:
-
-prints internal interpreter status information.
-
-example:
-
-status_:
-
-typically used for debugging and runtime inspection.
-
-output format depends on interpreter version.
-
-========================================================
-SYSTEM / LIBRARY
-========================================================
-
-library format:
-
+=SYSTEM / LIBRARY BLOCK=
 #{
-
-    ...
-
-    exec_:
-
+    debug_ -dt:   enable debug output
+    debug_ -df:   disable debug output
+    exec_:        jumps execution to __start (must be last before the last graph)
 }
 
-exec_:
+=COMMAet LINE=
+./Zinterpreter -dt|-df file.Zinter -libname.Zlib ...
+-dt   debug true
+-df   debug false
+additional .Zlib files are prepended to the source before execution
 
-jumps execution to __start()
-
-debug_ -dt:
-
-enable debug
-
-debug_ -df:
-
-disable debug
-
-========================================================
-MINIMAL PROGRAM
-========================================================
-
+=MINIMAL PROGRAM=
 #{
     debug_ -df:
     exec_:
 }
-
 __start(){
-
     int_ &i&a&:
     int_ &i&b&:
-
     a = 3:
     b = 5:
-
-    print_ a+b:
+    print_ a:
     println_:
+}
 
-}        i[idx] = indica un array di integer e idx la posizione o dimensione
-                ^
-                |
-                idx puo essere se variabile: i/s[&i&var_name&] o se numero int: i/s[N] 
-
-
-        --> &i&nome_variabile&  indica una variabile integer 
-
-        --> &s[15]&nome_variabile&  indica un array di string di 15 celle
-
-tuttavia non è necessaria se non per le dichiarazioni di dati con int_ o char_ infatti si puo usare dirrettamente il nome 
-e l'interprete è in grado di ddedurre il tipo
-
-
-======elementi base========
-ogni funzione va terminata con ":" anche int ecc...
-
-gli spazi non contano nulla a meno che non siano tra "" solo in quel caso vengono mantenuti
-        esempio: int_ var: == in t_ va r: ma "in t_" var: è diverso da in t_ var:
-
-il main del programma è la funzione __start(arg){        } l'esecuzione inizia da qui
-le funzioni possono essere scritte anche dopo start
-
-
-==========funzioni matematiche=========== 
-al posto delle variabili, dove logico, si possono mettere anche arr o num (non si puo salvare in un numero o immediate char)
-
-[idx]name + var2:              viene aggiunto a var1/array in pos idx var2
-var1 = var2 + var3:          la somma di var2 e var3 va in var1 
-
-var1 = __somma():
-
-un altro modo per assegnare:
-
-set_to_variable/array/matrix_ name,type,index(only for array and matrix),index2(only for matrix),value,cvalue:
-                                   ^
-                                   |
-                                imposta un valore(accetta come value o cvalue anche variabili matrici e array) ad ogni tipo 
-                                di dato variabili/matrici/array, possono essere usate variabili come indici perr array e matrici
-                                se si usa un dato int si deve mettere un place_holder in cvalue
-                                ogni dato usato come indice viene forzato a integer 
-
-============funzioni logiche=============
-tutto quello contenuto negli if/for/while o in generale ! > < == sono funzioni che ritornano 0 o 1
-e i cicli semplicemente eseguono ogni vola la funzione
-
-if_( name !<>= name){      } <--- si possono concatenare con nd (and) o || (or) 
-else_ {     }
-for_( name !<>= name, name + - * / name){   } 
-while_( name !<>= name){  }
-
-=========dichiarazioni==========
-vanno chiuse con :
-
-int_ &i&name&
-int_ &i[dim]&name&
-char_ &c&name&
-char_ &s[dim]&name&
-
-==========input output===========
-vanno chiuse con :
-
-scan_ &c&name&
-scan_ &s[idx]&name&  // scan_ &s[]&name& <-- scrive come stringa
-scan_ &i&name&
-scan_ &i[idx]&name&
-
-print_ &c&name&
-print_ &s[idx]&name&  // print_ &s[]&name& <-- scrive come stringa
-print_ &i&name&
-print_ &i[idx]&name&
-
-scan_ name
-scan_ [idx]name  // scan_ []name <-- scrive come stringa
-scan_ name
-scan_ [idx]name
-
-print_ name
-print_ [idx]name  // print_ []name <-- scrive come stringa
-print_ name
-print_ [idx]&name
-
-lnprint_ (stessa cosa ma va a capo prima di scrivere)
-println_ (stessa cosa ma va a capo dopo avere scritto)
-
-========function=======
-
-per dichiarare: od_ name(arg){  
-                                }
-
-per chiamarle:  __ name(arg): (se non restituiscono niente)
-
-                var = __name(arg): (se restituiscono un valore)
-
-return NULL / : <--- se viene ritornato NULL la funzione puo essere chiama anche se non ce 
-                    non ce nessun punto dove salvare il valore che restituisce
-return_ NULL: è uguale a return_:
-
-========conditions=========
-vanno chiuse con :
-
-var1 = var2   assegna a var1 il valore di var2
-
-var1 == var2 è una funzione che restituisce 1 se var1 è var2 o 0 se sono diverse
-
-=========librerie/system================
-va chiusa con :
-tutte le funzioni sono racchiuse in #{   
-                                        }
-
-e alla fine di prima dell`ultima parentesi tonda va scritto "exec_:" che sposta l'esecuzione a start
-funzioni:
-        - exec_ sposta l`esecuzione a __start
-        - debug_ df/dt attiva internamente il debug (dt) o lo disattiva (df) 
-        
+=NOTES=
+- functions declared with od_ are fouet by build_state before execution
+- __start is mandatory, # block is optional but recommended
+- arrays aet matrices are heap-allocated (calloc), freed only by status_ clr
+- float declarations use l type, char arrays use s type
+- immediate chars use single quotes: 'x'
+- string literals in print use double quotes: "hello world"
+- array/matrix size can be a constant or an integer variable at declaration time
+- comparison on unindexed arrays/matrices ([]arr == []arr) compares their sizes
