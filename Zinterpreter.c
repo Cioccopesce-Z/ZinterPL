@@ -14,7 +14,7 @@
 #define fal 0
 #define base_memory 256
 #define error_int -99
-#define error_char §§
+#define error_char "§§"
 
 
 int line_idx_program = 0;
@@ -1502,30 +1502,6 @@ int system_setup(){
     }
     
 }
-
-//condizioni logiche USE STATE_STACK
-int exec_if(char *text){
-    int current_line = global_ip;
-
-}
-
-void exec_else(char *text){
-    int current_line = global_ip;
-
-}
-
-void exec_for(char *text){
-    int current_line = global_ip;
-
-}
-
-void exec_while(char *text){
-    int current_line = global_ip;
-
-}
-
-//end condizioni logiche
-
 
 int check_if_same_type(char arg1[], char arg2[]){
 
@@ -3731,6 +3707,87 @@ int exec_status(char *text) {
     return 0;
 }
 
+void has_condition(char operation[]){
+
+    char text[128] = {0};
+    strcpy(text,operation);
+
+    if( strstr(program[global_ip].instruction,"==") ||
+                strstr(program[global_ip].instruction,"^=") ||
+                strstr(program[global_ip].instruction,">>") ||
+                strstr(program[global_ip].instruction,"<<") ||
+                (strchr(program[global_ip].instruction,'>') && !strstr(program[global_ip].instruction,">>")) ||
+                (strchr(program[global_ip].instruction,'<') && !strstr(program[global_ip].instruction,"<<")) ){
+
+                    if(strstr(text,">>")) strcpy(operation,">>");
+                    else if(strstr(text,"<<")) strcpy(operation,"<<");
+                    else if(strstr(text,"==")) strcpy(operation,"==");
+                    else if(strstr(text,"^=")) strcpy(operation,"^=");
+                    else if(strchr(text,'>'))  strcpy(operation,">");
+                    else if(strchr(text,'<'))  strcpy(operation,"<");
+
+                    strcat(operation,".has");
+    }
+    else if(strstr(operation,"__")){
+        char buffer[64] = {0};
+        strcpy(buffer,operation);
+        is_what(buffer);
+        if(strcmp(buffer,"-1.-1") != 0) strcpy(operation,"dirdata");
+    }
+    else{
+        strcpy(operation,"no_condition_or_data"); return;
+    }
+
+    if(strstr(operation,"||") && strstr(operation,"nd") ){
+        strcat(operation,".adding");
+    }
+    return;
+}
+
+void exec_if(char text[]){
+
+    char condition[64] = {0};
+    int n = sscanf(text,"if_(%[^)])",condition);
+
+    char buffer[64] = {0};
+    strcpy(buffer,text);
+    has_condition(buffer);
+
+    if(strcmp(buffer,"no_condition_or_data") == 0){
+        printf("ERROR: invalid argument for if function");
+        return;
+    }
+
+    //========CONTROLLA SE ESEGUIRE=========
+
+    else if(strstr(buffer,"dirdata")){
+        //controlla contenutono se <= 0 fal se >=1 tru
+        if(strstr(buffer,"adding")){
+            //contiene || o nd
+        }
+        else{
+
+        }
+    }
+
+    else if(strstr(buffer,".has")){
+        //chiama conf e controlla contenuto
+        if(strstr(buffer,"adding")){
+            //contiene || o nd
+        }
+        else{
+
+        }
+    }
+
+    //========== ESEGUE ===========
+
+    //controlla in base alla riga a qui si è la condizione in state_stack[] per avere riga di fine 
+    //oppure se false ottenere la riga del primo else con inizio dopo la fine dell' if chiamato 
+    
+    
+}
+
 void parse(int start_line, int  eventual_end_line){
 
     if(eventual_end_line == -1) eventual_end_line = line_idx_program;
@@ -3754,7 +3811,7 @@ void parse(int start_line, int  eventual_end_line){
         else if( starts_with (program[global_ip].instruction, "__") ){ exec_funarg(program[global_ip].instruction, fal); }
         else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); /*dichiara var int  */ }
         else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); /*dichiara var char */ }
-        else if( starts_with (program[global_ip].instruction, "if_") ){/*inizia if_ */ }
+        else if( starts_with (program[global_ip].instruction, "if_") ){ exec_if(program[global_ip].instruction); /*inizia if_ */ }
         else if( starts_with (program[global_ip].instruction, "else_") ){/*else */ }
         else if( starts_with (program[global_ip].instruction, "per_") ){/*inizia for */ }
         else if( starts_with (program[global_ip].instruction, "fke_") ){/*inizia while */ }
