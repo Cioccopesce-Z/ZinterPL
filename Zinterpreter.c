@@ -2058,22 +2058,225 @@ int is_math(char *operand) {
     return error_int;  // non è math
 }
 
-int exec_conf(char *text){
+int dimconf(char *rname, char *lname, char *datatype, char type, char *op){
+    if(deb) printf("DEBUG: confronto di dimensione di array o matrici non inficizzate\n");
+
+    int rdim = 0, ldim = 0;
+    //potrei ridurre della meta i cicli ma sono le 2 di mattina e non ne ho voglia
+    if(strcmp(datatype,"matrix") == 0){
+
+        if(type == 'i'){
+            for(int i = 0; i < matrix_count; i++){ //resolve rightdim
+                if(strcmp(rname,matrix[i].name) == 0){
+                    rdim = matrix[i].size_first * matrix[i].size_sec;
+                    break;
+                }
+            }
+            
+            for(int i = 0; i < matrix_count; i++){ //resolve leftdim
+                if(strcmp(lname,matrix[i].name) == 0){
+                    ldim = matrix[i].size_first * matrix[i].size_sec;
+                    break;
+                }
+            }
+        }
+
+        if(type == 'l'){
+            for(int i = 0; i < fl_matrix_count; i++){ //resolve rightdim
+                if(strcmp(rname,fl_matrix[i].name) == 0){
+                    rdim = fl_matrix[i].size_first * fl_matrix[i].size_sec;
+                    break;
+                }
+            }
+            
+            for(int i = 0; i < fl_matrix_count; i++){ //resolve leftdim
+                if(strcmp(lname,fl_matrix[i].name) == 0){
+                    ldim = fl_matrix[i].size_first * fl_matrix[i].size_sec;
+                    break;
+                }
+            }
+        }
+
+        if(type == 's'){
+            for(int i = 0; i < char_matrix_count; i++){ //resolve rightdim
+                if(strcmp(rname,char_matrix[i].name) == 0){
+                    rdim = char_matrix[i].size_first * char_matrix[i].size_sec;
+                    break;
+                }
+            }
+            
+            for(int i = 0; i < char_matrix_count; i++){ //resolve leftdim
+                if(strcmp(lname,char_matrix[i].name) == 0){
+                    ldim = char_matrix[i].size_first * char_matrix[i].size_sec;
+                    break;
+                }
+            }
+        }
+    }
+
+    else if(strcmp(datatype,"array") == 0){
+            if(type == 'i'){
+                for(int i = 0; i < array_count; i++){ //resolve rightdim
+                    if(strcmp(rname,array[i].name) == 0){
+                        rdim = array[i].size;
+                        break;
+                    }
+                }
+                
+                for(int i = 0; i < array_count; i++){ //resolve leftdim
+                    if(strcmp(lname,array[i].name) == 0){
+                        ldim = array[i].size;
+                        break;
+                    }
+                }
+            }
+
+            if(type == 'l'){
+                for(int i = 0; i < fl_array_count; i++){ //resolve rightdim
+                    if(strcmp(rname,fl_array[i].name) == 0){
+                        rdim = fl_array[i].size;
+                        break;
+                    }
+                }
+                
+                for(int i = 0; i < fl_array_count; i++){ //resolve leftdim
+                    if(strcmp(lname,fl_array[i].name) == 0){
+                        ldim = fl_array[i].size;
+                        break;
+                    }
+                }
+            }
+
+            if(type == 's'){
+                for(int i = 0; i < char_array_count;i++){ //resolve rightdim
+                    if(strcmp(rname,char_array[i].name) == 0){
+                        rdim = char_array[i].size;
+                        break;
+                    }
+                }
+                
+                for(int i = 0; i < char_array_count; i++){ //resolve leftdim
+                    if(strcmp(lname,char_array[i].name) == 0){
+                        ldim = char_array[i].size;
+                        break;
+                    }
+                }
+            }
+        }
+        
+
+        if(strcmp(op,"==") == 0){
+            if(ldim == rdim) return tru;
+        }
+        else if(strcmp(op,"^=") == 0){
+            if(ldim != rdim) return tru;
+        }
+        else if(strcmp(op,"<") == 0){
+            if(ldim < rdim) return tru;
+        }
+        else if(strcmp(op,">") == 0){
+            if(ldim > rdim) return tru;
+        }
+        else if(strcmp(op,"<<") == 0){
+            if(ldim <= rdim) return tru;
+        }
+        else if(strcmp(op,">>") == 0){
+            if(ldim >= rdim) return tru;
+        }
+        return fal;
+    
+}
+
+int itotalconf(int dest, int src, char *op){
+
+    if(strcmp(op,"==") == 0){
+        if(dest == src) return tru;
+    }
+    else if(strcmp(op,"^=") == 0){
+        if(dest != src) return tru;
+    }
+    else if(strcmp(op,"<") == 0){
+        if(dest < src) return tru;
+    }
+    else if(strcmp(op,">") == 0){
+        if(dest > src) return tru;
+    }
+    else if(strcmp(op,"<<") == 0){
+        if(dest <= src) return tru;
+    }
+    else if(strcmp(op,">>") == 0){
+        if(dest >= src) return tru;
+    }
+    return fal;
+}
+
+int ltotalconf(float dest, float src, char *op){
+
+    if(strcmp(op,"==") == 0){
+        if(dest == src) return tru;
+    }
+    else if(strcmp(op,"^=") == 0){
+        if(dest != src) return tru;
+    }
+    else if(strcmp(op,"<") == 0){
+        if(dest < src) return tru;
+    }
+    else if(strcmp(op,">") == 0){
+        if(dest > src) return tru;
+    }
+    else if(strcmp(op,"<<") == 0){
+        if(dest <= src) return tru;
+    }
+    else if(strcmp(op,">>") == 0){
+        if(dest >= src) return tru;
+    }
+    return fal;
+}
+
+int stotalconf(char dest, char src, char *op){
+
+    if(strcmp(op,"==") == 0){
+        if(dest == src) return tru;
+    }
+    else if(strcmp(op,"^=") == 0){
+        if(dest != src) return tru;
+    }
+    else if(strcmp(op,"<") == 0){
+        if(dest < src) return tru;
+    }
+    else if(strcmp(op,">") == 0){
+        if(dest > src) return tru;
+    }
+    else if(strcmp(op,"<<") == 0){
+        if(dest <= src) return tru;
+    }
+    else if(strcmp(op,">>") == 0){
+        if(dest >= src) return tru;
+    }
+    return fal;
+}
+
+static int split_operands(const char *text, const char *op, char *left, char *right) {
+    const char *pos = strstr(text, op);
+    if (!pos) return 0;
+    int llen = (int)(pos - text);
+    strncpy(left,  text, llen); left[llen] = '\0';
+    strncpy(right, pos + strlen(op), 31); right[31] = '\0';
+    return 1;
+}
+
+int exec_conf(char *text,char *op){
 
     char left_operand[32] = {0};
     char right_operand[32] = {0};
 
-    if (text[0] == '=' && text[1] == '=') {
-        printf("ERROR: im crying operation not allowed\n"); return error_int;
+    // NUOVO
+    if (!split_operands(text, op, left_operand, right_operand)) {
+        printf("ERROR: parse error in exec_conf: op='%s' text='%s'\n", op, text);
+        return error_int;
     }
-    else if (text[strlen(text)-1] == '=' && text[strlen(text)-2] == '=') {
-        printf("ERROR: im crying operation not allowed\n"); return error_int;
-    }
-    else {
-        int n = sscanf(text, "%23[^=]==%23s", left_operand, right_operand);
-        if(deb) printf("\ntext: %s, left op: %s, right op: %s\n", text, left_operand, right_operand);
-        if (n < 2) { printf("ERROR: parse error in x==x: %s\n", text); return error_int; }
-    }
+    if(deb) printf("\ntext: %s op: %s, left: %s, right: %s\n",
+                text, op, left_operand, right_operand);
 
     char left_name[64]  = {0};
     char right_name[64] = {0};
@@ -2085,11 +2288,23 @@ int exec_conf(char *text){
 
     /*MATRIX*/
     if (strstr(left_operand, "][") && strstr(right_operand, "][")) { /*matr x matr*/
+
+        if (left_operand[0]=='[' && left_operand[1]==']' && left_operand[2]=='[' && left_operand[3]==']' &&
+                right_operand[0]=='[' && right_operand[1]==']' && right_operand[2]=='[' && right_operand[3]==']') {
+                char ln[64]={0}, rn[64]={0};
+                sscanf(left_operand,  "[][]%63s", ln);
+                sscanf(right_operand, "[][]%63s", rn);
+                char bin[16]; char ltdata[16]={0}; char ltype=0;
+                strcpy(bin, ln); is_what(bin);
+                sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+                if(strcmp(ltdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",ln); return error_int; }
+                return dimconf(rn, ln, "matrix", ltype, op);
+        }
+
         sscanf(left_operand,  "[%[^]]][%[^]]]%63s", left_i,  left_j,  left_name);
         sscanf(right_operand, "[%[^]]][%[^]]]%63s", right_i, right_j, right_name);
         if(deb) printf("[CHECK] matr x matr | left: [%s][%s]%s | right: [%s][%s]%s\n",
                left_i, left_j, left_name, right_i, right_j, right_name);
-
         char bin[16];
         char ltdata[16] = {0}; char ltype = 0;
         char rtdata[16] = {0}; char rtype = 0;
@@ -2116,17 +2331,17 @@ int exec_conf(char *text){
             int *dest = (int *)get_index(lenc);
             int *src  = (int *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
+            return itotalconf(*dest,*src,op);
         } else if (ltype == 'l') {
             float *dest = (float *)get_index(lenc);
             float *src  = (float *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
+            return ltotalconf(*dest,*src,op);
         } else if (ltype == 's') {
             char *dest = (char *)get_index(lenc);
             char *src  = (char *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
+            return stotalconf(*dest,*src,op); 
         }
     }
 
@@ -2202,17 +2417,17 @@ int exec_conf(char *text){
                 int *dest = (int *)get_index(lenc);
                 int *src  = (int *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return itotalconf(*dest, *src, op);
             } else if (ltype == 'l') {
                 float *dest = (float *)get_index(lenc);
                 float *src  = (float *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return ltotalconf(*dest, *src, op);
             } else if (ltype == 's') {
                 char *dest = (char *)get_index(lenc);
                 char *src  = (char *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return stotalconf(*dest, *src, op);
             }
         }
         else if (strstr(right_operand, "__")) { /*matr x func*/
@@ -2301,17 +2516,17 @@ int exec_conf(char *text){
                 int *dest = (int *)get_index(lenc);
                 int *src  = (int *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return itotalconf(*dest, *src, op);
             } else if (ltype == 'l') {
                 float *dest = (float *)get_index(lenc);
                 float *src  = (float *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return ltotalconf(*dest, *src, op);
             } else if (ltype == 's') {
                 char *dest = (char *)get_index(lenc);
                 char *src  = (char *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return stotalconf(*dest, *src, op);
             }
         }
         else { /*var x matr*/
@@ -2329,23 +2544,36 @@ int exec_conf(char *text){
                 int *dest = (int *)resolve(ltype, left_name);
                 int *src  = (int *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return itotalconf(*dest, *src, op);
             } else if (ltype == 'l') {
                 float *dest = (float *)resolve(ltype, left_name);
                 float *src  = (float *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return ltotalconf(*dest, *src, op);
             } else if (ltype == 'c') {
                 char *dest = (char *)resolve(ltype, left_name);
                 char *src  = (char *)get_index(renc);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return stotalconf(*dest, *src, op);
             }
         }
     }
 
     /*ARRAY*/
     else if (strchr(left_operand, ']') && strchr(right_operand, ']')) { /*arr x arr*/
+
+            if (left_operand[0]=='[' && left_operand[1]==']' &&
+                right_operand[0]=='[' && right_operand[1]==']') {
+                char ln[64]={0}, rn[64]={0};
+                sscanf(left_operand,  "[]%63s", ln);
+                sscanf(right_operand, "[]%63s", rn);
+                char bin[16]; char ltdata[16]={0}; char ltype=0;
+                strcpy(bin, ln); is_what(bin);
+                sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+                if(strcmp(ltdata,"array")!=0){ printf("ERROR: %s is not an array\n",ln); return error_int; }
+                return dimconf(rn, ln, "array", ltype, op);
+            }
+
         sscanf(left_operand,  "[%[^]]]%63s", left_i,  left_name);
         sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
         if(deb) printf("[CHECK] arr x arr | left: [%s]%s | right: [%s]%s\n",
@@ -2377,18 +2605,18 @@ int exec_conf(char *text){
             int *dest = (int *)get_index(lenc);
             int *src  = (int *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
+            return itotalconf(*dest, *src, op);
         } else if (ltype == 'l') {
             float *dest = (float *)get_index(lenc);
             float *src  = (float *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
+            return ltotalconf(*dest, *src, op);
         } else if (ltype == 's' || ltype == 'c') {
             char *dest = (char *)get_index(lenc);
             char *src  = (char *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
-        }
+            return stotalconf(*dest, *src, op);
+        }   
     }
 
     else if (strchr(left_operand, ']') && !strchr(right_operand, ']')) { /*arr x boh*/
@@ -2475,17 +2703,17 @@ int exec_conf(char *text){
                 int *dest = (int *)get_index(lenc);
                 int *src  = (int *)resolve(rtype, right_name);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return itotalconf(*dest, *src, op);
             } else if (ltype == 'l') {
                 float *dest = (float *)get_index(lenc);
                 float *src  = (float *)resolve(rtype, right_name);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return ltotalconf(*dest, *src, op);
             } else if (ltype == 's' || ltype == 'c') {
                 char *dest = (char *)get_index(lenc);
                 char *src  = (char *)resolve(rtype, right_name);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return stotalconf(*dest, *src, op);
             }
         }
     }
@@ -2518,17 +2746,17 @@ int exec_conf(char *text){
             int *dest = (int *)resolve(ltype, left_name);
             int *src  = (int *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
+            return itotalconf(*dest, *src, op);
         } else if (ltype == 'l') {
             float *dest = (float *)resolve(ltype, left_name);
             float *src  = (float *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
+            return ltotalconf(*dest, *src, op);
         } else if (ltype == 's' || ltype == 'c') {
             char *dest = (char *)resolve(ltype, left_name);
             char *src  = (char *)get_index(renc);
             if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            if(*dest == *src) return tru; else return fal;
+            return stotalconf(*dest, *src, op);
         }
     }
 
@@ -2650,17 +2878,17 @@ int exec_conf(char *text){
                 int *dest = (int *)resolve(ltype, left_name);
                 int *src  = (int *)resolve(rtype, right_name);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return itotalconf(*dest, *src, op);
             } else if (ltype == 'l') {
                 float *dest = (float *)resolve(ltype, left_name);
                 float *src  = (float *)resolve(rtype, right_name);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return ltotalconf(*dest, *src, op);
             } else if (ltype == 'c') {
                 char *dest = (char *)resolve(ltype, left_name);
                 char *src  = (char *)resolve(rtype, right_name);
                 if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+                return stotalconf(*dest, *src, op);
             }
         }
     }
@@ -3520,7 +3748,6 @@ void parse(int start_line, int  eventual_end_line){
         else if( starts_with (program[global_ip].instruction, "lnprint_") ){ exec_lnprint(program[global_ip].instruction);/*va a capo stampa carattere a terminale */ }
         else if( starts_with (program[global_ip].instruction, "println_") ){ exec_println(program[global_ip].instruction);/*stampa carattere a terminale e va a capo */ }
         else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction);/*va a capo stampa carattere a terminale e va a capo */ }
-        else if( strstr (program[global_ip].instruction, "==") ){ exec_conf(program[global_ip].instruction);/*see older build*/ }
         else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction);}
         else if( starts_with (program[global_ip].instruction, "#") ){ /*funzioni di sistema e interprete tipo import o kill*/ }
         else if( starts_with (program[global_ip].instruction, "od") ){ /*dichiara funzione od (open door) ma non ha gran senso*/ }
@@ -3531,6 +3758,23 @@ void parse(int start_line, int  eventual_end_line){
         else if( starts_with (program[global_ip].instruction, "else_") ){/*else */ }
         else if( starts_with (program[global_ip].instruction, "for_") ){/*inizia for */ }
         else if( starts_with (program[global_ip].instruction, "while_") ){/*inizia while */ }
+        else if( strstr(program[global_ip].instruction,"==") ||
+                strstr(program[global_ip].instruction,"^=") ||
+                strstr(program[global_ip].instruction,">>") ||
+                strstr(program[global_ip].instruction,"<<") ||
+                (strchr(program[global_ip].instruction,'>') && !strstr(program[global_ip].instruction,">>")) ||
+                (strchr(program[global_ip].instruction,'<') && !strstr(program[global_ip].instruction,"<<")) )
+                {
+                    char detected_op[3] = {0};
+                    const char *ins = program[global_ip].instruction;
+                    if     (strstr(ins,">>")) strcpy(detected_op,">>");
+                    else if(strstr(ins,"<<")) strcpy(detected_op,"<<");
+                    else if(strstr(ins,"==")) strcpy(detected_op,"==");
+                    else if(strstr(ins,"^=")) strcpy(detected_op,"^=");
+                    else if(strchr(ins,'>'))  strcpy(detected_op,">");
+                    else if(strchr(ins,'<'))  strcpy(detected_op,"<");
+                    exec_conf(program[global_ip].instruction, detected_op);
+                }
         else if ( starts_with(program[global_ip].instruction, "return_") && check_return(eventual_end_line) == tru ) {
             exec_funarg(program[global_ip].instruction, tru); /* return_hit è ora 1 quindi il while esce al prossimo controllo */}
         else if( starts_with (program[global_ip].instruction, "set_to_") ){ exec_set_to(program[global_ip].instruction); }
@@ -3724,7 +3968,10 @@ void run_test(){
  
     printf("\n=== CONFRONTO BINARIO TRA DATA ===\n");
     *ptr6 = 'f';
-    printf("arr0[0] (char)  f & f   : %d  [atteso: 1]\n",exec_conf("[0]arr0==[2]arr2"));
+    printf("arr0[0] arr2[2] char ==   : %d  [atteso: 1]\n",exec_conf("[0]arr0==[2]arr2","=="));
+    printf("arr0[0] arr2[2] char ^=   : %d  [atteso: 0]\n",exec_conf("[0]arr0^=[2]arr2","^="));
+    printf("arr0[] >> arr2[] dimconf  : %d  [atteso: 1]\n",exec_conf("[]arr0>>[]arr2",">>"));
+    printf("arr0[] << arr2[] dimconf  : %d  [atteso: 0]\n",exec_conf("[]arr0<<[]arr2","<<"));
 }
 
 void copy_file(FILE *src, FILE *dst){
