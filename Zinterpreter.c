@@ -3758,9 +3758,26 @@ void exec_if(char text[]){
         return;
     }
 
+    int current_ip = global_ip, i = 0, position_in_ret_state = 0;
+
+    while(i < return_state){
+        if(state_stack[i].posizione_ritorno == current_ip){
+            position_in_ret_state = i;
+            break;
+        }
+        i++;
+    }
+    i = position_in_ret_state; if(i == 0){ printf("ERROR: condition in line %d: not found check for eventual misspelled in %s\n",global_ip,text); return;}
+
+    printf("DEBUG: condition: %s found with start: %d e end %d\n",
+            state_stack[i].nome_function,state_stack[i].posizione_ritorno,state_stack[i].posizione_skip);
+
     //========CONTROLLA SE ESEGUIRE=========
 
-    else if(strstr(buffer,"dirdata")){
+    if(strstr(buffer,"dirdata")){
+
+
+
         //controlla contenutono se <= 0 fal se >=1 tru
         if(strstr(buffer,"adding")){
             //contiene || o nd
@@ -3812,7 +3829,7 @@ void parse(int start_line, int  eventual_end_line){
         else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); /*dichiara var int  */ }
         else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); /*dichiara var char */ }
         else if( starts_with (program[global_ip].instruction, "if_") ){ exec_if(program[global_ip].instruction); /*inizia if_ */ }
-        else if( starts_with (program[global_ip].instruction, "else_") ){/*else */ }
+        else if( starts_with (program[global_ip].instruction, "oth_") ){/*else */ }
         else if( starts_with (program[global_ip].instruction, "per_") ){/*inizia for */ }
         else if( starts_with (program[global_ip].instruction, "fke_") ){/*inizia while */ }
         else if( strstr(program[global_ip].instruction,"==") ||
@@ -3873,8 +3890,8 @@ void build_state() {
             state_stack[return_state].posizione_ritorno = i;
             if( starts_with(program[i].instruction,"if_") ) strcpy(state_stack[return_state].nome_function, "if_");
             else if( starts_with(program[i].instruction,"for_") ) strcpy(state_stack[return_state].nome_function, "for_");
-            else if( starts_with(program[i].instruction,"while_") ) strcpy(state_stack[return_state].nome_function, "while_");
-            else if( starts_with(program[i].instruction,"else_") ) strcpy(state_stack[return_state].nome_function, "else_");
+            else if( starts_with(program[i].instruction,"fke_") ) strcpy(state_stack[return_state].nome_function, "fke_");
+            else if( starts_with(program[i].instruction,"oth_") ) strcpy(state_stack[return_state].nome_function, "oth_");
             else if( starts_with(program[i].instruction,"__start") ) strcpy(state_stack[return_state].nome_function, "__start");
             else if( starts_with(program[i].instruction,"od_") ){
                 char bin_name[16] = {0};
