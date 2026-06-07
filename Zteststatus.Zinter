@@ -65,5 +65,195 @@ __start(){
     status_:
 
     println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
+    println_ &s&"=== DOPO MATRICI GRANDI ==="&:
+    int_  &i[20][20]&mat2&:
+    int_  &i[50][50]&mat3&:
+    int_  &i[100][100]&mat4&:
+    char_ &s[20][20]&smat2&:
+    char_ &s[50][50]&smat3&:
+    char_ &s[100][100]&smat4&:
+    status_:
+
+    println_:
     println_ &s&"=== FINE ==="&:
 }
