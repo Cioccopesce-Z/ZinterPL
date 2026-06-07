@@ -6,7 +6,7 @@
 od_ retretfunc(){
 
     int_ &i&inner&:
-    return_ __differenza():
+    deven_ __differenza():
 
 }
 
@@ -17,7 +17,7 @@ od_ somma(){
     b = 5:
     int_ &i&res&:
     res = a + b:
-    return_ res:
+    deven_ res:
 }
 
 od_ differenza(){
@@ -27,7 +27,7 @@ od_ differenza(){
     b = 4:
     int_ &i&res&:
     res = a - b:
-    return_ res:
+    deven_ res:
 }
 
 od_ prodotto(){
@@ -37,7 +37,7 @@ od_ prodotto(){
     b = 7&:
     int_ &i&res&:
     res = a * b:
-    return_ res:
+    deven_ res:
 }
 
 od_ divisione(){
@@ -47,24 +47,24 @@ od_ divisione(){
     b = 4:
     int_ &i&res&:
     res = a / b:
-    return_ res:
+    deven_ res:
 }
 
 od_ testargs(&i&a&!&i&b&){
     int_&i&risultato&:
     risultato=a+b:
-    return_ risultato:
+    deven_ risultato:
 }
 
 od_ hello(){
     println_ &s&"hello from void function"&:
-    return_:
+    deven_:
 }
 
 od_ get_char(){
     char_ &c&ch&:
     ch = 'Z':
-    return_ ch:
+    deven_ ch:
 }
 
 __start(){
@@ -317,6 +317,26 @@ __start(){
 
     [0]sarr = [1][1]smat:
     print_ [0]sarr: println_ &s&" M - smat[1][1] in sarr[0]"&:
+
+    println_:
+    //====== CONDITION TEST ============:
+    println_ &s&"====== CONDITION TEST ============"&:
+    int_ &i&testif&:
+    testif = 0: // falso:
+    if(testif){
+        println_ &s&"if passato nel falso":
+    }
+    oth{
+        println_ &s&"if passato nell'oth giusto"&:
+    }
+
+
+    println_:
+    //====== ERROR VAR TEST ============:
+    println_ &s&"====== ERROR VAR TEST ============"&:
+    
+    b = 0: // non dovrebbe essere accessibile:
+    print_ b: println_ &s&"non dovrebbe essere accessibile"&:
     
     println_ &s&"start finito"&:
     status_:
