@@ -968,7 +968,7 @@ char* read_code_from_file(const char *filename) {
     int is_string = fal; // tru = 1 fal = 0
 
     FILE *file = fopen(filename, "r");
-    if (!file) return NULL;
+    if (!file){ printf("ERROR: impossibile aprire il file: %s, possibile che non esista",filename); }
 
     
     size_t total_size = 0;
@@ -3709,8 +3709,13 @@ int exec_status(char *text) {
 
 void has_condition(char operation[]){
 
+    printf("entrato nell'has_condition\n");
     char text[128] = {0};
     strcpy(text,operation);
+
+    char buffer[64] = {0};
+    strcpy(buffer,operation);
+    is_what(buffer);
 
     if( strstr(program[global_ip].instruction,"==") ||
                 strstr(program[global_ip].instruction,"^=") ||
@@ -3725,29 +3730,41 @@ void has_condition(char operation[]){
                     else if(strstr(text,"^=")) strcpy(operation,"^=");
                     else if(strchr(text,'>'))  strcpy(operation,">");
                     else if(strchr(text,'<'))  strcpy(operation,"<");
-
+                    printf("entrato nel ramo con == > < in has condition\n");
                     strcat(operation,".has");
     }
-    else if(strstr(operation,"__")){
-        char buffer[64] = {0};
-        strcpy(buffer,operation);
-        is_what(buffer);
-        if(strcmp(buffer,"-1.-1") != 0) strcpy(operation,"dirdata");
+
+    else if(strcmp(buffer,"-1.-1") != 0){
+        strcpy(operation,"dirdata");
+        printf("entrato nel ramo funzione/dirdata di has_condition\n");
     }
+
     else{
+        printf("entrato nel ramo non condition di has_condition\n");
         strcpy(operation,"no_condition_or_data"); return;
     }
 
-    if(strstr(operation,"||") && strstr(operation,"nd") ){
+    if(strstr(operation,"||") && strstr(operation,"et") ){
+        printf("entrato nel ramo adding di has_condition\n");
         strcat(operation,".adding");
     }
     return;
 }
 
-void exec_if(char text[]){
+int is_int(char varname[]){
 
+    char dtype[15] = {0}, type[15] = {0};
+    is_what(varname);
+    if(sscanf(varname,"%14[^.].%14s",dtype,type) == 2 && strcmp(type,"i") == 0) return tru;
+    else return fal;
+
+}
+
+void exec_if(char text[]){
+    printf("entrato nell'exec_if\n");
     char condition[64] = {0};
-    int n = sscanf(text,"if_(%[^)])",condition);
+    int n = sscanf(text,"if(%[^)])",condition);
+    printf("condition found as: %s in exec_if\n",condition);
 
     char buffer[64] = {0};
     strcpy(buffer,text);
@@ -3775,12 +3792,43 @@ void exec_if(char text[]){
     //========CONTROLLA SE ESEGUIRE=========
 
     if(strstr(buffer,"dirdata")){
+        strcpy(buffer,condition);
+        if(is_int(buffer)){
 
 
+            int *value = (int*)get_index(condition); //use resolve
+            if(value == NULL){ printf("ERROR: to find var %s for get_index in exec_if\n",condition); return;}
+
+            if(*value <= 0){
+                //condizione falsa
+            }
+            else if(*value >= 1){
+                //condizione vera
+            }
+
+            else{
+                printf("ERROR: an error has occurred in exec_if in dirdata section\n"); return;
+            }
+        } 
+        else{
+            printf("ERROR: if cannot operate with type other than integer %s in %s\n",condition,text); return;
+        }
 
         //controlla contenutono se <= 0 fal se >=1 tru
         if(strstr(buffer,"adding")){
-            //contiene || o nd
+
+            char buffer[512];
+            strncpy(buffer, condition, sizeof(buffer) - 1);
+            buffer[sizeof(buffer) - 1] = '\0';
+            
+            char *section = strtok(buffer, "oe");
+            while(section){
+
+                
+                section = strtok(NULL, "oe");
+            }
+            
+
         }
         else{
 
@@ -3828,10 +3876,10 @@ void parse(int start_line, int  eventual_end_line){
         else if( starts_with (program[global_ip].instruction, "__") ){ exec_funarg(program[global_ip].instruction, fal); }
         else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); /*dichiara var int  */ }
         else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); /*dichiara var char */ }
-        else if( starts_with (program[global_ip].instruction, "if_") ){ exec_if(program[global_ip].instruction); /*inizia if_ */ }
-        else if( starts_with (program[global_ip].instruction, "oth_") ){/*else */ }
-        else if( starts_with (program[global_ip].instruction, "per_") ){/*inizia for */ }
-        else if( starts_with (program[global_ip].instruction, "fke_") ){/*inizia while */ }
+        else if( starts_with (program[global_ip].instruction, "if") ){ exec_if(program[global_ip].instruction); /*inizia if_ */ }
+        else if( starts_with (program[global_ip].instruction, "oth") ){/*else */ }
+        else if( starts_with (program[global_ip].instruction, "for") ){/*inizia for */ }
+        else if( starts_with (program[global_ip].instruction, "while") ){/*inizia while */ }
         else if( strstr(program[global_ip].instruction,"==") ||
                 strstr(program[global_ip].instruction,"^=") ||
                 strstr(program[global_ip].instruction,">>") ||
@@ -3888,10 +3936,10 @@ void build_state() {
             if(deb) printf("program[%d].instruction: %s\n",i,program[i].instruction);
             state_stack[return_state].codice = return_state;
             state_stack[return_state].posizione_ritorno = i;
-            if( starts_with(program[i].instruction,"if_") ) strcpy(state_stack[return_state].nome_function, "if_");
-            else if( starts_with(program[i].instruction,"for_") ) strcpy(state_stack[return_state].nome_function, "for_");
-            else if( starts_with(program[i].instruction,"fke_") ) strcpy(state_stack[return_state].nome_function, "fke_");
-            else if( starts_with(program[i].instruction,"oth_") ) strcpy(state_stack[return_state].nome_function, "oth_");
+            if( starts_with(program[i].instruction,"if") ) strcpy(state_stack[return_state].nome_function, "if");
+            else if( starts_with(program[i].instruction,"for") ) strcpy(state_stack[return_state].nome_function, "for_");
+            else if( starts_with(program[i].instruction,"while") ) strcpy(state_stack[return_state].nome_function, "while");
+            else if( starts_with(program[i].instruction,"oth") ) strcpy(state_stack[return_state].nome_function, "oth");
             else if( starts_with(program[i].instruction,"__start") ) strcpy(state_stack[return_state].nome_function, "__start");
             else if( starts_with(program[i].instruction,"od_") ){
                 char bin_name[16] = {0};
@@ -3918,7 +3966,7 @@ void build_state() {
                     tok = strtok(NULL, "!");
                 }
                 state_stack[return_state].param_count = pc;
-                if(deb) printf("[BUILD] funzione %s con %d parametri\n", full_name, pc);
+                if(deb) printf("BUILD DEBUG: funzione %s con %d parametri\n", full_name, pc);
             }
             else if( starts_with(program[i].instruction,"#") ) strcpy(state_stack[return_state].nome_function, "#"); 
             state_stack[return_state].posizione_skip = j;
@@ -4106,6 +4154,9 @@ int main(int argc, char *argv[]) {
 
     if(argc >= 3){
 
+        FILE *origin = fopen(argv[2],"r");
+        FILE *copybflib = fopen("source_no_lib","w");
+
         //DEBUG FUNCTION SETUP
         if(strcmp("-df",argv[1]) == 0) deb = fal;
         else if(strcmp("-dt",argv[1]) == 0) deb = tru;
@@ -4118,10 +4169,13 @@ int main(int argc, char *argv[]) {
         }
         
         //SETTING UP LIBRARIES
-        if(argc >=4){
+        int has_libs = 0;  // Flag per sapere se hai usato librerie
+        if(argc >= 4){
+            copy_file(origin, copybflib);
+            has_libs = 1;
             for(int i = 3; i<argc; i++){
                 if(strstr(argv[i],".Zlib")){
-                    importlib(argv[i]+1,argv[2]);
+                    importlib(argv[i]+1, argv[2]);
                 }
             }
         }
@@ -4135,28 +4189,22 @@ int main(int argc, char *argv[]) {
         build_state();
 
         if(deb) {
- 
-        int i=0;
-
-        while(i<=line_idx_program){
-            printf("%d, %s",program[i].line_number,program[i].instruction);
-            printf("\n");
-            i++;
-        }
-
-        printf("Stato costruito:\n");
-
-        i=0;
-        while(i<return_state){
-            printf("riga di inizio condizione n%d: %d nome: %s, posizione skip(chiusura) %d",state_stack[i].codice,state_stack[i].posizione_ritorno,state_stack[i].nome_function,state_stack[i].posizione_skip);
-            printf("\n");
-            i++;
+            int i=0;
+            while(i<=line_idx_program){
+                printf("%d, %s",program[i].line_number,program[i].instruction);
+                printf("\n");
+                i++;
+            }
+            printf("Stato costruito:\n");
+            i=0;
+            while(i<return_state){
+                printf("riga di inizio condizione n%d: %d nome: %s, posizione skip(chiusura) %d",state_stack[i].codice,state_stack[i].posizione_ritorno,state_stack[i].nome_function,state_stack[i].posizione_skip);
+                printf("\n");
+                i++;
             }
         }
 
-        
         //=====inizia parse e esecuzione======
-
         int st = system_setup();
         int ed = -1;
         for(int i = 0; i<return_state; i++){
@@ -4167,6 +4215,25 @@ int main(int argc, char *argv[]) {
         if(deb) printf("\n\nendline: %d\n\n",ed);
         if(st == -1){ printf("ERROR: see preview error from system_setup \n"); return 0;}
         else{ parse(st,ed); }
+
+        // CHIUDI I FILE
+        fclose(origin);
+        fclose(copybflib);
+
+        // CLEANUP SOLO SE HAI USATO LIBRERIE
+        if(has_libs) {
+            if(remove(argv[2]) == 0) {
+                if(rename("source_no_lib", argv[2]) == 0) {
+                    if(deb) printf("File aggiornato con successo (librerie integrate e rimosse)\n");
+                } else {
+                    printf("ERROR: impossibile rinominare source_no_lib\n");
+                }
+            } else {
+                printf("ERROR: impossibile cancellare file originale\n");
+            }
+        } else {
+            remove("source_no_lib");  // Rimuovi il file vuoto
+        }
 
         free(code);
         return 0;
@@ -4186,11 +4253,7 @@ int main(int argc, char *argv[]) {
         printf("\n");
         printf("           A test will now be executed:\n");
         run_test();
-        // =====================FINE SET TEST===================
-    
     }
 
-
-    
     return 0;
 }
