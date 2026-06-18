@@ -2251,7 +2251,7 @@ int exec_conf(char *text,char *op){
         printf("ERROR: parse error in exec_conf: op='%s' text='%s'\n", op, text);
         return error_int;
     }
-    if(deb) printf("\ntext: %s op: %s, left: %s, right: %s\n",
+    if(deb) printf("CONF DEBUG: text: %s op: %s, left: %s, right: %s\n",
                 text, op, left_operand, right_operand);
 
     char left_name[64]  = {0};
@@ -2739,133 +2739,74 @@ int exec_conf(char *text,char *op){
     /*VARIABILI*/
     else if (!strchr(left_operand, ']') && (!strchr(right_operand, ']') || strstr(right_operand,"__")) ) {
 
+        sscanf(left_operand, "%63s", left_name);
+
+        char bin[16];
+        char ltdata[16] = {0}; char ltype = 0;
+        strcpy(bin, left_name); is_what(bin);
+        sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+        if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+
+        /* Risolve il puntatore sinistro una volta sola */
+        void *dest_ptr = resolve(ltype, left_name);
+        if (!dest_ptr) { printf("ERROR: null pointer\n"); return error_int; }
+
         int math_res = is_math(right_operand);
-        if(math_res != error_int) {
-            sscanf(left_operand, "%63s", left_name);
+        if (math_res != error_int) { /*var x math*/
             if(deb) printf("[CHECK] var x math | left: %s | right: %s\n", left_name, right_operand);
-            char bin[16]; char ltdata[16]={0}; char ltype=0;
-            strcpy(bin,left_name); is_what(bin);
-            sscanf(bin,"%15[^.].%c",ltdata,&ltype);
-            if(strcmp(ltdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",left_name); return error_int; }
-            if(ltype=='i'){
-                int *dest = (int*)resolve(ltype,left_name);
-                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
-                *dest = math_res;
-            } else if(ltype=='l'){
-                float *dest = (float*)resolve(ltype,left_name);
-                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
-                *dest = (float)math_res;
-            }
-            return error_int;
+            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch var/math\n"); return error_int; }
+            if      (ltype == 'i') return itotalconf(*(int   *)dest_ptr, (int)math_res,   op);
+            else if (ltype == 'l') return ltotalconf(*(float *)dest_ptr, (float)math_res, op);
         }
+
         else if (right_operand[0] == '\'') { /*var x k*/
-            sscanf(left_operand, "%63s", left_name);
             if(deb) printf("[CHECK] var x k | left: %s | right: %s\n", left_name, right_operand);
-
-            char bin[16];
-            char ltdata[16] = {0}; char ltype = 0;
-            strcpy(bin, left_name); is_what(bin);
-            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
             if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch var/char\n"); return error_int; }
-
-            char *dest = (char *)resolve(ltype, left_name);
-            if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-            *dest = right_operand[1];
+            char *dest = (char *)dest_ptr;
+            return stotalconf(*dest, right_operand[1], op);
         }
 
         else if (isdigit((unsigned char)right_operand[0])) { /*var x n*/
-            sscanf(left_operand, "%63s", left_name);
             if(deb) printf("[CHECK] var x n | left: %s | right: %s\n", left_name, right_operand);
-
-            char bin[16];
-            char ltdata[16] = {0}; char ltype = 0;
-            strcpy(bin, left_name); is_what(bin);
-            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
             if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch var/number\n"); return error_int; }
-
-            if (ltype == 'i') {
-                int *dest = (int *)resolve(ltype, left_name);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = atoi(right_operand);
-            } else if (ltype == 'l') {
-                float *dest = (float *)resolve(ltype, left_name);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = (float)atof(right_operand);
-            }
+            if      (ltype == 'i') return itotalconf(*(int   *)dest_ptr, atoi(right_operand),          op);
+            else if (ltype == 'l') return ltotalconf(*(float *)dest_ptr, (float)atof(right_operand),   op);
         }
 
-        else if (strstr(right_operand,"__")) { /*var x __function*/
-            sscanf(left_operand, "%63s", left_name);
+        else if (strstr(right_operand, "__")) { /*var x func*/
             sscanf(right_operand, "%63s", right_name);
-            if(deb) printf("[CHECK] var x func | left: %s | right: %s\n", left_name, right_operand);
+            if(deb) printf("[CHECK] var x func | left: %s | right: %s\n", left_name, right_name);
 
-            char bin[16];
             char rtdata[16] = {0}; char rtype = 0;
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
             if (strcmp(rtdata, "function") != 0) { printf("ERROR: %s is not a function\n", right_name); return error_int; }
-
-            char ltdata[16] = {0}; char ltype = 0;
-            strcpy(bin, left_name); is_what(bin);
-            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
-
             if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch var/function\n"); return error_int; }
 
-            if (ltype == 'i') {
-                int *dest = (int *)resolve(ltype, left_name);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(int *)get_index(right_name);
-            } 
-            else if (ltype == 'l') {
-                float *dest = (float *)resolve(ltype, left_name);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(float *)get_index(right_name);
-            } 
-            else if (ltype == 'c') {
-                char *dest = (char *)resolve(ltype, left_name);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(char *)get_index(right_name);
-            }
+            void *ret = get_index(right_name);
+            if (!ret) { printf("ERROR: null pointer from function\n"); return error_int; }
+
+            if      (ltype == 'i') return itotalconf(*(int   *)dest_ptr, *(int   *)ret, op);
+            else if (ltype == 'l') return ltotalconf(*(float *)dest_ptr, *(float *)ret, op);
+            else if (ltype == 'c') return stotalconf(*(char  *)dest_ptr, *(char  *)ret, op);
         }
 
         else { /*var x var*/
-            sscanf(left_operand,  "%63s", left_name);
             sscanf(right_operand, "%63s", right_name);
             if(deb) printf("[CHECK] var x var | left: %s | right: %s\n", left_name, right_name);
 
-            char bin[16];
-            char ltdata[16] = {0}; char ltype = 0;
             char rtdata[16] = {0}; char rtype = 0;
-
-            strcpy(bin, left_name);  is_what(bin);
-            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
-
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
             if (strcmp(rtdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", right_name); return error_int; }
-
             if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
 
-            if (ltype == 'i') {
-                int *dest = (int *)resolve(ltype, left_name);
-                int *src  = (int *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return itotalconf(*dest, *src, op);
-            } else if (ltype == 'l') {
-                float *dest = (float *)resolve(ltype, left_name);
-                float *src  = (float *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return ltotalconf(*dest, *src, op);
-            } else if (ltype == 'c') {
-                char *dest = (char *)resolve(ltype, left_name);
-                char *src  = (char *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return stotalconf(*dest, *src, op);
-            }
+            void *src_ptr = resolve(rtype, right_name);
+            if (!src_ptr) { printf("ERROR: null pointer\n"); return error_int; }
+
+            if      (ltype == 'i') return itotalconf(*(int   *)dest_ptr, *(int   *)src_ptr, op);
+            else if (ltype == 'l') return ltotalconf(*(float *)dest_ptr, *(float *)src_ptr, op);
+            else if (ltype == 'c') return stotalconf(*(char  *)dest_ptr, *(char  *)src_ptr, op);
         }
     }
 }
@@ -3709,7 +3650,7 @@ int exec_status(char *text) {
 
 void has_condition(char operation[]){
 
-    printf("entrato nell'has_condition\n");
+    if(deb) printf("DEBUG: entrato nell'has_condition\n");
     char text[128] = {0};
     strcpy(text,operation);
 
@@ -3730,24 +3671,25 @@ void has_condition(char operation[]){
                     else if(strstr(text,"^=")) strcpy(operation,"^=");
                     else if(strchr(text,'>'))  strcpy(operation,">");
                     else if(strchr(text,'<'))  strcpy(operation,"<");
-                    printf("entrato nel ramo con == > < in has condition\n");
+                    if(deb) printf("DEBUG: entrato nel ramo con == > < in has condition\n");
                     strcat(operation,".has");
     }
 
     else if(strcmp(buffer,"-1.-1") != 0){
         strcpy(operation,"dirdata");
-        printf("entrato nel ramo funzione/dirdata di has_condition\n");
+        if(deb) printf("DEBUG: entrato nel ramo funzione/dirdata di has_condition\n");
     }
 
     else{
-        printf("entrato nel ramo non condition di has_condition\n");
+        if(deb) printf("DEBUG: entrato nel ramo non condition di has_condition\n");
         strcpy(operation,"no_condition_or_data"); return;
     }
 
     if(strstr(operation,"||") && strstr(operation,"et") ){
-        printf("entrato nel ramo adding di has_condition\n");
+        if(deb) printf("DEBUG: entrato nel ramo adding di has_condition\n");
         strcat(operation,".adding");
     }
+    if(deb) printf("DEBUG: has_condition return:%s\n",operation);
     return;
 }
 
@@ -3760,14 +3702,33 @@ int is_int(char varname[]){
 
 }
 
+char type_of_var(char text[]){
+    char buffer[16];
+    strcpy(buffer,text);
+    is_what(buffer);
+    char junk[8], type[8];
+    sscanf(buffer,"%[^.].%s",junk,type);
+    if(strcmp(type,"-1") == 0 ){
+        printf("ERROR: no type found for data: %s\n",text);
+        return 'F';
+    }
+    else{
+        if(deb) printf("DEBUG: type of %s to return is %s (type_of_var)\n",text,type);
+        return type[0];
+    }
+}
+
 void exec_if(char text[]){
-    printf("entrato nell'exec_if\n");
+    
+    if(deb) printf("DEBUG: entrato nell'exec_if %s\n",text);
     char condition[64] = {0};
     int n = sscanf(text,"if(%[^)])",condition);
-    printf("condition found as: %s in exec_if\n",condition);
+    if( n == 0) n = sscanf(text,"othif(%[^)])",condition);
+
+    if(deb) printf("DEBUG: condition found as: %s in exec_if\n",condition);
 
     char buffer[64] = {0};
-    strcpy(buffer,text);
+    strcpy(buffer,condition);
     has_condition(buffer);
 
     if(strcmp(buffer,"no_condition_or_data") == 0){
@@ -3777,6 +3738,7 @@ void exec_if(char text[]){
 
     int current_ip = global_ip, i = 0, position_in_ret_state = 0;
 
+    
     while(i < return_state){
         if(state_stack[i].posizione_ritorno == current_ip){
             position_in_ret_state = i;
@@ -3784,73 +3746,141 @@ void exec_if(char text[]){
         }
         i++;
     }
+    
+    
     i = position_in_ret_state; if(i == 0){ printf("ERROR: condition in line %d: not found check for eventual misspelled in %s\n",global_ip,text); return;}
 
-    printf("DEBUG: condition: %s found with start: %d e end %d\n",
+    if(deb) printf("DEBUG: condition: %s found with start: %d e end %d\n",
             state_stack[i].nome_function,state_stack[i].posizione_ritorno,state_stack[i].posizione_skip);
+
+    //=======cerca se ci sono condizioni successive======
+    int nex_st = 0;
+    int nex_end = 0;
+    int all_condition_end = 0;
+    char nex_tx[64] = {0};
+
+    int f = i; f++;
+    if(strcmp(state_stack[f].nome_function,"oth") == 0 
+        && (state_stack[f].posizione_ritorno == (state_stack[i].posizione_skip)+1) //f = i+1
+        &&  strcmp(state_stack[f+1].nome_function,"othif") == 0){               //f= i+2
+
+            printf("ERROR: construction if/othif oth othif obscure %s %s %s with state_stack[%d]\n",
+                state_stack[i].nome_function,state_stack[f].nome_function,
+                state_stack[f+1].nome_function,i);
+            return;
+    }
+
+    if(strcmp(state_stack[f].nome_function,"othif") == 0){
+        strcpy(nex_tx,program[state_stack[f].posizione_ritorno].instruction);
+        nex_st = state_stack[f].posizione_ritorno;
+        nex_end = state_stack[f].posizione_skip;
+
+    }
+    else if(strcmp(state_stack[f].nome_function,"oth") == 0){
+        strcpy(nex_tx,program[state_stack[f].posizione_ritorno].instruction);
+        nex_st = state_stack[f].posizione_ritorno;
+        nex_end = state_stack[f].posizione_skip;
+        all_condition_end = nex_end;
+    }
 
     //========CONTROLLA SE ESEGUIRE=========
 
     if(strstr(buffer,"dirdata")){
         strcpy(buffer,condition);
+
         if(is_int(buffer)){
-
-
-            int *value = (int*)get_index(condition); //use resolve
+            if(deb) printf("DEBUG: condition is dirdata with state_stack[%d]\n",i);
+            //controlla contenutono se = 0 fal se =1 tru
+            int *value = (int*)resolve(type_of_var(condition),condition); //use resolve
             if(value == NULL){ printf("ERROR: to find var %s for get_index in exec_if\n",condition); return;}
+            
 
-            if(*value <= 0){
-                //condizione falsa
-            }
-            else if(*value >= 1){
+            //vedi se eseguire solo if e saltare l ultima condizione
+
+            if(*value == 1){
                 //condizione vera
+                if(deb) printf("DEBUG: condizione dirdata %s vera\n",condition);
+                parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip);
+                global_ip = state_stack[i].posizione_skip;
+                return;
+
             }
 
             else{
-                printf("ERROR: an error has occurred in exec_if in dirdata section\n"); return;
+                if(deb) printf("DEBUG: condizione %s falsa\n",condition);
+
+                if(strstr(nex_tx,"othif")){
+                    global_ip = nex_st;
+                    exec_if(program[state_stack[f].posizione_ritorno].instruction);
+                    return;
+                }
+                else{
+                    global_ip = nex_st;
+                    parse(nex_st+1,nex_end);
+                    return;
+                }
             }
         } 
-        else{
-            printf("ERROR: if cannot operate with type other than integer %s in %s\n",condition,text); return;
-        }
-
-        //controlla contenutono se <= 0 fal se >=1 tru
-        if(strstr(buffer,"adding")){
-
-            char buffer[512];
-            strncpy(buffer, condition, sizeof(buffer) - 1);
-            buffer[sizeof(buffer) - 1] = '\0';
-            
-            char *section = strtok(buffer, "oe");
-            while(section){
-
-                
-                section = strtok(NULL, "oe");
-            }
-            
-
+        //fa comparazioni or e and 
+        else if(strstr(buffer,"adding")){
+            if(deb) printf("DEBUG: ci sono adding in exec_if dirdata\n");
+            //contiene || o nd
         }
         else{
-
+            if(deb) printf("ERROR: if cannot operate with type other than integer %s in %s\n",condition,text); return;
         }
     }
 
     else if(strstr(buffer,".has")){
-        //chiama conf e controlla contenuto
+
+        if(deb) printf("DEBUG: condizione da parsare con conf in exec_if buffer:%s \n",buffer);
+
         if(strstr(buffer,"adding")){
+            if(deb) printf("DEBUG: ci sono adding in exec_if complex conf\n");
             //contiene || o nd
         }
         else{
+            char op[3] = {0};
+            sscanf(buffer,"%2[^.].",op);
+            if(deb) printf("DEBUG: condition in exex_if: %s e op: %s\n",condition,op);
+            int res = exec_conf(condition,op);
+            if(res){
 
+                //condizione
+                if(deb) printf("DEBUG: condizione conf %s vera\n",condition);
+                parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip);
+                global_ip = state_stack[i].posizione_skip;
+                return;
+                
+            }
+            else{
+                
+                //condizione falsa
+                if(strstr(nex_tx,"othif")){
+                    global_ip = nex_st;
+                    exec_if(program[state_stack[f].posizione_ritorno].instruction);
+                    return;
+                }
+                else{
+                    global_ip = nex_st;
+                    parse(nex_st+1,nex_end);
+                    return;
+                }
+            }
         }
     }
+}
 
-    //========== ESEGUE ===========
-
-    //controlla in base alla riga a qui si è la condizione in state_stack[] per avere riga di fine 
-    //oppure se false ottenere la riga del primo else con inizio dopo la fine dell' if chiamato 
-    
-    
+void skip_to_end(){
+    int current_ip = global_ip;
+    int i = 0;
+    while(i < return_state){
+        if(state_stack[i].posizione_ritorno == current_ip){
+            global_ip = state_stack[i].posizione_skip;
+            break;
+        }
+        i++;
+    }
 }
 
 void parse(int start_line, int  eventual_end_line){
@@ -3870,14 +3900,14 @@ void parse(int start_line, int  eventual_end_line){
         else if( starts_with (program[global_ip].instruction, "lnprint_") ){ exec_lnprint(program[global_ip].instruction);/*va a capo stampa carattere a terminale */ }
         else if( starts_with (program[global_ip].instruction, "println_") ){ exec_println(program[global_ip].instruction);/*stampa carattere a terminale e va a capo */ }
         else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction);/*va a capo stampa carattere a terminale e va a capo */ }
-        else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction);}
         else if( starts_with (program[global_ip].instruction, "#") ){ /*funzioni di sistema e interprete tipo import o kill*/ }
         else if( starts_with (program[global_ip].instruction, "od_") ){ /*dichiara funzione od (open door) ma non ha gran senso*/ }
         else if( starts_with (program[global_ip].instruction, "__") ){ exec_funarg(program[global_ip].instruction, fal); }
         else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); /*dichiara var int  */ }
         else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); /*dichiara var char */ }
+        else if( starts_with (program[global_ip].instruction, "othif") ){ skip_to_end();/*else if*/ }
         else if( starts_with (program[global_ip].instruction, "if") ){ exec_if(program[global_ip].instruction); /*inizia if_ */ }
-        else if( starts_with (program[global_ip].instruction, "oth") ){/*else */ }
+        else if( starts_with (program[global_ip].instruction, "oth") ){ skip_to_end();/*else */ }
         else if( starts_with (program[global_ip].instruction, "for") ){/*inizia for */ }
         else if( starts_with (program[global_ip].instruction, "while") ){/*inizia while */ }
         else if( strstr(program[global_ip].instruction,"==") ||
@@ -3900,6 +3930,7 @@ void parse(int start_line, int  eventual_end_line){
         else if ( starts_with(program[global_ip].instruction, "deven_") && check_deven(eventual_end_line) == tru ) {
             exec_funarg(program[global_ip].instruction, tru); /* return_hit è ora 1 quindi il while esce al prossimo controllo */}
         else if( starts_with (program[global_ip].instruction, "set_to_") ){ exec_set_to(program[global_ip].instruction); }
+        else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction);}
         else if( strstr (program[global_ip].instruction, "++") ){ exec_plus_plus(program[global_ip].instruction);/*operazione ++ di sicuro perche cicli gia parsati*/}
         else if( strstr (program[global_ip].instruction, "--") ){ exec_min_min(program[global_ip].instruction); /*operazione -- di sicuro perche cicli gia parsati*/}
         else if( starts_with (program[global_ip].instruction, "scan_") ){/*legge carattere da schermo */ }
@@ -3909,6 +3940,7 @@ void parse(int start_line, int  eventual_end_line){
     return_hit = fal;
 }
 
+//costruisce un id con inizio fine nome e proprieta di ogni funzione con { }
 void build_state() {
     int i = 0;
     
@@ -3936,7 +3968,8 @@ void build_state() {
             if(deb) printf("program[%d].instruction: %s\n",i,program[i].instruction);
             state_stack[return_state].codice = return_state;
             state_stack[return_state].posizione_ritorno = i;
-            if( starts_with(program[i].instruction,"if") ) strcpy(state_stack[return_state].nome_function, "if");
+            if( starts_with(program[i].instruction,"othif") ) strcpy(state_stack[return_state].nome_function, "othif");
+            else if( starts_with(program[i].instruction,"if") ) strcpy(state_stack[return_state].nome_function, "if");
             else if( starts_with(program[i].instruction,"for") ) strcpy(state_stack[return_state].nome_function, "for_");
             else if( starts_with(program[i].instruction,"while") ) strcpy(state_stack[return_state].nome_function, "while");
             else if( starts_with(program[i].instruction,"oth") ) strcpy(state_stack[return_state].nome_function, "oth");
@@ -3969,11 +4002,13 @@ void build_state() {
                 if(deb) printf("BUILD DEBUG: funzione %s con %d parametri\n", full_name, pc);
             }
             else if( starts_with(program[i].instruction,"#") ) strcpy(state_stack[return_state].nome_function, "#"); 
+            else if( starts_with(program[i].instruction,"C") ) strcpy(state_stack[return_state].nome_function, "C");
             state_stack[return_state].posizione_skip = j;
 
             return_state++;
         }
 
+        if(strstr(program[i].instruction,"//"));
         i++;
     }
 }

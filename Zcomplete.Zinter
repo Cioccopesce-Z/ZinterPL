@@ -322,12 +322,27 @@ __start(){
     //====== CONDITION TEST ============:
     println_ &s&"====== CONDITION TEST ============"&:
     int_ &i&testif&:
-    testif = 0: // falso:
-    if(testif){
-        println_ &s&"if passato nel falso":
+    testif = 1:
+    println_ testif:
+
+    oth if(testif == 9){
+        println_ &s&"non la devi vedere questa scritta oth if"&:
     }
     oth{
-        println_ &s&"if passato nell'oth giusto"&:
+        println_ &s&"non la devi vedere questa scritta oth"&:
+    }
+
+    if(testif){
+        println_ &s&"testif è 1":
+    }
+    oth if(testif == 9){
+        println_ &s&"testif è 9"&:
+    }
+    oth if(testif == 7){
+        println_ &s&"testif è 7"&:
+    }
+    oth{
+        println_ &s&"testif non è 1 o 9 o 7"&:
     }
 
 
