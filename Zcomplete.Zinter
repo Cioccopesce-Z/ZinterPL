@@ -232,6 +232,9 @@ __start(){
     [4]iarr = v0 * v1:
     print_ [4]iarr: println_ &s&" 24 - var*var in arr[4]"&:
 
+    [0]iarr = 5 * v1:
+    print_ [0]iarr: println_ &s&" 30 - n*var in arr[0]"&:
+
     println_:
     //=== MATH IN MATR ===:
     println_ &s&"=== MATH IN MATR ==="&:
