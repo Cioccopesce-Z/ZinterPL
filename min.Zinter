@@ -1,7 +1,0 @@
-#{
-    debug_ -df:
-    exec_:
-}
-__start(){
-    status_:
-}
