@@ -1,326 +1,488 @@
-# Zinterpreter
+# ZinterPL
 
-> Un interprete scritto in C per **Zinter**, un linguaggio di scripting personalizzato progettato da zero.
+**ZinterPL** is a lightweight, interpreted programming language written entirely in C, designed to run efficiently on constrained hardware — including the **ESP32** microcontroller. The interpreter is self-contained, low on memory footprint, and built with performance in mind.
 
----
-
-## Perché esiste
-
-Zinterpreter nasce come progetto didattico e sperimentale: costruire un linguaggio di scripting completo partendo da zero, senza dipendenze esterne, in C puro. L'obiettivo non è competere con linguaggi esistenti, ma capire dall'interno come funziona un interprete — dalla lettura del file sorgente fino all'esecuzione istruzione per istruzione.
-
-Il progetto copre l'intera filiera:
-
-- lettura e pulizia del codice sorgente
-- tokenizzazione e formattazione in righe eseguibili
-- costruzione dello stato (funzioni, blocchi, scope)
-- esecuzione tramite un parser lineare con gestione di variabili, array, matrici e funzioni
-- una VM (`VM`) che isola tutto lo stato del programma in un'unica struct
+Source files use the `.Zim` extension. Library files use `.Zlib`.
 
 ---
 
-## Struttura del progetto
+## Features
 
-```
-Zinterpreter/
-├── Zinterpreter.c       # sorgente principale (tutto in un file)
-└── *.Zinter             # file sorgente Zinter da eseguire
-    *.Zlib               # librerie importabili
-```
+- Statically typed: `int`, `char`, `float`
+- Variables, 1D arrays, and 2D matrices for all types
+- Functions with arguments and return values
+- `if / oth if / oth` branching
+- `for` and `while` loops
+- Input via `scan_`
+- Built-in `status_` diagnostic command
+- External library support via `.Zlib` files
+- Built-in build test suite (runs automatically with no arguments)
+- Debug mode togglable at runtime
+- Designed to target ESP32 (minimal memory, no dynamic allocation beyond data structures)
+
+> ⚠️ **Work in progress** — loops (`for_`, `while_`) are partially implemented. Core data structures, functions, arithmetic, and branching are stable.
 
 ---
 
-## Come compilare ed eseguire
+## Usage
 
 ```bash
-gcc Zinterpreter.c -o Zinterpreter
+./Zinterpreter -df file.Zim
+./Zinterpreter -dt file.Zim
+./Zinterpreter -df file.Zim -libname.Zlib
 ```
 
-```bash
-./Zinterpreter -dt programma.Zinter
-./Zinterpreter -df programma.Zinter
-./Zinterpreter -dt programma.Zinter -libreria.Zlib
-```
+| Flag | Meaning |
+|------|---------|
+| `-df` | Debug false (silent mode) |
+| `-dt` | Debug true (verbose, prints internal state) |
+| `-libname.Zlib` | Attach a `.Zlib` library (prefix with `-`) |
 
-Se viene avviato senza argomenti, esegue automaticamente una batteria di test interni (`run_test()`).
-
----
-
-## Argomenti da riga di comando
-
-| Argomento | Significato |
-|-----------|-------------|
-| `-dt` | debug **true** — stampa tutto il flusso interno |
-| `-df` | debug **false** — esecuzione silenziosa |
-| `file.Zinter` | file sorgente Zinter da eseguire (obbligatorio) |
-| `-libreria.Zlib` | libreria da includere (il `-` iniziale è parte della sintassi) |
-
----
-
-## Flusso di esecuzione
-
-```
-file .Zinter
-     │
-     ▼
-read_code_from_file()     → legge il file, rimuove spazi/tab/newline fuori dalle stringhe
-     │
-     ▼
-format_code()             → spezza il codice in righe su : { }
-                            ogni riga finisce in program[n].instruction
-     │
-     ▼
-build_state()             → scansiona tutti i blocchi { }
-                            costruisce lo state_stack con posizione di inizio e fine
-                            di ogni funzione, if, for, while, #
-     │
-     ▼
-system_setup()            → esegue il blocco #{ } (configurazione)
-                            al termine sposta global_ip su __start
-     │
-     ▼
-parse(start, end)         → loop principale di esecuzione
-                            legge program[global_ip].instruction
-                            riconosce il tipo di istruzione e chiama la funzione corretta
-                            incrementa global_ip ad ogni iterazione
-```
-
----
-
-## La VM
-
-Tutta la memoria del programma Zinter è contenuta in una singola struct globale `VM`:
-
-```c
-VM vm;
-```
-
-Contiene variabili int/float/char, array, matrici, registri, il programma formattato, lo stack degli stati e l'instruction pointer (`global_ip`). Ogni campo è accessibile tramite macro:
-
-```c
-#define variable      vm.variable
-#define variable_count vm.variable_count
-// ... ecc
-```
-
-Questo design permette in futuro di avere più istanze dell'interprete in parallelo semplicemente dichiarando più `VM`.
-
----
-
-## Sintassi Zinter
-
-### Regole generali
-
-- ogni istruzione termina con `:`
-- gli spazi sono ignorati **tranne** all'interno di `"stringhe"`
-- il punto di ingresso del programma è `__start`
-- i commenti iniziano con `//`
-
-### Tipi
-
-| Prefisso | Tipo |
-|----------|------|
-| `i` | integer |
-| `l` | float |
-| `c` | char (solo variabili) |
-| `s` | array di char / stringa |
-| `n` | numero intero immediato |
-| `k` | carattere immediato |
-
-### Sintassi estesa (token)
-
-I dati possono essere referenziati in forma esplicita con la notazione `&tipo&nome&`:
-
-```
-&i&nome&          → variabile intera
-&l&nome&          → variabile float
-&c&nome&          → variabile char
-&s[idx]&nome&     → elemento idx di un array char
-&i[idx]&nome&     → elemento idx di un array int
-&i[r][c]&nome&    → elemento [r][c] di una matrice int
-&n&42&            → numero immediato 42
-&k&A&             → carattere immediato 'A'
-```
-
-In alternativa, si può usare il nome direttamente e l'interprete deduce il tipo automaticamente tramite `is_what()`.
-
----
-
-### Dichiarazioni
-
-```zinter
-int_ &i&nome&:                  // variabile int
-int_ &i[10]&nome&:              // array int di 10 celle
-int_ &i[5][5]&nome&:            // matrice int 5x5
-
-char_ &c&nome&:                 // variabile char
-char_ &s[20]&nome&:             // array char (stringa) di 20 celle
-char_ &s[3][3]&nome&:           // matrice char 3x3
-```
-
----
-
-### Assegnazione
-
-```zinter
-var1 = var2:                    // copia var2 in var1
-var1 = 42:                      // assegna numero immediato
-[0]arr = var1:                  // arr[0] = var1
-[0]arr = [1]arr2:               // arr[0] = arr2[1]
-[0][1]matr = var1:              // matr[0][1] = var1
-var1 = var2 + var3:             // somma (supporta + - * /)
-var1 = __funzione(arg):         // assegna il valore restituito da una funzione
-```
-
-Forma alternativa esplicita:
-
-```zinter
-set_to_variable_ nome,i,valore,@:
-set_to_array_    nome,i,indice,valore,@:
-set_to_matrix_   nome,i,riga,colonna,valore,@:
-```
-
-Il `@` è un placeholder obbligatorio per il campo non usato (int o char).
-
----
-
-### Input / Output
-
-```zinter
-print_ &i&nome&:               // stampa variabile int
-print_ &s[]&nome&:             // stampa stringa intera
-print_ [0]nome:                // stampa elemento 0 di un array (sintassi breve)
-println_ &i&nome&:             // stampa e va a capo
-lnprint_ &i&nome&:             // va a capo e poi stampa
-lnprintln_ &i&nome&:           // va a capo, stampa, va a capo
-
-print_ &s&"testo"&:            // stampa testo letterale
-print_ &s&&:                   // stampa uno spazio
-```
-
----
-
-### Funzioni
-
-```zinter
-od_ nomefunzione(argomento){
-    // corpo
-    return_ &i&variabile&:
-}
-
-__start(){
-    __nomefunzione(arg):           // chiamata senza valore di ritorno
-    var1 = __nomefunzione(arg):   // chiamata con valore di ritorno
-}
-```
-
-- `return_ NULL:` o `return_:` per funzioni void
-- `return_ &i&nome&:` per restituire un valore
-
----
-
-### Blocco di sistema
-
-```zinter
-#{
-    debug_ -dt:                  // attiva debug
-    debug_ -df:                  // disattiva debug
-    exec_:                       // avvia __start
-}
-```
-
-Il blocco `#{ }` viene eseguito **prima** di `__start` e serve a configurare l'ambiente.
-
----
-
-### Condizioni e cicli *(implementazione in corso)*
-
-```zinter
-if_( var1 == var2 ){   }
-else_{   }
-for_( var1 != var2, var1 + 1 ){   }
-while_( var1 < var2 ){   }
-```
-
-La sintassi è già riconosciuta dal parser; l'esecuzione condizionale è in fase di sviluppo.
-
----
-
-## Sistema di debug
-
-Il debug si attiva con `-dt` da riga di comando oppure con `debug_ -dt:` nel blocco `#{}`.
-
-Con il debug attivo, l'interprete stampa su stdout ogni passaggio interno:
-
-- la riga analizzata da `parse()` con il suo indice
-- ogni chiamata a `get_index()` con il token risolto
-- ogni chiamata a `is_what()` con il tipo dedotto
-- l'ingresso e l'uscita da ogni funzione tramite `exec_funarg()`
-- la costruzione dello stato in `build_state()`
-- la ricerca di funzioni in `is_function_()`
-
-Esempio di output debug:
-
-```
-parse chiamato con global_ip: 5 e line_idx_program: 12
-linea analizzata: 5 var1=42
-[CHECK] var x n | left: var1 | right: 42
-linea analizzata: 6 println_&i&var1&
-DEBUG PRINT: type=i name=var1
-get_index variabile var1 di tipo i
-```
-
-Il debug è pensato per tracciare problemi di parsing, errori di tipo e comportamenti inattesi senza dover usare un debugger esterno.
-
----
-
-## Test interni
-
-Avviando l'interprete senza argomenti si esegue `run_test()`, che verifica:
-
-- dichiarazione e scrittura di variabili int, float, char
-- dichiarazione e scrittura di array int, float, char
-- dichiarazione e scrittura di matrici int, float, char
-- accesso tramite `get_index()` con indici numerici e variabili
+Running with no arguments executes the **built-in build test** and prints a pass/fail report.
 
 ```bash
 ./Zinterpreter
 ```
 
-Output atteso:
+---
+
+## Syntax Reference
+
+Every instruction ends with `:` — this is the statement terminator.
+
+### Program Entry Point
+
+Every `.Zim` file must define `__start()`, which is the main entry point:
 
 ```
-LOG: decl_var ok
-LOG: set_to_var ok
-LOG: decl_array ok
-...
-=== VARIABILI ===
-var0 (int)   : 3    [atteso: 3]
-var1 (char)  : F    [atteso: F]
-...
+__start(){
+    // your code here
+}
 ```
 
 ---
 
-## Stato del progetto
+### Header Block `#{...}`
 
-| Funzionalità | Stato |
-|---|---|
-| Lettura e formattazione sorgente | ✅ |
-| Variabili int / float / char | ✅ |
-| Array int / float / char | ✅ |
-| Matrici int / float / char | ✅ |
-| Funzioni con argomenti e return | ✅ |
-| Aritmetica `+ - * /` | ✅ |
-| Assegnazione `=` tra tutti i tipi | ✅ |
-| Print / Println / Lnprint | ✅ |
-| Sistema `#{}` e debug | ✅ |
-| If / Else | 🔧 in sviluppo |
-| For / While | 🔧 in sviluppo |
-| Scan (input utente) | 🔧 in sviluppo |
-| Import librerie `.Zlib` | ⚠️ deprecato (usa arg da CLI) |
+The optional header block at the top of the file configures the execution environment:
+
+```
+#{
+    debug_ -df:
+    exec_:
+}
+```
+
+| Directive | Effect |
+|-----------|--------|
+| `debug_ -df:` | Disable debug output |
+| `debug_ -dt:` | Enable debug output |
+| `import_ &f&name.Zlib&:` | Import a library (legacy inline syntax) |
+| `exec_:` | Start execution |
 
 ---
 
-## Licenza
+### Variable Declarations
 
-Progetto personale — tutti i diritti riservati.
+```
+int_  &i&varname&:
+char_ &c&varname&:
+```
+
+#### Token format: `&TYPE&NAME&`
+
+> **Note:** the `&type&name&` token syntax is **not required** in most contexts. You can reference variables, arrays and matrices directly by name in assignments, print statements, and expressions. The token syntax is mainly used when passing values as arguments or in ambiguous positions.
+
+| Prefix | Type |
+|--------|------|
+| `&i&name&` | integer variable |
+| `&c&name&` | char variable |
+| `&l&name&` | float variable |
+| `&n&value&` | numeric literal |
+| `&k&C&` | char literal (e.g. `'C'`) |
+| `&s&text&` | string literal |
+| `&f&file&` | file reference |
+
+---
+
+### Arrays
+
+```
+int_  &i[5]&arrname&:
+char_ &s[5]&arrname&:
+```
+
+Access:
+```
+[0]arrname = 42:
+var = [0]arrname:
+```
+
+Index can be a literal or an integer variable:
+```
+[index]arrname = value:
+```
+
+---
+
+### Matrices (2D arrays)
+
+```
+int_  &i[3][3]&matname&:
+char_ &s[3][3]&matname&:
+```
+
+Access:
+```
+[0][0]matname = 42:
+var = [1][2]matname:
+[row][col]matname = var:
+```
+
+---
+
+### Assignment
+
+```
+varname = value:
+varname = other_var:
+[idx]arrname = value:
+[r][c]matname = var:
+```
+
+Math expressions are supported inline:
+```
+v2 = v0 + v1:
+v2 = v0 - v1:
+v2 = v0 * v1:
+v2 = v0 / v1:
+[2]arr = 5 * v1:
+```
+
+---
+
+### Increment / Decrement
+
+```
+varname++:        // +1
+varname--:        // -1
+varname++N:       // +N
+varname--N:       // -N
+
+[idx]arr++:
+[idx]arr--N:
+```
+
+**Special behavior on char arrays:** when you apply `++` or `++N` to an element of a char array, the character is **copied** into the next cell(s), not incremented numerically. For example:
+
+```
+char_ &s[5]&vec&:
+[5]vec = 'F':
+[5]vec++:       // copies 'F' into [6]vec
+[2]vec++3:      // copies the char at [2] into [3], [4], [5]
+```
+
+On integer variables and arrays, `++` / `--` behave as standard numeric increment/decrement.
+
+---
+
+### Functions
+
+Declare with `od_` (open door):
+
+```
+od_ funcname(){
+    int_ &i&res&:
+    res = 3:
+    deven_ res:
+}
+```
+
+- `deven_` is the return keyword (replaces `return`).
+- `deven_:` with no argument returns void.
+
+#### Function with arguments
+
+Arguments separated by `!`:
+
+```
+od_ testargs(&i&a&!&i&b&){
+    int_ &i&result&:
+    result = a + b:
+    deven_ result:
+}
+```
+
+#### Calling functions
+
+Void call:
+```
+__funcname():
+```
+
+Call with return value stored in a variable:
+```
+var = __funcname():
+```
+
+Call with arguments (separated by `!`):
+```
+print_ __testargs(10!20):
+```
+
+Store return value in array or matrix:
+```
+[0]arr = __funcname():
+[1][2]mat = __funcname():
+```
+
+---
+
+### Output
+
+```
+print_ value:           // print without newline
+println_ value:         // print with newline
+println_:               // print empty newline
+```
+
+`value` can be a variable name, an `&s&string&` literal, an array element, or a matrix element.
+
+---
+
+### Input
+
+```
+scan_ &s&varname&:
+```
+
+---
+
+### Conditionals
+
+```
+if(condition){
+    // ...
+}
+oth if(condition){
+    // ...
+}
+oth if(condition){
+    // any number of oth if chains are supported
+}
+oth{
+    // ...
+}
+```
+
+Conditions support `==`, `<`, `>`, `s==` (string comparison).
+
+You can chain **any number of `oth if`** blocks before the final `oth`.
+
+---
+
+### Spaces and Whitespace
+
+**Spaces are ignored everywhere** in ZinterPL source code, **except inside double quotes** (`"..."`). This means indentation and spacing are purely cosmetic and have no effect on parsing.
+
+```
+int_ &i&x&:        // same as
+int_&i&x&:         // same as
+int_   &i& x &:   // all equivalent
+```
+
+Inside a string literal, spaces are preserved:
+```
+println_ &s&"hello world"&:   // prints: hello world
+```
+
+---
+
+### Variable Indices
+
+Array and matrix elements can be accessed using either literal indices or integer variables as indices:
+
+```
+[0]arr = 42:           // literal index
+[idx]arr = 42:         // variable as index
+
+[0][0]mat = 99:        // literal row and col
+[row][col]mat = 99:    // variables as row and col
+[row][0]mat = 99:      // mixed
+```
+
+---
+
+### Inline C Code
+
+You can define a C function directly inside a `.Zim` file using a `C{ }` block. The code inside is **compiled separately** as a standalone C function.
+
+```
+C{
+    // C code here
+    return 42;
+}
+```
+
+To call it, use `__C(...)` passing variables, values, or arrays as arguments. The `return` at the end of the C block becomes the return value of the call:
+
+```
+int_ &i&result&:
+result = __C(myvar, myarr, 10):
+```
+
+Arguments can be ZinterPL variables, array references, or literal values. The return value of `return` in the C block is used as the result of `__C(...)` in the ZinterPL code.
+
+---
+
+### Loops
+
+**`while_`** — same syntax as `if`:
+
+```
+while_( condition ){
+    // ...
+}
+```
+
+**`for_`** — condition uses the same syntax as `if`, step uses the same form as the condition:
+
+```
+for_( condition, step ){
+    // ...
+}
+```
+
+Example:
+```
+for_( < &i&counter& &i&limit&, + &i&counter& &n&1& ){
+    println_ &i&counter&:
+}
+```
+
+The condition is evaluated like an `if` expression (`<`, `>`, `==`, etc.). The step is an expression of the same form, applied at the end of each iteration.
+
+> ⚠️ Loop support is still under active development.
+
+---
+
+### Diagnostic
+
+```
+status_:
+```
+
+Prints the current state of all declared variables, arrays, and matrices. Useful for debugging.
+
+```
+status_ clear y:
+```
+
+Clears internal state after printing.
+
+---
+
+### Libraries
+
+Libraries are `.Zlib` files containing additional function definitions. Pass them on the command line:
+
+```bash
+./Zinterpreter -df file.Zim -libstdfn.Zlib
+```
+
+The interpreter merges the library into the source before parsing.
+
+In-file import (legacy, may print a warning in some builds):
+```
+#import_&f&stdfn.Zlib&:
+```
+
+---
+
+## Minimal Example
+
+```
+#{
+    debug_ -df:
+    exec_:
+}
+
+__start(){
+    status_:
+}
+```
+
+---
+
+## Complete Example
+
+```
+od_ somma(){
+    int_ &i&a&:
+    int_ &i&b&:
+    a = 3:
+    b = 5:
+    int_ &i&res&:
+    res = a + b:
+    deven_ res:
+}
+
+__start(){
+    int_ &i&result&:
+    result = __somma():
+    println_ result:
+}
+```
+
+---
+
+## Build & Run
+
+```bash
+gcc Zinterpreter.c -o Zinterpreter
+./Zinterpreter -df myprogram.Zim
+```
+
+Run the built-in test suite:
+```bash
+./Zinterpreter
+```
+
+Output ends with:
+```
+build OK
+```
+or a count of failed tests if something is broken.
+
+---
+
+## Project Status
+
+| Feature | Status |
+|---------|--------|
+| Variables (int, char, float) | Stable |
+| Arrays (1D) | Stable |
+| Matrices (2D) | Stable |
+| Functions + return values | Stable |
+| Function arguments | Stable |
+| Arithmetic expressions | Stable |
+| Conditionals (if/oth if/oth) | Stable |
+| Increment/Decrement | Stable |
+| Library support (.Zlib) | Stable |
+| Build test suite | Stable |
+| `scan_` (input) | Partial |
+| `for_` / `while_` loops | In progress |
+| ESP32 port | Planned |
+
+---
+
+## Design Goals
+
+- **Minimal memory usage** — fixed-size data structures, no heap sprawl; suitable for microcontrollers
+- **Self-contained** — single C source file, no external dependencies
+- **ESP32 target** — the entire VM is a single `struct VM`, easy to port to embedded environments
+- **Transparent execution** — debug mode prints every step of parsing and execution
+
+---
+
+*ZinterPL — a custom scripting language built in C, designed to go small.*
