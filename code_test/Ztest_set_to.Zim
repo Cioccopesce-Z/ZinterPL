@@ -1,0 +1,81 @@
+
+
+__calcola(){
+
+    println_ &s&"TEST IGNITE"&:
+}
+
+__start(){
+    int_ &i&int_var0&:
+    int_ &i&int_var1&:
+
+    char_ &c&char_var0&:
+    char_ &c&char_var1&:
+
+    int_ &i[5]&int_arr_5&:
+    int_ &i[6]&int_arr_6&:
+
+    char_ &s[5]&char_arr_5&:
+    char_ &s[6]&char_arr_6&:
+
+    //N IN VAR:
+    set_to_variable_ int_var0,i,&n&7&,@:
+    print_ &i&int_var0&: println_ &s&" 7 N IN VAR"&:
+
+    //VAR IN VAR:
+    set_to_variable_ int_var1,i,&i&int_var0&,@:
+    print_ &i&int_var1&: println_ &s&" 7 VAR IN VAR"&:
+
+    //N IN ARR:
+    set_to_array_ int_arr_5,i,&n&0&,&n&9&,@:
+    print_ &i[0]&int_arr_5&: println_ &s&" 9 N IN ARR"&:
+
+    //ARR IN VAR:
+    set_to_variable_ int_var1,i,&i[0]&int_arr_5&,@:
+    print_ &i&int_var1&: println_ &s&" 9 ARR IN VAR"&:
+
+    //VAR IN ARR:
+    set_to_array_ int_arr_5,i,&n&1&,&i&int_var0&,@:
+    print_ &i[1]&int_arr_5&: println_ &s&" 7 VAR IN ARR"&:
+
+    //ARR IN ARR:
+    set_to_array_ int_arr_5,i,&n&3&,&i[0]&int_arr_5&,@:
+    print_ &i[3]&int_arr_5&: println_ &s&" 9 ARR IN ARR"&:
+
+    println_ &s&" "&:
+
+    //K IN CVAR:
+    set_to_variable_ char_var0,c,@,&k&H&:
+    print_ &c&char_var0&: println_ &s&" H - K IN CVAR"&:
+
+    //CVAR IN CVAR:
+    set_to_variable_ char_var1,c,@,&c&char_var0&:
+    print_ &c&char_var1&: println_ &s&" H - CVAR IN CVAR"&:
+
+    //K IN CARR:
+    set_to_array_ char_arr_5,s,&n&0&,@,&k&L&:
+    print_ &s[0]&char_arr_5&: println_ &s&" L - K IN CARR"&:
+
+    //CARR IN CVAR:
+    set_to_variable_ char_var1,c,@,&s[0]&char_arr_5&:
+    print_ &c&char_var1&: println_ &s&" L - CARR IN CVAR"&:
+
+    //CVAR IN CARR:
+    set_to_array_ char_arr_5,s,&n&1&,@,&c&char_var0&:
+    print_ &s[1]&char_arr_5&: println_ &s&" H - VAR IN ARR"&:
+
+    //CARR IN CARR:
+    set_to_array_ char_arr_5,s,&n&3&,@,&s[0]&char_arr_5&:
+    print_ &s[3]&char_arr_5&: println_ &s&" L - ARR IN ARR"&:
+
+    println_ &s&" "&:
+
+}
+
+#{
+    import_ &f&ciao.Zlib&:
+
+    debug_ -df:
+
+    exec_:
+}

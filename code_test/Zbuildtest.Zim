@@ -1,0 +1,62 @@
+#import_&f&stdfn.Zlib&:
+
+
+__calcola_doppio_e_tripli(&i&input&){
+        = + &i&temp& &i&input& &i&input&:
+        = + &i&temp& &i&temp& &i&input&:
+        return &i&temp&:
+    }
+
+__start(){
+
+    int_ &i&counter&:
+    int_ &i&limit&:
+    int_ &i&sum&:
+    int_ &i&temp&:
+    char_ &s&greeting&:
+    int_ &i&result1&:
+    int_ &i&result2&:
+
+    = &i&counter& &n&0&:
+    = &i&limit& &n&5&:
+    = &i&sum& &n&0&:
+        
+    scan_ &s&greeting&:
+
+    for_( s== &s&greeting& &s&hello& ){
+
+        if_( == &i&ciao& 2){
+            println_ "ciao":
+        }
+
+        println_ &s&Benvenuto nel programma!&:
+    } 
+    else_ {
+        println_ &s&Ciao sconosciuto, continua pure.&:
+    }
+
+    for_( < &i&counter& &i&limit&, + &i&counter& &n&1& ){
+        = + &i&sum& &i&sum& &i&counter&:
+        println_ &i&counter&:
+        println_ &s&" - Somma parziale "&:
+        println_ &i&sum&:
+    }
+
+    _calcola_doppio_e_tripli(&i&3&)--&i&result1&:
+
+    println_ &s&Il triplo di 3 è &:
+    println_ &i&result1&:
+
+    while_( < &i&result1& &n&20& ){
+        = + &i&result1& &i&result1& &n&5&:
+        println_ &i&result1&:
+    }
+
+    if_( == &i&result1& &n&25& ){
+        println_ &s&Hai raggiunto 25!&:
+    } else_ {
+        println_ &s&"ncora non 25.&:
+    }
+
+    return NULL:
+}
