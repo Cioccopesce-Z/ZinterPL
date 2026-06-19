@@ -4261,7 +4261,7 @@ void importlib(const char *libfile, const char *codefile){
         return;
     }
 
-    FILE *tmp = fopen(".__temp__.Zinter", "wb");
+    FILE *tmp = fopen(".__temp__.Zim", "wb");
     if(!tmp){
         printf("ERROR: impossibile creare file temporaneo\n");
         fclose(lib);
@@ -4278,7 +4278,7 @@ void importlib(const char *libfile, const char *codefile){
     fclose(tmp);
 
     remove(codefile);
-    rename(".__temp__.Zinter", codefile);
+    rename(".__temp__.Zim", codefile);
 }
 
 int main(int argc, char *argv[]) {
@@ -4295,7 +4295,7 @@ int main(int argc, char *argv[]) {
 
         //SOURCEFILE SETUP
         const char *dot = strrchr(argv[2], '.');
-        if (!dot || strcmp(dot, ".Zinter") != 0) {
+        if (!dot || strcmp(dot, ".Zim") != 0) {
             printf("ERROR: formato file non supportato\n");
             return 0;
         }
@@ -4373,7 +4373,7 @@ int main(int argc, char *argv[]) {
 
     if(argc<3){
         printf("need to add arguments \n");
-        printf("in order: ./Zinterpreter -debug file_name.Zinter -library \n");
+        printf("in order: ./Zinterpreter -debug file_name.Zim -library \n");
         printf("                 ^          ^                        ^\n");
         printf("                 |          |                        |\n");
         printf("           or your compiler |                    eventual file_name.Zlib \n");
