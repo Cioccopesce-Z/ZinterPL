@@ -426,7 +426,7 @@ void* get_index(char data_sruct_name[]) {
     char type;
     char var_type;
 
-    static int temp_int;
+    static int temp_int = 0;
     static char temp_char;
     
     
@@ -1876,8 +1876,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         return ret;
     }
 }
-
-// fix anche in math_plus: stessa firma e stessi cast
+//if(deb) 
 int math_plus(char *operation, int called_by_parse) {
     char lop[24] = {0}, rop[24] = {0};
     if(deb) printf("DEBUG: math_plus chiamata con %s\n", operation);
@@ -1896,7 +1895,8 @@ int math_plus(char *operation, int called_by_parse) {
         char clop[24]; strcpy(clop,lop); is_what(clop);
         sscanf(clop, "%15[^.].%c", junk, &ltype);
     }
-    if(ltype=='i')      lopv = *(int   *)resolve(ltype,lop);
+    if(ltype=='i')      lopv = *(int*)resolve(ltype,lop);
+    else if(ltype=='n') lopv = *(int*)resolve(ltype,lop);
     else if(ltype=='l') lopv = (int)*(float*)resolve(ltype,lop);
     else { printf("WARNING: cant operate arithmetically with char %s\n",lop); }
 
@@ -1907,11 +1907,13 @@ int math_plus(char *operation, int called_by_parse) {
         sscanf(crop, "%15[^.].%c", junk, &rtype);
     }
     if(rtype=='i')      ropv = *(int   *)resolve(rtype,rop);
+    else if(rtype=='n') ropv = *(int*)resolve(rtype,rop);
     else if(rtype=='l') ropv = (int)*(float*)resolve(rtype,rop);
     else { printf("WARNING: cant operate arithmetically with char %s\n",rop); }
 
     if(!types_match(ltype,rtype)) { printf("ERROR: type mismatch in math_plus\n"); return error_int; }
-    return lopv + ropv;
+    if(deb) printf("DEBUG: math_plus return: %d = %d + %d\n",lopv+ropv,lopv,ropv);
+    return lopv+ropv;
 }
 
 int math_min(char *operation, int called_by_parse) {
@@ -1933,6 +1935,7 @@ int math_min(char *operation, int called_by_parse) {
         sscanf(clop, "%15[^.].%c", junk, &ltype);
     }
     if(ltype=='i')      lopv = *(int   *)resolve(ltype,lop);
+    else if(ltype=='n') lopv = *(int*)resolve(ltype,lop);
     else if(ltype=='l') lopv = (int)*(float*)resolve(ltype,lop);
     else { printf("WARNING: cant operate arithmetically with char %s\n",lop); }
 
@@ -1943,11 +1946,13 @@ int math_min(char *operation, int called_by_parse) {
         sscanf(crop, "%15[^.].%c", junk, &rtype);
     }
     if(rtype=='i')      ropv = *(int   *)resolve(rtype,rop);
+    else if(rtype=='n') ropv = *(int*)resolve(rtype,rop);
     else if(rtype=='l') ropv = (int)*(float*)resolve(rtype,rop);
     else { printf("WARNING: cant operate arithmetically with char %s\n",rop); }
 
     if(!types_match(ltype,rtype)) { printf("ERROR: type mismatch in math_min\n"); return error_int; }
-    return lopv - ropv;
+    if(deb) printf("DEBUG: math_min return: %d = %d - %d\n",lopv-ropv,lopv,ropv);
+    return lopv-ropv;
 }
 
 int math_times(char *operation, int called_by_parse) {
@@ -1969,6 +1974,7 @@ int math_times(char *operation, int called_by_parse) {
         sscanf(clop, "%15[^.].%c", junk, &ltype);
     }
     if(ltype=='i')      lopv = *(int   *)resolve(ltype,lop);
+    else if(ltype=='n') lopv = *(int*)resolve(ltype,lop);
     else if(ltype=='l') lopv = (int)*(float*)resolve(ltype,lop);
     else { printf("WARNING: cant operate arithmetically with char %s\n",lop); }
 
@@ -1979,10 +1985,12 @@ int math_times(char *operation, int called_by_parse) {
         sscanf(crop, "%15[^.].%c", junk, &rtype);
     }
     if(rtype=='i')      ropv = *(int   *)resolve(rtype,rop);
+    else if(rtype=='n') ropv = *(int*)resolve(rtype,rop);
     else if(rtype=='l') ropv = (int)*(float*)resolve(rtype,rop);
     else { printf("WARNING: cant operate arithmetically with char %s\n",rop); }
 
     if(!types_match(ltype,rtype)) { printf("ERROR: type mismatch in math_times\n"); return error_int; }
+    if(deb) printf("DEBUG: math_plus return: %d = %d * %d\n",lopv*ropv,lopv,ropv);
     return lopv * ropv;
 }
 
@@ -2005,6 +2013,7 @@ int math_slash(char *operation, int called_by_parse) {
         sscanf(clop, "%15[^.].%c", junk, &ltype);
     }
     if(ltype=='i')      lopv = *(int   *)resolve(ltype,lop);
+    else if(ltype=='n') lopv = *(int*)resolve(ltype,lop);
     else if(ltype=='l') lopv = (int)*(float*)resolve(ltype,lop);
     else { printf("WARNING: cant operate arithmetically with char %s\n",lop); }
 
@@ -2015,12 +2024,14 @@ int math_slash(char *operation, int called_by_parse) {
         sscanf(crop, "%15[^.].%c", junk, &rtype);
     }
     if(rtype=='i')      ropv = *(int   *)resolve(rtype,rop);
+    else if(rtype=='n') ropv = *(int*)resolve(rtype,rop);
     else if(rtype=='l') ropv = (int)*(float*)resolve(rtype,rop);
     else { printf("WARNING: cant operate arithmetically with char %s\n",rop); }
 
     if(!types_match(ltype,rtype)) { printf("ERROR: type mismatch in math_slash\n"); return error_int; }
     if(ropv == 0) { printf("ERROR: division by zero\n"); return error_int; }
-    return lopv / ropv;
+    if(deb) printf("DEBUG: math_plus return: %d = %d / %d\n",lopv/ropv,lopv,ropv);
+    return lopv/ropv;
 }
 
 int is_math(char *operand) {
@@ -4012,8 +4023,6 @@ void build_state() {
         i++;
     }
 }
-
-
 void run_test(){
 
     int pass = 0;
@@ -4217,6 +4226,7 @@ void run_test(){
     else           printf("ATTENZIONE: %d test falliti, verificare la build\n", fail);
     printf("========================================\n");
 }
+
 
 void copy_file(FILE *src, FILE *dst){
 
