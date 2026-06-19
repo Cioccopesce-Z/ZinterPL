@@ -4015,120 +4015,207 @@ void build_state() {
 
 
 void run_test(){
- 
+
+    int pass = 0;
+    int fail = 0;
+
     // ===== VARIABILI =====
     declare_variable("var0",'i');
     declare_variable("var1",'c');
     declare_variable("var2",'l');
     printf("LOG: decl_var ok \n");
- 
+
     set_to_variable("var0",'i', 3, place_holder);
     set_to_variable("var1",'c', place_holder, 'F');
     set_to_variable("var2",'l', 2.71, char_place_holder);
     printf("LOG: set_to_var ok \n");
- 
+
     // ===== ARRAY =====
     declare_array("arr0", 's', 7);
     declare_array("arr1", 'i', 5);
     declare_array("arr2", 's', 4);
     declare_array("arr3", 'l', 6);
     printf("LOG: decl_array ok \n");
- 
+
     set_to_array("arr0",'s', 0, place_holder, 'f');
     set_to_array("arr1", 'i', 1, 77, place_holder);
     set_to_array("arr2", 's', 2, place_holder, 'c');
     set_to_array("arr2", 's', 3, place_holder, 'i');
     set_to_array("arr3", 'l', 0, 7.21 , char_place_holder);
     printf("LOG: set_to_array ok \n");
- 
+
     // ===== MATRICI =====
     declare_matrix("matr0", 'i', 5, 5);
     declare_matrix("matr1", 's', 3, 3);
     declare_matrix("matr2", 'l', 4, 8);
     printf("LOG: declare_matrix ok \n");
- 
+
     set_to_matrix("matr0", 'i', 0, 0,  42,  '\0');
     set_to_matrix("matr0", 'i', 1, 2,  99,  '\0');
     set_to_matrix("matr0", 'i', 4, 4, -7,   '\0');
- 
+
     set_to_matrix("matr1", 's', 0, 0,  0,   'X');
     set_to_matrix("matr1", 's', 1, 1,  0,   'Y');
     set_to_matrix("matr1", 's', 2, 2,  0,   'Z');
- 
+
     set_to_matrix("matr2", 'l', 0, 0,  3.14, '\0');
     set_to_matrix("matr2", 'l', 3, 7,  9.99, '\0');
     printf("LOG: set_to_matrix ok \n");
- 
+
     // ===== GET_INDEX - VARIABILI =====
     int   *ptr0 = (int   *)get_index("&i&var0&");
     char  *ptr1 = (char  *)get_index("&c&var1&");
     float *ptr2 = (float *)get_index("&l&var2&");
-    printf("LOG: get_index var ok \n");
- 
+
     // ===== GET_INDEX - ARRAY =====
     char  *ptr3 = (char  *)get_index("&s[0]&arr0&");
     int   *ptr4 = (int   *)get_index("&i[1]&arr1&");
     float *ptr5 = (float *)get_index("&l[0]&arr3&");
     char  *ptr6 = (char  *)get_index("&s[2]&arr2&");
     char  *ptr7 = (char  *)get_index("&s[&i&var0&]&arr2&");  // var0=3 -> arr2[3]='i'
-    printf("LOG: get_index array ok \n");
- 
+
     // ===== GET_INDEX - MATRICI =====
-    int   *mptr0 = (int   *)get_index("&i[0][0]&matr0&");    // 42
-    int   *mptr1 = (int   *)get_index("&i[1][2]&matr0&");    // 99
-    int   *mptr2 = (int   *)get_index("&i[4][4]&matr0&");    // -7
- 
-    char  *mptr3 = (char  *)get_index("&s[0][0]&matr1&");    // X
-    char  *mptr4 = (char  *)get_index("&s[1][1]&matr1&");    // Y
-    char  *mptr5 = (char  *)get_index("&s[2][2]&matr1&");    // Z
- 
-    float *mptr6 = (float *)get_index("&l[0][0]&matr2&");    // 3.14
-    float *mptr7 = (float *)get_index("&l[3][7]&matr2&");    // 9.99
- 
-    // var0(=3) come indice di riga -> matr0[3][1] = 55
+    int   *mptr0 = (int   *)get_index("&i[0][0]&matr0&");
+    int   *mptr1 = (int   *)get_index("&i[1][2]&matr0&");
+    int   *mptr2 = (int   *)get_index("&i[4][4]&matr0&");
+
+    char  *mptr3 = (char  *)get_index("&s[0][0]&matr1&");
+    char  *mptr4 = (char  *)get_index("&s[1][1]&matr1&");
+    char  *mptr5 = (char  *)get_index("&s[2][2]&matr1&");
+
+    float *mptr6 = (float *)get_index("&l[0][0]&matr2&");
+    float *mptr7 = (float *)get_index("&l[3][7]&matr2&");
+
     set_to_matrix("matr0", 'i', 3, 1, 55, '\0');
-    int   *mptr8 = (int   *)get_index("&i[&i&var0&][1]&matr0&");  // 55
-    printf("LOG: get_index matrice ok \n");
- 
-    // ===== OUTPUT =====
+    int   *mptr8 = (int   *)get_index("&i[&i&var0&][1]&matr0&");  // var0=3 -> matr0[3][1]=55
+
     printf("\n=== VARIABILI ===\n");
-    if (ptr0) printf("var0 (int)   : %d    [atteso: 3]\n",  *ptr0);
-    if (ptr1) printf("var1 (char)  : %c    [atteso: F]\n",  *ptr1);
-    if (ptr2) printf("var2 (float) : %f  [atteso: 2.71]\n", *ptr2);
-    else       printf("var2 (float) : NULL\n");
- 
+    if (ptr0 && *ptr0 == 3)   { printf("var0 (int)   : %d    [ok]\n",  *ptr0); pass++; }
+    else                      { printf("var0 (int)   : %d    [FAIL atteso 3]\n", ptr0 ? *ptr0 : -999); fail++; }
+
+    if (ptr1 && *ptr1 == 'F') { printf("var1 (char)  : %c    [ok]\n",  *ptr1); pass++; }
+    else                      { printf("var1 (char)  : %c    [FAIL atteso F]\n", ptr1 ? *ptr1 : '?'); fail++; }
+
+    if (ptr2 && *ptr2 > 2.70 && *ptr2 < 2.72) { printf("var2 (float) : %f  [ok]\n", *ptr2); pass++; }
+    else                      { printf("var2 (float) : %f  [FAIL atteso 2.71]\n", ptr2 ? *ptr2 : -999.0); fail++; }
+
     printf("\n=== ARRAY ===\n");
-    if (ptr3) printf("arr0[0] (char)      : %c    [atteso: f]\n",  *ptr3);
-    if (ptr4) printf("arr1[1] (int)       : %d    [atteso: 77]\n", *ptr4);
-    if (ptr5) printf("arr3[0] (float)     : %f  [atteso: 7.21]\n", *ptr5);
-    else       printf("arr3[0] (float)     : NULL\n");
-    if (ptr6) printf("arr2[2] (char)      : %c    [atteso: c]\n",  *ptr6);
-    if (ptr7) printf("arr2[var0=3] (char) : %c    [atteso: i]\n",  *ptr7);
- 
+    if (ptr3 && *ptr3 == 'f') { printf("arr0[0] (char)      : %c    [ok]\n",  *ptr3); pass++; }
+    else                      { printf("arr0[0] (char)      : %c    [FAIL atteso f]\n", ptr3 ? *ptr3 : '?'); fail++; }
+
+    if (ptr4 && *ptr4 == 77)  { printf("arr1[1] (int)       : %d    [ok]\n",  *ptr4); pass++; }
+    else                      { printf("arr1[1] (int)       : %d    [FAIL atteso 77]\n", ptr4 ? *ptr4 : -999); fail++; }
+
+    if (ptr5 && *ptr5 > 7.20 && *ptr5 < 7.22) { printf("arr3[0] (float)     : %f  [ok]\n", *ptr5); pass++; }
+    else                      { printf("arr3[0] (float)     : %f  [FAIL atteso 7.21]\n", ptr5 ? *ptr5 : -999.0); fail++; }
+
+    if (ptr6 && *ptr6 == 'c') { printf("arr2[2] (char)      : %c    [ok]\n",  *ptr6); pass++; }
+    else                      { printf("arr2[2] (char)      : %c    [FAIL atteso c]\n", ptr6 ? *ptr6 : '?'); fail++; }
+
+    if (ptr7 && *ptr7 == 'i') { printf("arr2[var0=3] (char) : %c    [ok]\n",  *ptr7); pass++; }
+    else                      { printf("arr2[var0=3] (char) : %c    [FAIL atteso i]\n", ptr7 ? *ptr7 : '?'); fail++; }
+
     printf("\n=== MATRICI INT ===\n");
-    if (mptr0) printf("matr0[0][0]        : %d    [atteso:  42]\n", *mptr0);
-    if (mptr1) printf("matr0[1][2]        : %d    [atteso:  99]\n", *mptr1);
-    if (mptr2) printf("matr0[4][4]        : %d    [atteso:  -7]\n", *mptr2);
-    if (mptr8) printf("matr0[var0=3][1]   : %d    [atteso:  55]\n", *mptr8);
-    else        printf("matr0[var0][1]     : NULL\n");
- 
+    if (mptr0 && *mptr0 == 42)  { printf("matr0[0][0]        : %d    [ok]\n", *mptr0); pass++; }
+    else                        { printf("matr0[0][0]        : %d    [FAIL atteso 42]\n", mptr0 ? *mptr0 : -999); fail++; }
+
+    if (mptr1 && *mptr1 == 99)  { printf("matr0[1][2]        : %d    [ok]\n", *mptr1); pass++; }
+    else                        { printf("matr0[1][2]        : %d    [FAIL atteso 99]\n", mptr1 ? *mptr1 : -999); fail++; }
+
+    if (mptr2 && *mptr2 == -7)  { printf("matr0[4][4]        : %d    [ok]\n", *mptr2); pass++; }
+    else                        { printf("matr0[4][4]        : %d    [FAIL atteso -7]\n", mptr2 ? *mptr2 : -999); fail++; }
+
+    if (mptr8 && *mptr8 == 55)  { printf("matr0[var0=3][1]   : %d    [ok]\n", *mptr8); pass++; }
+    else                        { printf("matr0[var0=3][1]   : %d    [FAIL atteso 55]\n", mptr8 ? *mptr8 : -999); fail++; }
+
     printf("\n=== MATRICI CHAR ===\n");
-    if (mptr3) printf("matr1[0][0]        : %c    [atteso: X]\n", *mptr3);
-    if (mptr4) printf("matr1[1][1]        : %c    [atteso: Y]\n", *mptr4);
-    if (mptr5) printf("matr1[2][2]        : %c    [atteso: Z]\n", *mptr5);
- 
+    if (mptr3 && *mptr3 == 'X') { printf("matr1[0][0]        : %c    [ok]\n", *mptr3); pass++; }
+    else                        { printf("matr1[0][0]        : %c    [FAIL atteso X]\n", mptr3 ? *mptr3 : '?'); fail++; }
+
+    if (mptr4 && *mptr4 == 'Y') { printf("matr1[1][1]        : %c    [ok]\n", *mptr4); pass++; }
+    else                        { printf("matr1[1][1]        : %c    [FAIL atteso Y]\n", mptr4 ? *mptr4 : '?'); fail++; }
+
+    if (mptr5 && *mptr5 == 'Z') { printf("matr1[2][2]        : %c    [ok]\n", *mptr5); pass++; }
+    else                        { printf("matr1[2][2]        : %c    [FAIL atteso Z]\n", mptr5 ? *mptr5 : '?'); fail++; }
+
     printf("\n=== MATRICI FLOAT ===\n");
-    if (mptr6) printf("matr2[0][0]        : %f  [atteso: 3.14]\n", *mptr6);
-    else        printf("matr2[0][0]        : NULL\n");
-    if (mptr7) printf("matr2[3][7]        : %f  [atteso: 9.99]\n", *mptr7);
-    else        printf("matr2[3][7]        : NULL\n");
- 
-    printf("\n=== CONFRONTO BINARIO TRA DATA ===\n");
-    *ptr6 = 'f';
-    printf("arr0[0] arr2[2] char ==   : %d  [atteso: 1]\n",exec_conf("[0]arr0==[2]arr2","=="));
-    printf("arr0[0] arr2[2] char ^=   : %d  [atteso: 0]\n",exec_conf("[0]arr0^=[2]arr2","^="));
-    printf("arr0[] >> arr2[] dimconf  : %d  [atteso: 1]\n",exec_conf("[]arr0>>[]arr2",">>"));
-    printf("arr0[] << arr2[] dimconf  : %d  [atteso: 0]\n",exec_conf("[]arr0<<[]arr2","<<"));
+    if (mptr6 && *mptr6 > 3.13 && *mptr6 < 3.15) { printf("matr2[0][0]        : %f  [ok]\n", *mptr6); pass++; }
+    else                        { printf("matr2[0][0]        : %f  [FAIL atteso 3.14]\n", mptr6 ? *mptr6 : -999.0); fail++; }
+
+    if (mptr7 && *mptr7 > 9.98 && *mptr7 < 10.0) { printf("matr2[3][7]        : %f  [ok]\n", *mptr7); pass++; }
+    else                        { printf("matr2[3][7]        : %f  [FAIL atteso 9.99]\n", mptr7 ? *mptr7 : -999.0); fail++; }
+
+    printf("\n=== CONFRONTO BINARIO (exec_conf) ===\n");
+    *ptr6 = 'f';   // rende arr2[2]='f' uguale ad arr0[0]='f' per i test ==
+    int c1 = exec_conf("[0]arr0==[2]arr2","==");
+    int c2 = exec_conf("[0]arr0^=[2]arr2","^=");
+    int c3 = exec_conf("[]arr0>>[]arr2",">>");
+    int c4 = exec_conf("[]arr0<<[]arr2","<<");
+
+    if (c1 == 1) { printf("arr0[0] arr2[2] char ==   : %d  [ok]\n", c1); pass++; }
+    else         { printf("arr0[0] arr2[2] char ==   : %d  [FAIL atteso 1]\n", c1); fail++; }
+
+    if (c2 == 0) { printf("arr0[0] arr2[2] char ^=   : %d  [ok]\n", c2); pass++; }
+    else         { printf("arr0[0] arr2[2] char ^=   : %d  [FAIL atteso 0]\n", c2); fail++; }
+
+    if (c3 == 1) { printf("arr0[] >> arr2[] dimconf  : %d  [ok]\n", c3); pass++; }
+    else         { printf("arr0[] >> arr2[] dimconf  : %d  [FAIL atteso 1]\n", c3); fail++; }
+
+    if (c4 == 0) { printf("arr0[] << arr2[] dimconf  : %d  [ok]\n", c4); pass++; }
+    else         { printf("arr0[] << arr2[] dimconf  : %d  [FAIL atteso 0]\n", c4); fail++; }
+
+    printf("\n=== CONFRONTO VAR x N ===\n");
+    int c5 = exec_conf("var0==3","==");
+    int c6 = exec_conf("var0>1",">");
+    int c7 = exec_conf("var0<1","<");
+    int c8 = exec_conf("var0^=3","^=");
+
+    if (c5 == 1) { printf("var0(3) == 3              : %d  [ok]\n", c5); pass++; }
+    else         { printf("var0(3) == 3              : %d  [FAIL atteso 1]\n", c5); fail++; }
+
+    if (c6 == 1) { printf("var0(3) >  1              : %d  [ok]\n", c6); pass++; }
+    else         { printf("var0(3) >  1              : %d  [FAIL atteso 1]\n", c6); fail++; }
+
+    if (c7 == 0) { printf("var0(3) <  1              : %d  [ok]\n", c7); pass++; }
+    else         { printf("var0(3) <  1              : %d  [FAIL atteso 0]\n", c7); fail++; }
+
+    if (c8 == 0) { printf("var0(3) ^= 3              : %d  [ok]\n", c8); pass++; }
+    else         { printf("var0(3) ^= 3              : %d  [FAIL atteso 0]\n", c8); fail++; }
+
+    printf("\n=== ARITMETICA (math_*) ===\n");
+    int m1 = math_plus ("3+4",  fal);
+    int m2 = math_min  ("9-4",  fal);
+    int m3 = math_times("3*4",  fal);
+    int m4 = math_slash("10/2", fal);
+    // errore atteso: divisione per zero
+    int m5 = math_slash("5/0",  fal);
+    // errore atteso: numero puro non e' char, math_plus con char non ha senso
+    // (queste due righe servono solo a vedere che non crashano)
+    int m6 = math_plus("3+0",  fal);
+
+    if (m1 == 7)          { printf("3 + 4                     : %d  [ok]\n", m1); pass++; }
+    else                  { printf("3 + 4                     : %d  [FAIL atteso 7]\n", m1); fail++; }
+
+    if (m2 == 5)          { printf("9 - 4                     : %d  [ok]\n", m2); pass++; }
+    else                  { printf("9 - 4                     : %d  [FAIL atteso 5]\n", m2); fail++; }
+
+    if (m3 == 12)         { printf("3 * 4                     : %d  [ok]\n", m3); pass++; }
+    else                  { printf("3 * 4                     : %d  [FAIL atteso 12]\n", m3); fail++; }
+
+    if (m4 == 5)          { printf("10 / 2                    : %d  [ok]\n", m4); pass++; }
+    else                  { printf("10 / 2                    : %d  [FAIL atteso 5]\n", m4); fail++; }
+
+    if (m5 == error_int)  { printf("5 / 0  -> div by zero     : error_int  [ok]\n"); pass++; }
+    else                  { printf("5 / 0  -> div by zero     : %d  [FAIL atteso error_int]\n", m5); fail++; }
+
+    if (m6 == 3)          { printf("3 + 0                     : %d  [ok]\n", m6); pass++; }
+    else                  { printf("3 + 0                     : %d  [FAIL atteso 3]\n", m6); fail++; }
+
+    printf("\n========================================\n");
+    printf("TOTALE: %d ok,  %d falliti  su %d test\n", pass, fail, pass + fail);
+    if (fail == 0) printf("build OK\n");
+    else           printf("ATTENZIONE: %d test falliti, verificare la build\n", fail);
+    printf("========================================\n");
 }
 
 void copy_file(FILE *src, FILE *dst){
