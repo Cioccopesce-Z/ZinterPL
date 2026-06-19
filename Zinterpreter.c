@@ -4380,8 +4380,6 @@ int main(int argc, char *argv[]) {
         printf("              version       |        \n");
         printf("                           -df ==debug false  \n");
         printf("                           -dt ==debug true  \n");
-        printf("                           -int ==interface   \n");
-        
         printf("\n");
         printf("           A test will now be executed:\n");
         run_test();
