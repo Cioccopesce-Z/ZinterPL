@@ -382,7 +382,7 @@ int is_function_(const char *name_or_declaration){
     return tru; // non è una function
 }
 
-/* variable array matrix function n c , n i c/s/k l*/
+/* variable array matrix function.v n c , n/i/l c/s/k*/
 void is_what(char name_result[]) {
 
     int base_type;
@@ -3894,6 +3894,38 @@ void skip_to_end(){
     }
 }
 
+void exec_during(char text[]){
+
+    char exp[64] = {0};
+    if(sscanf(text,"during(%63[^)])",exp) == 0){
+        printf("ERROR: in during statement %s\n",text);
+        return;
+    }
+    char condition[16] = {0};
+    char step[16] = {0};
+    char buffer[64] = {0};
+
+    char dtype[16] = {0};
+    char type = 'a';
+    strcpy(buffer,exp);
+    is_what(buffer);
+    sscanf(buffer,"%15[^.].%c",dtype,&type);
+
+    if(type != 'n' || type != 'i' || strcmp(dtype,"function") != 0){
+        printf("ERROR: type error in the expression of during in line: %s type not integer\n",text);
+        return;
+    }
+    //il tipo o dtipo sono necessariamente n o i o function
+
+
+    else if(strchr(condition,'!') && sscanf(condition,"%15[^!]!%15s",condition,step) == 2){
+        //fallisce is_what
+
+    }
+
+
+}
+
 void parse(int start_line, int  eventual_end_line){
 
     if(eventual_end_line == -1) eventual_end_line = line_idx_program;
@@ -3919,8 +3951,7 @@ void parse(int start_line, int  eventual_end_line){
         else if( starts_with (program[global_ip].instruction, "othif") ){ skip_to_end();/*else if*/ }
         else if( starts_with (program[global_ip].instruction, "if") ){ exec_if(program[global_ip].instruction); /*inizia if_ */ }
         else if( starts_with (program[global_ip].instruction, "oth") ){ skip_to_end();/*else */ }
-        else if( starts_with (program[global_ip].instruction, "for") ){/*inizia for */ }
-        else if( starts_with (program[global_ip].instruction, "while") ){/*inizia while */ }
+        else if( starts_with (program[global_ip].instruction, "during") ){ exec_during(program[global_ip].instruction); /*inizia for */ }
         else if( strstr(program[global_ip].instruction,"==") ||
                 strstr(program[global_ip].instruction,"^=") ||
                 strstr(program[global_ip].instruction,">>") ||
