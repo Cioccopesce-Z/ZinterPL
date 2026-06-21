@@ -238,7 +238,7 @@ VM vm;
 #define pt_char_place_holder vm.pt_char_place_holder
 
 // ==== PREDEFINED FUNCTION =========
-void parse(int idx_line_temp, int  eventual_end_line);
+void parse(int idx_line_temp, int  eventual_end_line, char direct_line[]);
 int starts_with(const char *str, const char *prefix);
 void* exec_funarg(char *name_plus_args, int is_return);
 
@@ -1860,7 +1860,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         // ---- parse esistente ----
         return_hit   = 0;
         return_value = NULL;
-        parse(st_ip, end_ip);
+        parse(st_ip, end_ip,"void");
 
         // ---- NUOVO: pop scope ----
         pop_scope();
@@ -2043,6 +2043,52 @@ int is_math(char *operand) {
     if(strchr(operand,'/')) return math_slash(operand, fal);
 
     return error_int;  // non è math
+}
+
+// no_condition_or_data  ==/=/^=/</<</>/>>.has  dirdata
+void has_condition(char operation[]){
+
+    if(deb) printf("DEBUG: entrato nell'has_condition\n");
+    char text[128] = {0};
+    strcpy(text,operation);
+
+    char buffer[64] = {0};
+    strcpy(buffer,operation);
+    is_what(buffer);
+
+    if( strstr(text,"==") ||
+                strstr(text,"^=") ||
+                strstr(text,">>") ||
+                strstr(text,"<<") ||
+                (strchr(text,'>') && !strstr(text,">>")) ||
+                (strchr(text,'<') && !strstr(text,"<<")) ){
+
+                    if(strstr(text,">>")) strcpy(operation,">>");
+                    else if(strstr(text,"<<")) strcpy(operation,"<<");
+                    else if(strstr(text,"==")) strcpy(operation,"==");
+                    else if(strstr(text,"^=")) strcpy(operation,"^=");
+                    else if(strchr(text,'>'))  strcpy(operation,">");
+                    else if(strchr(text,'<'))  strcpy(operation,"<");
+                    if(deb) printf("DEBUG: entrato nel ramo con == > < in has condition\n");
+                    strcat(operation,".has");
+    }
+
+    else if(strcmp(buffer,"-1.-1") != 0){
+        strcpy(operation,"dirdata");
+        if(deb) printf("DEBUG: entrato nel ramo funzione/dirdata di has_condition\n");
+    }
+
+    else{
+        if(deb) printf("DEBUG: entrato nel ramo non condition di has_condition\n");
+        strcpy(operation,"no_condition_or_data"); return;
+    }
+
+    if(strstr(operation,"||") && strstr(operation,"et") ){
+        if(deb) printf("DEBUG: entrato nel ramo adding di has_condition\n");
+        strcat(operation,".adding");
+    }
+    if(deb) printf("DEBUG: has_condition return:%s\n",operation);
+    return;
 }
 
 int dimconf(char *rname, char *lname, char *datatype, char type, char *op){
@@ -2252,12 +2298,29 @@ static int split_operands(const char *text, const char *op, char *left, char *ri
     return 1;
 }
 
-int exec_conf(char *text,char *op){
+//op can now be idk to make it found it autonomally
+int exec_conf(char text[],char op_param[]){
 
+    char op[3] = {0};
+
+    if(strcmp(op_param,"idk") == 0){
+        char buffer[64] = {0};
+        strcpy(buffer,text);
+        if(deb) printf("DEBUG EXEC_CONF: received:%s buffer:%s\n",text,buffer);
+        has_condition(buffer);
+        if(strstr(buffer,"has"))
+        sscanf(buffer,"%[^.].",op);
+        else{ printf("ERRORE: exec_conf error no operand automatically found\n"); return fal;}
+    }
+    else{
+       strncpy(op, op_param, sizeof(op)-1);
+    }
+    
+    
     char left_operand[32] = {0};
     char right_operand[32] = {0};
 
-    // NUOVO
+
     if (!split_operands(text, op, left_operand, right_operand)) {
         printf("ERROR: parse error in exec_conf: op='%s' text='%s'\n", op, text);
         return error_int;
@@ -3659,50 +3722,6 @@ int exec_status(char *text) {
     return 0;
 }
 
-void has_condition(char operation[]){
-
-    if(deb) printf("DEBUG: entrato nell'has_condition\n");
-    char text[128] = {0};
-    strcpy(text,operation);
-
-    char buffer[64] = {0};
-    strcpy(buffer,operation);
-    is_what(buffer);
-
-    if( strstr(program[global_ip].instruction,"==") ||
-                strstr(program[global_ip].instruction,"^=") ||
-                strstr(program[global_ip].instruction,">>") ||
-                strstr(program[global_ip].instruction,"<<") ||
-                (strchr(program[global_ip].instruction,'>') && !strstr(program[global_ip].instruction,">>")) ||
-                (strchr(program[global_ip].instruction,'<') && !strstr(program[global_ip].instruction,"<<")) ){
-
-                    if(strstr(text,">>")) strcpy(operation,">>");
-                    else if(strstr(text,"<<")) strcpy(operation,"<<");
-                    else if(strstr(text,"==")) strcpy(operation,"==");
-                    else if(strstr(text,"^=")) strcpy(operation,"^=");
-                    else if(strchr(text,'>'))  strcpy(operation,">");
-                    else if(strchr(text,'<'))  strcpy(operation,"<");
-                    if(deb) printf("DEBUG: entrato nel ramo con == > < in has condition\n");
-                    strcat(operation,".has");
-    }
-
-    else if(strcmp(buffer,"-1.-1") != 0){
-        strcpy(operation,"dirdata");
-        if(deb) printf("DEBUG: entrato nel ramo funzione/dirdata di has_condition\n");
-    }
-
-    else{
-        if(deb) printf("DEBUG: entrato nel ramo non condition di has_condition\n");
-        strcpy(operation,"no_condition_or_data"); return;
-    }
-
-    if(strstr(operation,"||") && strstr(operation,"et") ){
-        if(deb) printf("DEBUG: entrato nel ramo adding di has_condition\n");
-        strcat(operation,".adding");
-    }
-    if(deb) printf("DEBUG: has_condition return:%s\n",operation);
-    return;
-}
 
 int is_int(char varname[]){
 
@@ -3811,7 +3830,7 @@ void exec_if(char text[]){
             if(*value == 1){
                 //condizione vera
                 if(deb) printf("DEBUG: condizione dirdata %s vera\n",condition);
-                parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip);
+                parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip,"void");
                 global_ip = state_stack[i].posizione_skip;
                 return;
 
@@ -3827,7 +3846,7 @@ void exec_if(char text[]){
                 }
                 else{
                     global_ip = nex_st;
-                    parse(nex_st+1,nex_end);
+                    parse(nex_st+1,nex_end,"void");
                     return;
                 }
             }
@@ -3859,7 +3878,7 @@ void exec_if(char text[]){
 
                 //condizione
                 if(deb) printf("DEBUG: condizione conf %s vera\n",condition);
-                parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip);
+                parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip,"void");
                 global_ip = state_stack[i].posizione_skip;
                 return;
                 
@@ -3874,7 +3893,7 @@ void exec_if(char text[]){
                 }
                 else{
                     global_ip = nex_st;
-                    parse(nex_st+1,nex_end);
+                    parse(nex_st+1,nex_end,"void");
                     return;
                 }
             }
@@ -3894,6 +3913,19 @@ void skip_to_end(){
     }
 }
 
+void exec_steps(int st, char steps[]){
+    char buffer[64];
+    strncpy(buffer, steps, sizeof(buffer)-1);
+    buffer[sizeof(buffer)-1] = '\0';
+
+    char *tok = strtok(buffer, "!");
+    while(tok){
+        if(deb) printf("DEBUG STEP: eseguo: %s\n", tok);
+        parse(st, st, tok);
+        tok = strtok(NULL, "!");
+    }
+}
+
 void exec_during(char text[]){
 
     char exp[64] = {0};
@@ -3901,81 +3933,145 @@ void exec_during(char text[]){
         printf("ERROR: in during statement %s\n",text);
         return;
     }
-    char condition[16] = {0};
-    char step[16] = {0};
+
+    char condition[64] = {0};
+    char steps[64] = {0};
     char buffer[64] = {0};
-
     char dtype[16] = {0};
-    char type = 'a';
-    strcpy(buffer,exp);
-    is_what(buffer);
-    sscanf(buffer,"%15[^.].%c",dtype,&type);
+    char type = {0};
+    char op[3] = {0};
 
-    if(type != 'n' || type != 'i' || strcmp(dtype,"function") != 0){
-        printf("ERROR: type error in the expression of during in line: %s type not integer\n",text);
+    if(strchr(exp,'!')){
+        if(sscanf(exp,"%63[^!]!%63s",condition,steps) != 2){
+            printf("ERROR: malformed during condition: %s\n",text);
+            return;
+        }
+        if(deb) printf("DEBUG DURING (while-style): condition:%s steps:%s\n",condition,steps);
+        int st = global_ip, i = 0, end = 0;
+        while(i < return_state){
+            if(state_stack[i].posizione_ritorno == st){
+                end = state_stack[i].posizione_skip;
+                break;
+            }
+            i++;
+        }
+        if(deb) printf("DEBUG DURING (while-style): st:%d end:%d\n",st,end);
+
+        int stop_exec = exec_conf(condition,"idk");
+        while(stop_exec){
+            parse(st+1,end-1,"void");      /*corpo del ciclo*/
+            exec_steps(st, steps);     /*tutti gli step in sequenza*/
+            return_hit = fal;          /*difensivo: uno step non dovrebbe poter fare return*/
+            stop_exec = exec_conf(condition,"idk"); /*ricontrolla DOPO corpo+step*/
+        }
+
+    }
+    else{
+        strcpy(condition,exp);
+        strcpy(buffer,condition);
+        is_what(buffer);
+        sscanf(buffer,"%15[^.].%c",dtype,&type);
+        printf("DEBUG DURING (count-style): exp:%s type:%c dtype:%s\n",exp,type,dtype);
+
+        if(type != 'n' && type != 'i' && strcmp(dtype,"function") != 0){
+            printf("ERROR: type error in the expression of during in line: %s type not integer\n",text);
+            return;
+        }
+        //count style
+
+        int *repetiton = resolve(type,condition);
+
+        int st = global_ip, i = 0, end = 0;
+        while(i < return_state){
+            if(state_stack[i].posizione_ritorno == st){
+                end = state_stack[i].posizione_skip;
+                break;
+            }
+            i++;
+        }
+        printf("DEBUG DURING (count-style): st:%d end:%d\n",st,end);
+        
+        
+    }
+}
+void parse(int start_line, int eventual_end_line, char direct_line[]){
+
+    int exclusive = (strcmp(direct_line,"void") != 0);
+
+    if(exclusive){
+        /* Modalita' esclusiva: si esegue UNA sola istruzione, quella in direct_line.
+           Il dispatch si basa sul contenuto di direct_line stesso: start_line e
+           eventual_end_line vengono ignorati e non si tocca program[] ne' global_ip. */
+
+        if( starts_with(direct_line, "//") ) { /*comment do nothing*/ }
+        else if( starts_with(direct_line, "print_") ){ exec_print(direct_line); }
+        else if( starts_with(direct_line, "status_") ){ exec_status(direct_line); }
+        else if( starts_with(direct_line, "lnprint_") ){ exec_lnprint(direct_line); }
+        else if( starts_with(direct_line, "println_") ){ exec_println(direct_line); }
+        else if( starts_with(direct_line, "lnprintln_") ){ exec_lnprintln(direct_line); }
+        else if( starts_with(direct_line, "#") ){ }
+        else if( starts_with(direct_line, "od_") ){ }
+        else if( starts_with(direct_line, "__") ){ exec_funarg(direct_line, fal); }
+        else if( starts_with(direct_line, "int_") ){ exec_int(direct_line); }
+        else if( starts_with(direct_line, "char_") ){ exec_char(direct_line); }
+        else if( starts_with(direct_line, "othif") ){ }
+        else if( starts_with(direct_line, "if") ){ exec_if(direct_line); }
+        else if( starts_with(direct_line, "oth") ){ }
+        else if( starts_with(direct_line, "during") ){ exec_during(direct_line); }
+        else if( strstr(direct_line,"==") || strstr(direct_line,"^=") ||
+                 strstr(direct_line,">>") || strstr(direct_line,"<<") ||
+                 (strchr(direct_line,'>') && !strstr(direct_line,">>")) ||
+                 (strchr(direct_line,'<') && !strstr(direct_line,"<<")) )
+            { exec_conf(direct_line, "idk"); }
+        else if( starts_with(direct_line, "deven_") ){ exec_funarg(direct_line, tru); }
+        else if( starts_with(direct_line, "set_to_") ){ exec_set_to(direct_line); }
+        else if( strchr(direct_line, '=') ){ exec_equal(direct_line); }
+        else if( strstr(direct_line, "++") ){ exec_plus_plus(direct_line); }
+        else if( strstr(direct_line, "--") ){ exec_min_min(direct_line); }
+        else if( starts_with(direct_line, "scan_") ){ }
+
         return;
     }
-    //il tipo o dtipo sono necessariamente n o i o function
 
-
-    else if(strchr(condition,'!') && sscanf(condition,"%15[^!]!%15s",condition,step) == 2){
-        //fallisce is_what
-
-    }
-
-
-}
-
-void parse(int start_line, int  eventual_end_line){
-
+    /* modalita' normale: itera sul programma, dispatch su program[] */
     if(eventual_end_line == -1) eventual_end_line = line_idx_program;
     global_ip = start_line;
     if(deb) printf("parse chiamato con global_ip: %d e line_idx_program: %d\n",global_ip,eventual_end_line);
-
 
     while( !return_hit && (global_ip <= eventual_end_line) ){
 
         if(deb) printf("\nlinea analizzata: %d %s\n",global_ip, program[global_ip].instruction);
 
-        if( starts_with (program[global_ip].instruction, "//") ) { /*comment do nothing*/ }
-        else if( starts_with (program[global_ip].instruction, "print_") ){ exec_print(program[global_ip].instruction);/*stampa carattere a terminale */ }
-        else if( starts_with (program[global_ip].instruction, "status_") ){ exec_status(program[global_ip].instruction);/*stampa carattere a terminale */ }
-        else if( starts_with (program[global_ip].instruction, "lnprint_") ){ exec_lnprint(program[global_ip].instruction);/*va a capo stampa carattere a terminale */ }
-        else if( starts_with (program[global_ip].instruction, "println_") ){ exec_println(program[global_ip].instruction);/*stampa carattere a terminale e va a capo */ }
-        else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction);/*va a capo stampa carattere a terminale e va a capo */ }
-        else if( starts_with (program[global_ip].instruction, "#") ){ /*funzioni di sistema e interprete tipo import o kill*/ }
-        else if( starts_with (program[global_ip].instruction, "od_") ){ /*dichiara funzione od (open door) ma non ha gran senso*/ }
+        if( starts_with (program[global_ip].instruction, "//") ) { }
+        else if( starts_with (program[global_ip].instruction, "print_") ){ exec_print(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "status_") ){ exec_status(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "lnprint_") ){ exec_lnprint(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "println_") ){ exec_println(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "#") ){ }
+        else if( starts_with (program[global_ip].instruction, "od_") ){ }
         else if( starts_with (program[global_ip].instruction, "__") ){ exec_funarg(program[global_ip].instruction, fal); }
-        else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); /*dichiara var int  */ }
-        else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); /*dichiara var char */ }
-        else if( starts_with (program[global_ip].instruction, "othif") ){ skip_to_end();/*else if*/ }
-        else if( starts_with (program[global_ip].instruction, "if") ){ exec_if(program[global_ip].instruction); /*inizia if_ */ }
-        else if( starts_with (program[global_ip].instruction, "oth") ){ skip_to_end();/*else */ }
-        else if( starts_with (program[global_ip].instruction, "during") ){ exec_during(program[global_ip].instruction); /*inizia for */ }
+        else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "othif") ){ skip_to_end(); }
+        else if( starts_with (program[global_ip].instruction, "if") ){ exec_if(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "oth") ){ skip_to_end(); }
+        else if( starts_with (program[global_ip].instruction, "during") ){ exec_during(program[global_ip].instruction); }
         else if( strstr(program[global_ip].instruction,"==") ||
-                strstr(program[global_ip].instruction,"^=") ||
-                strstr(program[global_ip].instruction,">>") ||
-                strstr(program[global_ip].instruction,"<<") ||
-                (strchr(program[global_ip].instruction,'>') && !strstr(program[global_ip].instruction,">>")) ||
-                (strchr(program[global_ip].instruction,'<') && !strstr(program[global_ip].instruction,"<<")) )
-                {
-                    char detected_op[3] = {0};
-                    const char *ins = program[global_ip].instruction;
-                    if     (strstr(ins,">>")) strcpy(detected_op,">>");
-                    else if(strstr(ins,"<<")) strcpy(detected_op,"<<");
-                    else if(strstr(ins,"==")) strcpy(detected_op,"==");
-                    else if(strstr(ins,"^=")) strcpy(detected_op,"^=");
-                    else if(strchr(ins,'>'))  strcpy(detected_op,">");
-                    else if(strchr(ins,'<'))  strcpy(detected_op,"<");
-                    exec_conf(program[global_ip].instruction, detected_op);
-                }
+            strstr(program[global_ip].instruction,"^=") ||
+            strstr(program[global_ip].instruction,">>") ||
+            strstr(program[global_ip].instruction,"<<") ||
+            (strchr(program[global_ip].instruction,'>') && !strstr(program[global_ip].instruction,">>")) ||
+            (strchr(program[global_ip].instruction,'<') && !strstr(program[global_ip].instruction,"<<")) )
+            { exec_conf(program[global_ip].instruction, "idk"); }
         else if ( starts_with(program[global_ip].instruction, "deven_") && check_deven(eventual_end_line) == tru ) {
-            exec_funarg(program[global_ip].instruction, tru); /* return_hit è ora 1 quindi il while esce al prossimo controllo */}
+            exec_funarg(program[global_ip].instruction, tru); }
         else if( starts_with (program[global_ip].instruction, "set_to_") ){ exec_set_to(program[global_ip].instruction); }
-        else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction);}
-        else if( strstr (program[global_ip].instruction, "++") ){ exec_plus_plus(program[global_ip].instruction);/*operazione ++ di sicuro perche cicli gia parsati*/}
-        else if( strstr (program[global_ip].instruction, "--") ){ exec_min_min(program[global_ip].instruction); /*operazione -- di sicuro perche cicli gia parsati*/}
-        else if( starts_with (program[global_ip].instruction, "scan_") ){/*legge carattere da schermo */ }
+        else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction); }
+        else if( strstr (program[global_ip].instruction, "++") ){ exec_plus_plus(program[global_ip].instruction); }
+        else if( strstr (program[global_ip].instruction, "--") ){ exec_min_min(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "scan_") ){ }
+
         global_ip++;
     }
 
@@ -4377,7 +4473,7 @@ int main(int argc, char *argv[]) {
         }
         if(deb) printf("\n\nendline: %d\n\n",ed);
         if(st == -1){ printf("ERROR: see preview error from system_setup \n"); return 0;}
-        else{ parse(st,ed); }
+        else{ parse(st,ed,"void"); }
 
         // CHIUDI I FILE
         fclose(origin);

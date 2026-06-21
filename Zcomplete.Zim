@@ -67,6 +67,10 @@ od_ get_char(){
     deven_ ch:
 }
 
+od_ retv(&i&value&){
+    deven_ value:
+}
+
 __start(){
 
     //=== TEST LIB FUNCTION ===:
@@ -152,7 +156,9 @@ __start(){
     println_ &s&"=== MATH IN VAR ==="&:
 
     int_ &i&plusplus&:
+    int_ &i&mov&:
 
+    mov = 2:
     plusplus = 3:
     print_ plusplus: println_ &s&" 3 - plusplus"&:
 
@@ -162,11 +168,15 @@ __start(){
     plusplus--:
     print_ plusplus: println_ &s&" 3 - plusplus--"&:
 
-    plusplus++2:
-    print_ plusplus: println_ &s&" 5 - plusplus++2"&:
+    plusplus++mov:
+    print_ plusplus: println_ &s&" 5 - plusplus++mov"&:
 
     plusplus--4:
     print_ plusplus: println_ &s&" 1 - plusplus--4"&:
+
+    plusplus++__retv(5):
+    print_ plusplus: println_ &s&" 6 - plusplus++__retv(5)"&:
+
 
     println_:
 
@@ -348,6 +358,38 @@ __start(){
         println_ &s&"testif non è 1 o 9 o 7"&:
     }
 
+    println_:
+    //====== DURING TEST ============:
+    println_ &s&"====== DURING TEST ============"&:
+    int_ &i&repetition&:
+    int_ &i[5]&tion&:
+    [4]tion = 2:
+    repetition = 3:
+    println_ repetition:
+    println_:
+
+//    during(5){
+//        println_ &s&"ciao 5 volte"&:
+//    }
+//
+//    during(repetition){
+//        println_ &s&"hello 3 volte"&:
+//    }
+//
+//    during([4]tion){
+//        println_ &s&"hi 2 volte"&:
+//    }
+
+    during(repetition < 7 ! repetition++){
+        print_ repetition: println_ &s&" 4 volte"&: 
+    }
+
+    println_:
+
+    repetition = 0:
+    during(repetition < 6 ! repetition++2){
+        print_ repetition: println_ &s&" 3 volte"&:
+    }
 
     println_:
     //====== ERROR VAR TEST ============:
@@ -356,7 +398,11 @@ __start(){
     b = 0: // non dovrebbe essere accessibile:
     print_ b: println_ &s&"non dovrebbe essere accessibile"&:
     
+    println_:
+    //====== MEMORY READ AND RESET TEST ============:
+    println_ &s&"====== MEMORY READ AND RESET TEST ============"&:
     println_ &s&"start finito"&:
+    status_ cls y:
     status_:
     println_:
 }
