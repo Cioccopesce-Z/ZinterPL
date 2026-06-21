@@ -509,6 +509,25 @@ or a count of failed tests if something is broken.
 
 ---
 
+## Repository Structure
+
+```
+ZinterPL/
+├── Zinterpreter.c       # The interpreter — single source file
+├── code_test/           # Test programs (.Zim files)
+└── stable_build/        # Archived stable interpreter builds
+```
+
+### `code_test/`
+
+Contains `.Zim` test programs that cover all language features. These tests are version-agnostic: they are written against the ZinterPL language specification and are valid for every interpreter version, past and future.
+
+### `stable_build/`
+
+Contains archived builds of older interpreter versions. All newer versions of ZinterPL are **fully backwards compatible** — any `.Zim` file that ran correctly on an older build will run identically on a newer one.
+
+---
+
 ## Project Status
 
 | Feature | Status |
