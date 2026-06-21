@@ -60,6 +60,8 @@ __start(){
 }
 ```
 
+> **Note:** the order of declarations in a `.Zim` file does not matter. The header block `#{...}`, `__start()`, and function definitions (`od_`) can appear in any order. The interpreter resolves all definitions before execution, so there is no requirement to declare functions before they are called, or to place the header at the top.
+
 ---
 
 ### Header Block `#{...}`
