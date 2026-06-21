@@ -12,7 +12,7 @@ Source files use the `.Zim` extension. Library files use `.Zlib`.
 - Variables, 1D arrays, and 2D matrices for all types
 - Functions with arguments and return values
 - `if / oth if / oth` branching
-- `for` and `while` loops
+- `during` unified loop construct (count-style and condition-style)
 - Input via `scan_`
 - Built-in `status_` diagnostic command
 - External library support via `.Zlib` files
@@ -20,7 +20,7 @@ Source files use the `.Zim` extension. Library files use `.Zlib`.
 - Debug mode togglable at runtime
 - Designed to target ESP32 (minimal memory, no dynamic allocation beyond data structures)
 
-> ⚠️ **Work in progress** — loops (`for_`, `while_`) are partially implemented. Core data structures, functions, arithmetic, and branching are stable.
+> ⚠️ **Work in progress** — the `during` loop construct's condition-style form is functional; the count-style form parses correctly but does not yet execute the loop body. Core data structures, functions, arithmetic, and branching are stable.
 
 ---
 
@@ -161,6 +161,29 @@ v2 = v0 / v1:
 
 ---
 
+### Comparison operators
+
+The standard comparison operators (`==`, `<`, `>`) work on scalar variables and on indexed array/matrix elements.
+
+When `==` is applied to an **unindexed array or matrix name**, it compares their **declared size**, not the number of occupied slots:
+
+```
+int_  &i[5]&arrA&:
+int_  &i[5]&arrB&:
+int_  &i[3]&arrC&:
+
+if(arrA == arrB){   // true  — both declared with size 5
+    println_ &s&"same size"&:
+}
+if(arrA == arrC){   // false — 5 != 3
+    println_ &s&"same size"&:
+}
+```
+
+This also applies to matrices, where the declared total size (rows × cols) is compared.
+
+---
+
 ### Increment / Decrement
 
 ```
@@ -173,13 +196,16 @@ varname--N:       // -N
 [idx]arr--N:
 ```
 
-**Special behavior on char arrays:** when you apply `++` or `++N` to an element of a char array, the character is **copied** into the next cell(s), not incremented numerically. For example:
+**Special behavior on char arrays:** `++` and `++N` on a char array element do **not** perform numeric arithmetic. Instead:
+
+- `[idx]arr++` — copies the character at `[idx]` into `[idx+1]`
+- `[idx]arr++N` — copies the character at `[idx]` into `[idx+N]` only (not into every cell in between)
 
 ```
-char_ &s[5]&vec&:
-[5]vec = 'F':
-[5]vec++:       // copies 'F' into [6]vec
-[2]vec++3:      // copies the char at [2] into [3], [4], [5]
+char_ &s[10]&arr&:
+[2]arr = 'F':
+[2]arr++:     // copies 'F' into [3] only
+[2]arr++3:    // copies 'F' into [5] only  ([2] + 3 = [5])
 ```
 
 On integer variables and arrays, `++` / `--` behave as standard numeric increment/decrement.
@@ -324,45 +350,72 @@ C{
 }
 ```
 
-To call it, use `__C(...)` passing variables, values, or arrays as arguments. The `return` at the end of the C block becomes the return value of the call:
+To call it, use `__C(...)` passing variables, values, or arrays as arguments:
 
 ```
 int_ &i&result&:
 result = __C(myvar, myarr, 10):
 ```
 
-Arguments can be ZinterPL variables, array references, or literal values. The return value of `return` in the C block is used as the result of `__C(...)` in the ZinterPL code.
+The return value of `return` in the C block is used as the result of `__C(...)` in the ZinterPL code.
 
 ---
 
 ### Loops
 
-**`while_`** — same syntax as `if`:
+ZinterPL uses a single unified loop construct: **`during`**, replacing the earlier separate `for_` / `while_` keywords.
+
+There are two forms.
+
+#### Count-style
+
+Repeats a fixed number of times. The argument can be a numeric literal, an integer variable, or an array element:
 
 ```
-while_( condition ){
-    // ...
+during(5){
+    println_ &s&"ciao"&:
+}
+
+during(repetition){
+    println_ &s&"hello"&:
+}
+
+during([4]tion){
+    println_ &s&"hi"&:
 }
 ```
 
-**`for_`** — condition uses the same syntax as `if`, step uses the same form as the condition:
+> ⚠️ The count-style form is still under development — it currently parses and resolves its argument but does not yet execute the loop body.
+
+#### Condition-style
+
+Behaves like a `while` loop. The first element is the condition; after the condition, any number of additional statements can be added, each separated by `!`. These extra statements are executed as steps at the end of every iteration (up to ~4 are supported):
 
 ```
-for_( condition, step ){
-    // ...
+during(condition ! step1):
+during(condition ! step1 ! step2):
+during(condition ! step1 ! step2 ! step3):
+```
+
+The condition uses the same syntax as `if` (`<`, `>`, `==`, etc.). Steps are typically increments or decrements but can be any valid ZinterPL statement.
+
+```
+during(repetition < 7 ! repetition++){
+    println_ &s&"bye"&:
+}
+
+during(repetition < 6 ! repetition++2){
+    println_ &s&"tre"&:
+}
+
+during(i < 10 ! i++ ! j-- ! k++2){
+    println_ i:
 }
 ```
 
-Example:
-```
-for_( < &i&counter& &i&limit&, + &i&counter& &n&1& ){
-    println_ &i&counter&:
-}
-```
+The condition is re-checked after the body and all steps have run; the loop exits as soon as it evaluates to false.
 
-The condition is evaluated like an `if` expression (`<`, `>`, `==`, etc.). The step is an expression of the same form, applied at the end of each iteration.
-
-> ⚠️ Loop support is still under active development.
+> ✅ The condition-style form is functional.
 
 ---
 
@@ -471,7 +524,8 @@ or a count of failed tests if something is broken.
 | Library support (.Zlib) | Stable |
 | Build test suite | Stable |
 | `scan_` (input) | Partial |
-| `for_` / `while_` loops | In progress |
+| `during` loops (condition-style) | Stable |
+| `during` loops (count-style) | In progress |
 | ESP32 port | Planned |
 
 ---
@@ -493,8 +547,6 @@ The base VM footprint is **~284 KB**, which covers the full fixed structure: var
 This makes ZinterPL suitable for constrained environments like the **ESP32**, where the entire VM lives inside a single `struct VM` and can be statically allocated.
 
 ---
-
-
 
 - **Minimal memory usage** — fixed-size data structures, no heap sprawl; suitable for microcontrollers
 - **Self-contained** — single C source file, no external dependencies
