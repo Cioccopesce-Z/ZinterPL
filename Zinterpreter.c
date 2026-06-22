@@ -4145,7 +4145,7 @@ void exec_during(char text[]){
         strcpy(buffer,condition);
         is_what(buffer);
         sscanf(buffer,"%15[^.].%c",dtype,&type);
-        printf("DEBUG DURING (count-style): exp:%s type:%c dtype:%s\n",exp,type,dtype);
+        if(deb) printf("DEBUG DURING (count-style): exp:%s type:%c dtype:%s\n",exp,type,dtype);
 
         if(type != 'n' && type != 'i' && strcmp(dtype,"function") != 0){
             printf("ERROR: type error in the expression of during in line: %s type not integer\n",text);
@@ -4163,19 +4163,149 @@ void exec_during(char text[]){
             }
             i++;
         }
-        printf("DEBUG DURING (count-style): st:%d end:%d\n",st,end);
+        if(deb) printf("DEBUG DURING (count-style): st:%d end:%d number_of_execution:%d\n",st,end,*repetiton);
+        i = 0;
+        while(i < *repetiton){
+            parse(st+1,end-1,"void");      /*corpo del ciclo*/
+            return_hit = fal;          /*difensivo: uno step non dovrebbe poter fare return*/
+            i++;
+        }
         
         
     }
 }
+
+void exec_change_var_name(char *text){
+
+    char new_name[16] = {0};
+    char data[28] = {0};
+
+    sscanf(text,"%15[^-]-->%27s",new_name,data);
+    int i = 0;
+
+    char buffer[28] = {0};
+    strcpy(buffer,data);
+    is_what(buffer);
+    char dtype[9];
+    char type = {0};
+    sscanf(buffer,"%8[^.].%c",dtype,&type);
+
+    if(strcmp(dtype,"function") == 0 || strstr(data,"od_")){
+
+        char old_name[28] = {0};
+        if(!strstr(data,"od_")){ strcpy(old_name,"od_"); strcat(old_name,data); }  //od_vecchionome
+        if(!strstr(buffer,"od_")){strcpy(buffer,"od_"); strcat(buffer,new_name);}  //od_nuovonome
+
+        while(i < return_state){
+            if(deb) printf("DEBUG -->: nome_function:%s to search:%s\n",state_stack[i].nome_function,old_name);
+            if( strcmp(state_stack[i].nome_function, old_name) == 0){
+                strcpy(state_stack[i].nome_function, buffer);
+                break;
+            }
+            i++;
+        }
+    }
+
+    if(strcmp(dtype,"variable") == 0){
+        if(type == 'i'){
+            while(i < variable_count){
+                if(strcmp(variable[i].name,data) == 0){
+                    strcpy(variable[i].name,new_name);
+                    break;
+                }
+            } 
+        }
+        else if(type == 'c'){
+            while(i < char_variable_count){
+                if(strcmp(char_variable[i].name,data) == 0){
+                    strcpy(char_variable[i].name,new_name);
+                    break;
+                }
+            }
+        }
+        else{
+            while(i < fl_variable_count){
+                if(strcmp(fl_variable[i].name,data) == 0){
+                    strcpy(fl_variable[i].name,new_name);
+                    break;
+                }
+            }
+        }
+
+    }
+
+    if(strcmp(dtype,"array") == 0){
+
+        if(strchr(data,'[')){
+            printf("WARNING: è richiesto solo il nome dell'array\n");
+            return;
+        }
+
+        if(type == 'i'){
+            while(i < array_count){
+                if(strcmp(array[i].name,data) == 0){
+                    strcpy(array[i].name,new_name);
+                    break;
+                }
+            } 
+        }
+        else if(type == 's'){
+            while(i < char_array_count){
+                if(strcmp(char_array[i].name,data) == 0){
+                    strcpy(char_array[i].name,new_name);
+                    break;
+                }
+            }
+        }
+        else{
+            while(i < fl_array_count){
+                if(strcmp(fl_array[i].name,data) == 0){
+                    strcpy(fl_array[i].name,new_name);
+                    break;
+                }
+            }
+        }
+    }
+
+    if(strcmp(dtype,"matrix") == 0){
+        
+        if(strstr(data,"][")){
+            printf("WARNING: è richiesto solo il nome dell'array\n");
+            return;
+        }
+
+        if(type == 'i'){
+            while(i < matrix_count){
+                if(strcmp(matrix[i].name,data) == 0){
+                    strcpy(matrix[i].name,new_name);
+                    break;
+                }
+            } 
+        }
+        else if(type == 's'){
+            while(i < char_matrix_count){
+                if(strcmp(char_matrix[i].name,data) == 0){
+                    strcpy(char_matrix[i].name,new_name);
+                    break;
+                }
+            }
+        }
+        else{
+            while(i < fl_matrix_count){
+                if(strcmp(fl_matrix[i].name,data) == 0){
+                    strcpy(fl_matrix[i].name,new_name);
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void parse(int start_line, int eventual_end_line, char direct_line[]){
 
     int exclusive = (strcmp(direct_line,"void") != 0);
 
     if(exclusive){
-        /* Modalita' esclusiva: si esegue UNA sola istruzione, quella in direct_line.
-           Il dispatch si basa sul contenuto di direct_line stesso: start_line e
-           eventual_end_line vengono ignorati e non si tocca program[] ne' global_ip. */
 
         if( starts_with(direct_line, "//") ) { /*comment do nothing*/ }
         else if( starts_with(direct_line, "print_") ){ exec_print(direct_line); }
@@ -4184,6 +4314,7 @@ void parse(int start_line, int eventual_end_line, char direct_line[]){
         else if( starts_with(direct_line, "println_") ){ exec_println(direct_line); }
         else if( starts_with(direct_line, "lnprintln_") ){ exec_lnprintln(direct_line); }
         else if( starts_with(direct_line, "#") ){ }
+        else if( strstr (direct_line, "->") ){ exec_change_var_name(direct_line); }
         else if( starts_with(direct_line, "od_") ){ }
         else if( starts_with(direct_line, "__") ){ exec_funarg(direct_line, fal); }
         else if( starts_with(direct_line, "int_") ){ exec_int(direct_line); }
@@ -4223,6 +4354,7 @@ void parse(int start_line, int eventual_end_line, char direct_line[]){
         else if( starts_with (program[global_ip].instruction, "println_") ){ exec_println(program[global_ip].instruction); }
         else if( starts_with (program[global_ip].instruction, "lnprintln_") ){ exec_lnprintln(program[global_ip].instruction); }
         else if( starts_with (program[global_ip].instruction, "#") ){ }
+        else if( strstr (program[global_ip].instruction, "->") ){ exec_change_var_name(program[global_ip].instruction); }
         else if( starts_with (program[global_ip].instruction, "od_") ){ }
         else if( starts_with (program[global_ip].instruction, "__") ){ exec_funarg(program[global_ip].instruction, fal); }
         else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); }
@@ -4286,6 +4418,7 @@ void build_state() {
             else if( starts_with(program[i].instruction,"while") ) strcpy(state_stack[return_state].nome_function, "while");
             else if( starts_with(program[i].instruction,"oth") ) strcpy(state_stack[return_state].nome_function, "oth");
             else if( starts_with(program[i].instruction,"__start") ) strcpy(state_stack[return_state].nome_function, "__start");
+            else if( starts_with(program[i].instruction,"during") ) strcpy(state_stack[return_state].nome_function, "during");
             else if( starts_with(program[i].instruction,"od_") ){
                 char bin_name[16] = {0};
                 char param_str[64] = {0};
