@@ -397,7 +397,7 @@ __start(){
 //        println_ &s&"hi 2 volte"&:
 //    }
 
-    during(repetition < 7 ! repetition++){
+    during(repetition < 7 ! repetition++ ! println_ &s&"any legal function can be executed here"&){
         print_ repetition: println_ &s&" 4 volte"&: 
     }
 
@@ -422,31 +422,4 @@ __start(){
     status_ cls y:
     status_:
     println_:
-}
-od_ printciao(){
-    println_ &s&"ciao"&:
-    return_ NULL:
-}
-
-od_ printhello(){
-    println_ &s&"hello"&:
-    return_:
-}
-od_ printciao(){
-    println_ &s&"ciao"&:
-    return_ NULL:
-}
-
-od_ printhello(){
-    println_ &s&"hello"&:
-    return_:
-}
-od_ printciao(){
-    println_ &s&"ciao"&:
-    return_ NULL:
-}
-
-od_ printhello(){
-    println_ &s&"hello"&:
-    return_:
 }
