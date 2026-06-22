@@ -3,11 +3,17 @@
     exec_:
 }
 
-od_ retretfunc(){
+od_ retretunc(&i&pass&){
+    deven_ __valueplus(pass):
+}
 
-    int_ &i&inner&:
+od_ retfunc(){
     deven_ __differenza():
+}
 
+od_ valueplus(&i&inner&){
+    print_ inner: println_ &s&" 5 - inner form valueplus"&:
+    deven_ __retv(inner)++:
 }
 
 od_ somma(){
@@ -103,6 +109,17 @@ __start(){
     print_ __testargs(10!20): println_ &s&" 30 - testargs(10!20)"&:
 
     println_:
+    //=== CONCATENED FUNCTION ===  NON VA!!!!!!!!!:
+    println_ &s&"=== CONCATENED FUNCTION ==="&:
+    print_ __retretunc(5): println_ &s&" 6 - retretunc(5)-->valueplus(5)-->6"&:
+
+    println_:
+    //=== RETURN FUNCTION ===  NON VA!!!!!!:
+    println_ &s&"=== RETURN FUNCTION ==="&:
+    print_ __retv(5): println_ &s&" 5 - retv(5)"&:
+
+
+    println_:
     //=== FUNCTION IN VAR ===:
     println_ &s&"=== FUNCTION IN VAR ==="&:
     v0 = __somma():
@@ -135,8 +152,8 @@ __start(){
     println_:
     //=== FUNCTION IN FUNCTION ===:
     println_ &s&"=== FUNCTION IN FUNCTION ==="&:
-    print_ __retretfunc():
-    println_ &s&" 6 - differenza() in retretfunc()"&:
+    print_ __retfunc():
+    println_ &s&" 6 - differenza() in retfunc()"&:
 
 
     println_:
@@ -405,4 +422,31 @@ __start(){
     status_ cls y:
     status_:
     println_:
+}
+od_ printciao(){
+    println_ &s&"ciao"&:
+    return_ NULL:
+}
+
+od_ printhello(){
+    println_ &s&"hello"&:
+    return_:
+}
+od_ printciao(){
+    println_ &s&"ciao"&:
+    return_ NULL:
+}
+
+od_ printhello(){
+    println_ &s&"hello"&:
+    return_:
+}
+od_ printciao(){
+    println_ &s&"ciao"&:
+    return_ NULL:
+}
+
+od_ printhello(){
+    println_ &s&"hello"&:
+    return_:
 }

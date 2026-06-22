@@ -241,6 +241,14 @@ VM vm;
 void parse(int idx_line_temp, int  eventual_end_line, char direct_line[]);
 int starts_with(const char *str, const char *prefix);
 void* exec_funarg(char *name_plus_args, int is_return);
+int is_math(char *operand);
+void exec_steps(int st, char steps[]);
+char type_of_var(char text[]);
+void *exec_plus_plus(char *text);
+void *exec_min_min(char *text);
+void *exec_times_times(char *text);
+void *exec_slash_slash(char *text);
+
 
 void push_scope() {
     scope_stack[scope_depth].base_variable_idx      = variable_count;
@@ -1707,10 +1715,12 @@ void* exec_funarg(char *name_plus_args, int is_return) {
 
     // ======= IF RETURN ==========
     if (is_return) {
+
+
         if(deb) printf("DEBUG: funarg called with is_return line: %s\n", name_plus_args);
 
         char buffer[128] = {0};
-        sscanf(name_plus_args, "deven_%127s", buffer);   // FIX: source corretto
+        sscanf(name_plus_args, "deven_%127s", buffer);
 
         if (strlen(buffer) == 0 || strcmp(buffer, "NULL") == 0) {
             if(deb) printf("WARNING: no item to deven\n");
@@ -1718,11 +1728,41 @@ void* exec_funarg(char *name_plus_args, int is_return) {
             return_hit   = 1;
             return NULL;
         }
-        else if (strstr(buffer, "--")) {
-            if(deb) printf("WARNING: more than one item to deven\n");
-            return_value = pt_place_holder;
+        else if(strchr(buffer,'(') && !strstr(buffer,"__")){
+            char line_to_parse[96] = {0};
+            char actual_return[16] = {0};
+            sscanf(buffer,"(%95[^)])%15s",line_to_parse,actual_return);
+            exec_steps(0,line_to_parse);
+            char type = type_of_var(actual_return);
+            return resolve(type,actual_return);
+        }
+        else if(strstr(buffer, "++") && !strchr(buffer, '(')) {
+            void *ret = exec_plus_plus(buffer);
+            return_type  = 'i';
+            return_value = ret;
             return_hit   = 1;
-            return pt_place_holder;
+            return ret;
+        }
+        else if(strstr(buffer, "--") && !strchr(buffer, '(')) {
+            void *ret = exec_min_min(buffer);
+            return_type  = 'i';
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
+        }
+        else if(strstr(buffer, "**") && !strchr(buffer, '(')) {
+            void *ret = exec_times_times(buffer);
+            return_type  = 'i';
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
+        }
+        else if(strstr(buffer, "~~") && !strchr(buffer, '(')) {
+            void *ret = exec_slash_slash(buffer);
+            return_type  = 'i';
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
         }
         else {
             void *ret = NULL;
@@ -1882,7 +1922,7 @@ int math_plus(char *operation, int called_by_parse) {
     if(deb) printf("DEBUG: math_plus chiamata con %s\n", operation);
     if(called_by_parse) { printf("ERROR: arithmetic needs = to save result\n"); return error_int; }
 
-    if(sscanf(operation, "%23[^+]+%23s", lop, rop) != 2) {
+    if(sscanf(operation, "%23[^+]+%23s", lop, rop) != 2) {   
         printf("ERROR: failed parse in math_plus %s\n", operation); return error_int;
     }
 
@@ -1960,7 +2000,7 @@ int math_times(char *operation, int called_by_parse) {
     if(deb) printf("DEBUG: math_times chiamata con %s\n", operation);
     if(called_by_parse) { printf("ERROR: arithmetic needs = to save result\n"); return error_int; }
 
-    if(sscanf(operation, "%23[^*]*%23s", lop, rop) != 2) {
+    if(sscanf(operation, "%23[^*]*%23s", lop, rop) != 2) {   
         printf("ERROR: failed parse in math_times %s\n", operation); return error_int;
     }
 
@@ -2034,6 +2074,7 @@ int math_slash(char *operation, int called_by_parse) {
     return lopv/ropv;
 }
 
+//se trova + - * / ritorna l'operazione eseguita else error_int
 int is_math(char *operand) {
     if(deb) printf("DEBUG: is_math chiamata con %s\n", operand);
 
@@ -2308,8 +2349,7 @@ int exec_conf(char text[],char op_param[]){
         strcpy(buffer,text);
         if(deb) printf("DEBUG EXEC_CONF: received:%s buffer:%s\n",text,buffer);
         has_condition(buffer);
-        if(strstr(buffer,"has"))
-        sscanf(buffer,"%[^.].",op);
+        if(strstr(buffer,"has")) sscanf(buffer,"%[^.].",op);
         else{ printf("ERRORE: exec_conf error no operand automatically found\n"); return fal;}
     }
     else{
@@ -3625,6 +3665,140 @@ void *exec_min_min(char *text) {
     }
 }
 
+void *exec_times_times(char *text) {
+
+    char lop[16] = {0};
+    char rop[16] = {0};
+    int has_rop = (sscanf(text, "%15[^*]**%15s", lop, rop) == 2);
+    if (!has_rop)
+        sscanf(text, "%15[^*]**", lop);
+
+    // tipo di lop
+    char buffer[16], junk[16]; char type = 0;
+    strcpy(buffer, lop);
+    is_what(buffer);
+    sscanf(buffer, "%15[^.].%c", junk, &type);
+    if(deb) printf("DEBUG: timestimes lop=%s type=%c has_rop=%d rop=%s\n", lop, type, has_rop, rop);
+
+    // valore di rop (default 1)
+    int ropv = 1;
+    if (has_rop) {
+        char rbuffer[16]; char rtype = 0;
+        strcpy(rbuffer, rop);
+        is_what(rbuffer);
+        sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
+        int *rptr = (int *)resolve(rtype, rop);
+        if (!rptr) { printf("ERROR: cannot resolve rop '%s' in **\n", rop); return pt_place_holder; }
+        ropv = *rptr;
+    }
+
+    // INT: sottrazione diretta
+    if (type == 'i') {
+        int *dest = (int *)resolve(type, lop);
+        if (!dest) { printf("ERROR: resolve failed for '%s' in **\n", lop); return pt_place_holder; }
+        *dest *= ropv;
+        return dest;
+    }
+
+    // CHAR ARRAY: copia arr[src] in arr[src-ropv]
+    else if (type == 's') {
+        char idx_str[8] = {0}, arr_name[16] = {0};
+        if (sscanf(lop, "[%7[^]]]%15s", idx_str, arr_name) != 2) {
+            printf("ERROR: cannot parse array index from '%s' in **\n", lop);
+            return pt_char_place_holder;
+        }
+        int src_idx = resolve_index(idx_str);
+        int dst_idx = src_idx * ropv;
+
+        if (dst_idx < 0) {
+            printf("ERROR: ** underflow su char array '%s' [%d - %d]\n", arr_name, src_idx, ropv);
+            return pt_char_place_holder;
+        }
+
+        char buf_src[32], buf_dst[32];
+        snprintf(buf_src, sizeof(buf_src), "&s[%d]&%s&", src_idx, arr_name);
+        snprintf(buf_dst, sizeof(buf_dst), "&s[%d]&%s&", dst_idx, arr_name);
+
+        char *src = (char *)get_index(buf_src);
+        char *dst = (char *)get_index(buf_dst);
+        if (!src || !dst) { printf("ERROR: out of bounds in ** char array '%s' [%d]->[%d]\n", arr_name, src_idx, dst_idx); return pt_char_place_holder; }
+        *dst = *src;
+        return src;
+    }
+
+    else {
+        printf("ERROR: type mismatch on ** operation, line: %s\n", text);
+        return pt_char_place_holder;
+    }
+}
+
+void *exec_slash_slash(char *text) {
+
+    char lop[16] = {0};
+    char rop[16] = {0};
+    int has_rop = (sscanf(text, "%15[^~]~~%15s", lop, rop) == 2);
+    if (!has_rop)
+        sscanf(text, "%15[^~]~~", lop);
+
+    // tipo di lop
+    char buffer[16], junk[16]; char type = 0;
+    strcpy(buffer, lop);
+    is_what(buffer);
+    sscanf(buffer, "%15[^.].%c", junk, &type);
+    if(deb) printf("DEBUG: slash_slash lop=%s type=%c has_rop=%d rop=%s\n", lop, type, has_rop, rop);
+
+    // valore di rop (default 1)
+    int ropv = 1;
+    if (has_rop) {
+        char rbuffer[16]; char rtype = 0;
+        strcpy(rbuffer, rop);
+        is_what(rbuffer);
+        sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
+        int *rptr = (int *)resolve(rtype, rop);
+        if (!rptr) { printf("ERROR: cannot resolve rop '%s' in ~~\n", rop); return pt_place_holder; }
+        ropv = *rptr;
+    }
+
+    // INT: sottrazione diretta
+    if (type == 'i') {
+        int *dest = (int *)resolve(type, lop);
+        if (!dest) { printf("ERROR: resolve failed for '%s' in ~~\n", lop); return pt_place_holder; }
+        *dest /= ropv;
+        return dest;
+    }
+
+    // CHAR ARRAY: copia arr[src] in arr[src-ropv]
+    else if (type == 's') {
+        char idx_str[8] = {0}, arr_name[16] = {0};
+        if (sscanf(lop, "[%7[^]]]%15s", idx_str, arr_name) != 2) {
+            printf("ERROR: cannot parse array index from '%s' in ~~\n", lop);
+            return pt_char_place_holder;
+        }
+        int src_idx = resolve_index(idx_str);
+        int dst_idx = src_idx / ropv;
+
+        if (dst_idx < 0) {
+            printf("ERROR: ~~ underflow su char array '%s' [%d - %d]\n", arr_name, src_idx, ropv);
+            return pt_char_place_holder;
+        }
+
+        char buf_src[32], buf_dst[32];
+        snprintf(buf_src, sizeof(buf_src), "&s[%d]&%s&", src_idx, arr_name);
+        snprintf(buf_dst, sizeof(buf_dst), "&s[%d]&%s&", dst_idx, arr_name);
+
+        char *src = (char *)get_index(buf_src);
+        char *dst = (char *)get_index(buf_dst);
+        if (!src || !dst) { printf("ERROR: out of bounds in ~~ char array '%s' [%d]->[%d]\n", arr_name, src_idx, dst_idx); return pt_char_place_holder; }
+        *dst = *src;
+        return src;
+    }
+
+    else {
+        printf("ERROR: type mismatch on ~~ operation, line: %s\n", text);
+        return pt_char_place_holder;
+    }
+}
+
 size_t get_memory_usage() {
 
     size_t total = 0;
@@ -3731,7 +3905,7 @@ int is_int(char varname[]){
     else return fal;
 
 }
-
+//return data type by name
 char type_of_var(char text[]){
     char buffer[16];
     strcpy(buffer,text);
