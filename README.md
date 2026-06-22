@@ -10,17 +10,19 @@ Source files use the `.Zim` extension. Library files use `.Zlib`.
 
 - Statically typed: `int`, `char`, `float`
 - Variables, 1D arrays, and 2D matrices for all types
-- Functions with arguments and return values
-- `if / oth if / oth` branching
-- `during` unified loop construct (count-style and condition-style)
+- Functions with arguments and return values — **typeless**: a function can return any scalar value (`int`, `char`, `float`)
+- `if / oth if / oth` branching — any number of `oth if` chains
+- `during` unified loop construct (count-style and condition-style) — both fully functional
+- Extended `deven_` return expressions: arithmetic, power, square root, and nested function calls
+- Function argument pass-by-reference: modifications made inside a called function are reflected back in the caller
+- Function aliasing: rename any function with `newname --> oldname`
+- `++N` / `--N` operations accept variables or function calls as `N`
 - Input via `scan_`
 - Built-in `status_` diagnostic command
 - External library support via `.Zlib` files
 - Built-in build test suite (runs automatically with no arguments)
 - Debug mode togglable at runtime
 - Designed to target ESP32 (minimal memory, no dynamic allocation beyond data structures)
-
-> ⚠️ **Work in progress** — the `during` loop construct's condition-style form is functional; the count-style form parses correctly but does not yet execute the loop body. Core data structures, functions, arithmetic, and branching are stable.
 
 ---
 
@@ -198,6 +200,16 @@ varname--N:       // -N
 [idx]arr--N:
 ```
 
+**`N` can be a literal, a variable, or a function call:**
+
+```
+int_ &i&step&:
+step = 3:
+
+plusplus++step:            // increment by the value of a variable
+plusplus++__retv(5):       // increment by the return value of a function
+```
+
 **Special behavior on char arrays:** `++` and `++N` on a char array element do **not** perform numeric arithmetic. Instead:
 
 - `[idx]arr++` — copies the character at `[idx]` into `[idx+1]`
@@ -229,15 +241,17 @@ od_ funcname(){
 - `deven_` is the return keyword (replaces `return`).
 - `deven_:` with no argument returns void.
 
+Functions are **typeless**: there is no return-type declaration. A function can return an `int`, a `char`, or a `float` — the interpreter handles the type at runtime. The only restriction is that **arrays and matrices cannot be returned** (see [Limitations](#limitations)).
+
 #### Function with arguments
 
 Arguments separated by `!`:
 
 ```
 od_ testargs(&i&a&!&i&b&){
-    int_ &i&result&:
-    result = a + b:
-    deven_ result:
+    int_&i&risultato&:
+    risultato = a + b:
+    deven_ risultato:
 }
 ```
 
@@ -266,6 +280,101 @@ Store return value in array or matrix:
 
 ---
 
+### Extended `deven_` expressions
+
+`deven_` can return more than just a plain value. The following inline operations are supported directly on the return expression:
+
+| Syntax | Effect |
+|--------|--------|
+| `deven_ val++:` | returns `val + 1` |
+| `deven_ val--:` | returns `val - 1` |
+| `deven_ val**:` | returns `val²` (squared) |
+| `deven_ val~~:` | returns `√val` (square root) |
+| `deven_ __func():` | returns the result of calling `func` |
+| `deven_ __func(arg):` | returns the result of calling `func` with an argument |
+
+Examples:
+
+```
+od_ valueplus(&i&inner&){
+    deven_ inner++:       // returns inner + 1
+}
+
+od_ retfunc(){
+    deven_ __differenza():  // delegates return to another function
+}
+
+od_ retretunc(&i&pass&){
+    deven_ __valueplus(pass):  // chains two function calls in one return
+}
+```
+
+This makes it easy to build concise functional pipelines:
+
+```
+print_ __retretunc(5):    // → valueplus(5) → 6
+print_ __retfunc():       // → differenza() → 6
+```
+
+---
+
+### Pass-by-reference for function arguments
+
+When a variable is passed to a function as an argument, it is passed **by reference**: if the called function modifies it, the change is visible in the caller after the call returns.
+
+This also propagates across call chains. A variable passed into function A, then forwarded to function B, will reflect changes made in B when A returns.
+
+**Example from `Zcomple.Zim`:**
+
+```
+od_ addone(&i&value&){
+    value++:
+    __addtwo(value):
+    deven_ value:
+}
+
+od_ addtwo(&i&value&){
+    value++2:
+    deven_:
+}
+```
+
+Calling `__addone(5)`:
+
+1. `addone` receives `value = 5`
+2. `value++` → `value = 6`
+3. `__addtwo(value)` is called — `addtwo` receives the same `value` and increments it by 2 → `value = 8`
+4. Back in `addone`, `value` is now `8` (the change from `addtwo` propagated back)
+5. `deven_ value` returns `8`
+
+```
+print_ __addone(5):   // prints 8
+```
+
+> ⚠️ **Limitation:** arrays and matrices cannot currently be passed as function arguments. This is the next planned feature.
+
+---
+
+### Function aliasing
+
+A function can be given a new name using the `-->` operator. The new name becomes an alias for the original function:
+
+```
+newname --> oldname:
+```
+
+This works for plain function names as well as for array-indexed and matrix-indexed forms, depending on the type of entity being aliased:
+
+```
+myalias   --> originalfunc:     // function alias
+[i]alias  --> [i]originalfunc:  // array-form alias
+[r][c]alias --> [r][c]original: // matrix-form alias
+```
+
+> **Coming soon:** aliasing for plain scalar variables.
+
+---
+
 ### Output
 
 ```
@@ -274,7 +383,11 @@ println_ value:         // print with newline
 println_:               // print empty newline
 ```
 
-`value` can be a variable name, an `&s&string&` literal, an array element, or a matrix element.
+`value` can be a variable name, an `&s&string&` literal, an array element, a matrix element, or a direct function call:
+
+```
+print_ __testargs(10!20):    // prints 30
+```
 
 ---
 
@@ -307,6 +420,8 @@ Conditions support `==`, `<`, `>`, `s==` (string comparison).
 
 You can chain **any number of `oth if`** blocks before the final `oth`.
 
+**Standalone `oth` or `oth if` without a preceding `if`** are silently ignored — they do not crash or produce errors, they simply do not execute.
+
 ---
 
 ### Spaces and Whitespace
@@ -322,6 +437,25 @@ int_   &i& x &:   // all equivalent
 Inside a string literal, spaces are preserved:
 ```
 println_ &s&"hello world"&:   // prints: hello world
+```
+
+---
+
+### Variable Scope
+
+Variables declared inside a function are **local to that function** and are not accessible from outside. Attempting to read a variable that does not exist in the current scope returns a zero/null value rather than crashing.
+
+```
+od_ myfunc(){
+    int_ &i&local&:
+    local = 42:
+    deven_ local:
+}
+
+__start(){
+    local = 0:       // 'local' not declared here — silently fails
+    print_ local:    // prints 0
+}
 ```
 
 ---
@@ -387,11 +521,11 @@ during([4]tion){
 }
 ```
 
-> ⚠️ The count-style form is still under development — it currently parses and resolves its argument but does not yet execute the loop body.
+The loop runs exactly N times, where N is the value of the argument at the moment the loop starts. The argument is evaluated once at entry.
 
 #### Condition-style
 
-Behaves like a `while` loop. The first element is the condition; after the condition, any number of additional statements can be added, each separated by `!`. These extra statements are executed as steps at the end of every iteration (up to ~4 are supported):
+Behaves like a `while` loop. The first element is the condition; after the condition, any number of additional statements can be added, each separated by `!`. These extra statements are executed as steps at the end of every iteration:
 
 ```
 during(condition ! step1):
@@ -417,8 +551,6 @@ during(i < 10 ! i++ ! j-- ! k++2){
 
 The condition is re-checked after the body and all steps have run; the loop exits as soon as it evaluates to false.
 
-> ✅ The condition-style form is functional.
-
 ---
 
 ### Diagnostic
@@ -430,10 +562,10 @@ status_:
 Prints the current state of all declared variables, arrays, and matrices. Useful for debugging.
 
 ```
-status_ clear y:
+status_ cls y:
 ```
 
-Clears internal state after printing.
+Clears internal state after printing (useful for resetting the VM snapshot mid-program).
 
 ---
 
@@ -451,6 +583,14 @@ In-file import (legacy, may print a warning in some builds):
 ```
 #import_&f&stdfn.Zlib&:
 ```
+
+---
+
+## Limitations
+
+- **Arrays and matrices cannot be passed as function arguments.** Workaround: use global-style naming conventions or pass individual elements. Proper array-passing support is the next planned feature.
+- **Arrays and matrices cannot be returned from functions** via `deven_`. Only scalar values (`int`, `char`, `float`) are returnable.
+- **Function aliasing for scalar variables** is not yet supported. Coming soon.
 
 ---
 
@@ -538,7 +678,13 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Arrays (1D) | Stable |
 | Matrices (2D) | Stable |
 | Functions + return values | Stable |
-| Function arguments | Stable |
+| Function arguments (scalars) | Stable |
+| Function arguments (arrays/matrices) | Planned |
+| Pass-by-reference for function args | Stable |
+| Function aliasing (`-->`) | Stable |
+| Variable aliasing (`-->`) | Planned |
+| Extended `deven_` expressions (`++`, `--`, `**`, `~~`, function) | Stable |
+| `++N` / `--N` with variable or function as `N` | Stable |
 | Arithmetic expressions | Stable |
 | Conditionals (if/oth if/oth) | Stable |
 | Increment/Decrement | Stable |
@@ -546,7 +692,7 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Build test suite | Stable |
 | `scan_` (input) | Partial |
 | `during` loops (condition-style) | Stable |
-| `during` loops (count-style) | In progress |
+| `during` loops (count-style) | Stable |
 | ESP32 port | Planned |
 
 ---
