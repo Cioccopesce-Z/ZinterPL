@@ -15,8 +15,8 @@ Source files use the `.Zim` extension. Library files use `.Zlib`.
 - `during` unified loop construct (count-style and condition-style) — both fully functional
 - Extended `deven_` return expressions: arithmetic, power, square root, and nested function calls
 - Function argument pass-by-reference: modifications made inside a called function are reflected back in the caller
-- Function aliasing: rename any function with `newname --> oldname`
-- Variable aliasing: rename any variable with `newname --> oldname`
+- Function renaming: permanently rename any function with `newname --> oldname`
+- Variable renaming: permanently rename any variable with `newname --> oldname`
 - `++N` / `--N` operations accept variables or function calls as `N`
 - Input via `scan_`
 - Built-in `status_` diagnostic command
@@ -82,7 +82,6 @@ The optional header block at the top of the file configures the execution enviro
 |-----------|--------|
 | `debug_ -df:` | Disable debug output |
 | `debug_ -dt:` | Enable debug output |
-| `import_ &f&name.Zlib&:` | ~~Import a library (obsolete — use the `-libname.Zlib` command-line flag instead)~~ |
 | `exec_:` | Start execution |
 
 > **Note:** the `import_` directive is **obsolete** and should not be used in new code. Attach libraries via the command line: `./Zinterpreter -df file.Zim -libname.Zlib`.
@@ -358,41 +357,40 @@ print_ __addone(5):   // prints 8
 
 ---
 
-### Function aliasing
+### Function renaming
 
-A function can be given a new name using the `-->` operator. The new name becomes an alias for the original function:
+A function can be permanently renamed using the `-->` operator. After the rename, the function is only accessible under the new name; the old name is no longer valid:
 
 ```
 newname --> oldname:
 ```
 
-This works for plain function names as well as for array-indexed and matrix-indexed forms, depending on the type of entity being aliased:
+This works for plain function names as well as for array-indexed and matrix-indexed forms:
 
 ```
-myalias   --> originalfunc:     // function alias
-[i]alias  --> [i]originalfunc:  // array-form alias
-[r][c]alias --> [r][c]original: // matrix-form alias
+newname     --> originalfunc:       // function rename
+[i]newname  --> [i]originalfunc:    // array-form rename
+[r][c]newname --> [r][c]original:   // matrix-form rename
 ```
 
 ---
 
-### Variable aliasing
+### Variable renaming
 
-Scalar variables can also be aliased using the same `-->` operator:
+Scalar variables can be permanently renamed using the same `-->` operator:
 
 ```
 newname --> oldname:
 ```
 
-After this, `newname` and `oldname` refer to the same variable. Assigning to either one updates the same underlying value:
+After this, the variable is only accessible under `newname`. The old name is no longer valid:
 
 ```
 int_ &i&score&:
 score = 42:
 punti --> score:
 println_ punti:    // prints 42
-punti = 99:
-println_ score:    // prints 99
+println_ score:    // score no longer exists — returns 0
 ```
 
 ---
@@ -438,7 +436,7 @@ oth{
 }
 ```
 
-Conditions support `==`, `<`, `>`, `s==` (string comparison).
+Conditions support `==`, `<`, `>`. String comparison (`s==`) is planned.
 
 You can chain **any number of `oth if`** blocks before the final `oth`.
 
@@ -517,7 +515,9 @@ Array and matrix elements can be accessed using either literal indices or intege
 
 ### Inline C Code
 
-You can define a C function directly inside a `.Zim` file using a `C{ }` block. The code inside is **compiled separately** as a standalone C function.
+> ⚠️ **Planned — not yet implemented.**
+
+A future version will allow defining a C function directly inside a `.Zim` file using a `C{ }` block. The code inside will be compiled separately as a standalone C function.
 
 ```
 C{
@@ -533,7 +533,7 @@ int_ &i&result&:
 result = __C(myvar, myarr, 10):
 ```
 
-The return value of `return` in the C block is used as the result of `__C(...)` in the ZinterPL code.
+The return value of `return` in the C block will be used as the result of `__C(...)` in the ZinterPL code.
 
 ---
 
@@ -717,12 +717,14 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Function arguments (scalars) | Stable |
 | Function arguments (arrays/matrices) | Planned |
 | Pass-by-reference for function args | Stable |
-| Function aliasing (`-->`) | Stable |
-| Variable aliasing (`-->`) | Stable |
+| Function renaming (`-->`) | Stable |
+| Variable renaming (`-->`) | Stable |
+| Inline C (`C{ }`) | Planned |
 | Extended `deven_` expressions (`++`, `--`, `**`, `~~`, function) | Stable |
 | `++N` / `--N` with variable or function as `N` | Stable |
 | Arithmetic expressions | Stable |
 | Conditionals (if/oth if/oth) | Stable |
+| String comparison (`s==`) | Planned |
 | Increment/Decrement | Stable |
 | Library support (.Zlib) | Stable |
 | Build test suite | Stable |
