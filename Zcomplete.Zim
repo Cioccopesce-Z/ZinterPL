@@ -13,7 +13,7 @@ od_ retfunc(){
 
 od_ valueplus(&i&inner&){
     print_ inner: println_ &s&" 5 - inner form valueplus"&:
-    deven_ __retv(inner)++:
+    deven_ inner++:
 }
 
 od_ somma(){
