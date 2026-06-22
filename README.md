@@ -16,6 +16,7 @@ Source files use the `.Zim` extension. Library files use `.Zlib`.
 - Extended `deven_` return expressions: arithmetic, power, square root, and nested function calls
 - Function argument pass-by-reference: modifications made inside a called function are reflected back in the caller
 - Function aliasing: rename any function with `newname --> oldname`
+- Variable aliasing: rename any variable with `newname --> oldname`
 - `++N` / `--N` operations accept variables or function calls as `N`
 - Input via `scan_`
 - Built-in `status_` diagnostic command
@@ -81,8 +82,10 @@ The optional header block at the top of the file configures the execution enviro
 |-----------|--------|
 | `debug_ -df:` | Disable debug output |
 | `debug_ -dt:` | Enable debug output |
-| `import_ &f&name.Zlib&:` | Import a library (legacy inline syntax) |
+| `import_ &f&name.Zlib&:` | ~~Import a library (obsolete — use the `-libname.Zlib` command-line flag instead)~~ |
 | `exec_:` | Start execution |
+
+> **Note:** the `import_` directive is **obsolete** and should not be used in new code. Attach libraries via the command line: `./Zinterpreter -df file.Zim -libname.Zlib`.
 
 ---
 
@@ -324,7 +327,7 @@ When a variable is passed to a function as an argument, it is passed **by refere
 
 This also propagates across call chains. A variable passed into function A, then forwarded to function B, will reflect changes made in B when A returns.
 
-**Example from `Zcomple.Zim`:**
+**Example from `Zcomplete.Zim`:**
 
 ```
 od_ addone(&i&value&){
@@ -371,7 +374,26 @@ myalias   --> originalfunc:     // function alias
 [r][c]alias --> [r][c]original: // matrix-form alias
 ```
 
-> **Coming soon:** aliasing for plain scalar variables.
+---
+
+### Variable aliasing
+
+Scalar variables can also be aliased using the same `-->` operator:
+
+```
+newname --> oldname:
+```
+
+After this, `newname` and `oldname` refer to the same variable. Assigning to either one updates the same underlying value:
+
+```
+int_ &i&score&:
+score = 42:
+punti --> score:
+println_ punti:    // prints 42
+punti = 99:
+println_ score:    // prints 99
+```
 
 ---
 
@@ -443,7 +465,25 @@ println_ &s&"hello world"&:   // prints: hello world
 
 ### Variable Scope
 
-Variables declared inside a function are **local to that function** and are not accessible from outside. Attempting to read a variable that does not exist in the current scope returns a zero/null value rather than crashing.
+Variables declared inside a function are **local to that function** and are not accessible from outside.
+
+Variables declared inside `__start()` are **global**: they are accessible from any function called during program execution.
+
+```
+__start(){
+    int_ &i&counter&:    // global — visible to all functions called from here
+    counter = 10:
+    __increment():
+    println_ counter:    // prints 11
+}
+
+od_ increment(){
+    counter++:           // accesses the global 'counter' declared in __start
+    deven_:
+}
+```
+
+Variables declared inside any other function (`od_`) are local to that function and are not accessible from outside. Attempting to read a variable that does not exist in the current scope returns a zero/null value rather than crashing.
 
 ```
 od_ myfunc(){
@@ -579,10 +619,7 @@ Libraries are `.Zlib` files containing additional function definitions. Pass the
 
 The interpreter merges the library into the source before parsing.
 
-In-file import (legacy, may print a warning in some builds):
-```
-#import_&f&stdfn.Zlib&:
-```
+> **Note:** the in-file `import_` directive is **obsolete** and should not be used in new code. Always attach libraries via the command line.
 
 ---
 
@@ -590,7 +627,6 @@ In-file import (legacy, may print a warning in some builds):
 
 - **Arrays and matrices cannot be passed as function arguments.** Workaround: use global-style naming conventions or pass individual elements. Proper array-passing support is the next planned feature.
 - **Arrays and matrices cannot be returned from functions** via `deven_`. Only scalar values (`int`, `char`, `float`) are returnable.
-- **Function aliasing for scalar variables** is not yet supported. Coming soon.
 
 ---
 
@@ -682,7 +718,7 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Function arguments (arrays/matrices) | Planned |
 | Pass-by-reference for function args | Stable |
 | Function aliasing (`-->`) | Stable |
-| Variable aliasing (`-->`) | Planned |
+| Variable aliasing (`-->`) | Stable |
 | Extended `deven_` expressions (`++`, `--`, `**`, `~~`, function) | Stable |
 | `++N` / `--N` with variable or function as `N` | Stable |
 | Arithmetic expressions | Stable |
