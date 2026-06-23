@@ -51,7 +51,20 @@ Running with no arguments executes the **built-in build test** and prints a pass
 
 ## Syntax Reference
 
-Every instruction ends with `:` — this is the statement terminator.
+Every instruction ends with `:` — this is the statement terminator. **This includes comments.**
+
+### Comments
+
+Comments begin with `//` and must also end with `:`, like every other statement:
+
+```
+// this is a comment:
+// another comment:
+```
+
+Omitting the `:` at the end of a comment is a syntax error.
+
+---
 
 ### Program Entry Point
 
@@ -59,7 +72,7 @@ Every `.Zim` file must define `__start()`, which is the main entry point:
 
 ```
 __start(){
-    // your code here
+    // your code here:
 }
 ```
 
@@ -178,10 +191,10 @@ int_  &i[5]&arrA&:
 int_  &i[5]&arrB&:
 int_  &i[3]&arrC&:
 
-if(arrA == arrB){   // true  — both declared with size 5
+if(arrA == arrB){   // true  — both declared with size 5:
     println_ &s&"same size"&:
 }
-if(arrA == arrC){   // false — 5 != 3
+if(arrA == arrC){   // false — 5 != 3:
     println_ &s&"same size"&:
 }
 ```
@@ -193,10 +206,10 @@ This also applies to matrices, where the declared total size (rows × cols) is c
 ### Increment / Decrement
 
 ```
-varname++:        // +1
-varname--:        // -1
-varname++N:       // +N
-varname--N:       // -N
+varname++:        // +1:
+varname--:        // -1:
+varname++N:       // +N:
+varname--N:       // -N:
 
 [idx]arr++:
 [idx]arr--N:
@@ -208,8 +221,8 @@ varname--N:       // -N
 int_ &i&step&:
 step = 3:
 
-plusplus++step:            // increment by the value of a variable
-plusplus++__retv(5):       // increment by the return value of a function
+plusplus++step:            // increment by the value of a variable:
+plusplus++__retv(5):       // increment by the return value of a function:
 ```
 
 **Special behavior on char arrays:** `++` and `++N` on a char array element do **not** perform numeric arithmetic. Instead:
@@ -220,8 +233,8 @@ plusplus++__retv(5):       // increment by the return value of a function
 ```
 char_ &s[10]&arr&:
 [2]arr = 'F':
-[2]arr++:     // copies 'F' into [3] only
-[2]arr++3:    // copies 'F' into [5] only  ([2] + 3 = [5])
+[2]arr++:     // copies 'F' into [3] only:
+[2]arr++3:    // copies 'F' into [5] only  ([2] + 3 = [5]):
 ```
 
 On integer variables and arrays, `++` / `--` behave as standard numeric increment/decrement.
@@ -299,23 +312,23 @@ Examples:
 
 ```
 od_ valueplus(&i&inner&){
-    deven_ inner++:       // returns inner + 1
+    deven_ inner++:       // returns inner + 1:
 }
 
 od_ retfunc(){
-    deven_ __differenza():  // delegates return to another function
+    deven_ __differenza():  // delegates return to another function:
 }
 
 od_ retretunc(&i&pass&){
-    deven_ __valueplus(pass):  // chains two function calls in one return
+    deven_ __valueplus(pass):  // chains two function calls in one return:
 }
 ```
 
 This makes it easy to build concise functional pipelines:
 
 ```
-print_ __retretunc(5):    // → valueplus(5) → 6
-print_ __retfunc():       // → differenza() → 6
+print_ __retretunc(5):    // → valueplus(5) → 6:
+print_ __retfunc():       // → differenza() → 6:
 ```
 
 ---
@@ -350,7 +363,7 @@ Calling `__addone(5)`:
 5. `deven_ value` returns `8`
 
 ```
-print_ __addone(5):   // prints 8
+print_ __addone(5):   // prints 8:
 ```
 
 > ⚠️ **Limitation:** arrays and matrices cannot currently be passed as function arguments. This is the next planned feature.
@@ -368,9 +381,9 @@ newname --> oldname:
 This works for plain function names as well as for array-indexed and matrix-indexed forms:
 
 ```
-newname     --> originalfunc:       // function rename
-[i]newname  --> [i]originalfunc:    // array-form rename
-[r][c]newname --> [r][c]original:   // matrix-form rename
+newname     --> originalfunc:       // function rename:
+[i]newname  --> [i]originalfunc:    // array-form rename:
+[r][c]newname --> [r][c]original:   // matrix-form rename:
 ```
 
 ---
@@ -389,8 +402,8 @@ After this, the variable is only accessible under `newname`. The old name is no 
 int_ &i&score&:
 score = 42:
 punti --> score:
-println_ punti:    // prints 42
-println_ score:    // score no longer exists — returns 0
+println_ punti:    // prints 42:
+println_ score:    // score no longer exists — returns 0:
 ```
 
 ---
@@ -398,15 +411,15 @@ println_ score:    // score no longer exists — returns 0
 ### Output
 
 ```
-print_ value:           // print without newline
-println_ value:         // print with newline
-println_:               // print empty newline
+print_ value:           // print without newline:
+println_ value:         // print with newline:
+println_:               // print empty newline:
 ```
 
 `value` can be a variable name, an `&s&string&` literal, an array element, a matrix element, or a direct function call:
 
 ```
-print_ __testargs(10!20):    // prints 30
+print_ __testargs(10!20):    // prints 30:
 ```
 
 ---
@@ -423,16 +436,16 @@ scan_ &s&varname&:
 
 ```
 if(condition){
-    // ...
+    // ...:
 }
 oth if(condition){
-    // ...
+    // ...:
 }
 oth if(condition){
-    // any number of oth if chains are supported
+    // any number of oth if chains are supported:
 }
 oth{
-    // ...
+    // ...:
 }
 ```
 
@@ -449,14 +462,14 @@ You can chain **any number of `oth if`** blocks before the final `oth`.
 **Spaces are ignored everywhere** in ZinterPL source code, **except inside double quotes** (`"..."`). This means indentation and spacing are purely cosmetic and have no effect on parsing.
 
 ```
-int_ &i&x&:        // same as
-int_&i&x&:         // same as
-int_   &i& x &:   // all equivalent
+int_ &i&x&:        // same as:
+int_&i&x&:         // same as:
+int_   &i& x &:   // all equivalent:
 ```
 
 Inside a string literal, spaces are preserved:
 ```
-println_ &s&"hello world"&:   // prints: hello world
+println_ &s&"hello world"&:   // prints: hello world:
 ```
 
 ---
@@ -469,14 +482,14 @@ Variables declared inside `__start()` are **global**: they are accessible from a
 
 ```
 __start(){
-    int_ &i&counter&:    // global — visible to all functions called from here
+    int_ &i&counter&:    // global — visible to all functions called from here:
     counter = 10:
     __increment():
-    println_ counter:    // prints 11
+    println_ counter:    // prints 11:
 }
 
 od_ increment(){
-    counter++:           // accesses the global 'counter' declared in __start
+    counter++:           // accesses the global 'counter' declared in __start:
     deven_:
 }
 ```
@@ -491,8 +504,8 @@ od_ myfunc(){
 }
 
 __start(){
-    local = 0:       // 'local' not declared here — silently fails
-    print_ local:    // prints 0
+    local = 0:       // 'local' not declared here — silently fails:
+    print_ local:    // prints 0:
 }
 ```
 
@@ -503,12 +516,12 @@ __start(){
 Array and matrix elements can be accessed using either literal indices or integer variables as indices:
 
 ```
-[0]arr = 42:           // literal index
-[idx]arr = 42:         // variable as index
+[0]arr = 42:           // literal index:
+[idx]arr = 42:         // variable as index:
 
-[0][0]mat = 99:        // literal row and col
-[row][col]mat = 99:    // variables as row and col
-[row][0]mat = 99:      // mixed
+[0][0]mat = 99:        // literal row and col:
+[row][col]mat = 99:    // variables as row and col:
+[row][0]mat = 99:      // mixed:
 ```
 
 ---
@@ -521,7 +534,7 @@ A future version will allow defining a C function directly inside a `.Zim` file 
 
 ```
 C{
-    // C code here
+    // C code here:
     return 42;
 }
 ```
