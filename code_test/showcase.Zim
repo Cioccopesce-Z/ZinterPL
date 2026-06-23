@@ -4,9 +4,6 @@
 }
 
 
-// ─────────────────────────────────────────
-//  UTILITY
-// ─────────────────────────────────────────
 
 od_ sep(){
     println_ &s&"+====================================+"&:
@@ -37,10 +34,6 @@ od_ stars(&i&n&){
 }
 
 
-// ─────────────────────────────────────────
-//  MATH FUNCTIONS  (deven_ expressions)
-// ─────────────────────────────────────────
-
 od_ sq(&i&n&){
     deven_ n**:
 }
@@ -59,9 +52,6 @@ od_ triangle(&i&n&){
 }
 
 
-// ─────────────────────────────────────────
-//  PASS-BY-REFERENCE HELPER
-// ─────────────────────────────────────────
 
 od_ double_val(&i&v&){
     v = v * 2:
@@ -69,9 +59,6 @@ od_ double_val(&i&v&){
 }
 
 
-// ─────────────────────────────────────────
-//  SECTION 1 — FIBONACCI  (array + loop)
-// ─────────────────────────────────────────
 
 od_ show_fib(){
     int_ &i[13]&f&:
@@ -105,10 +92,6 @@ od_ show_fib(){
 }
 
 
-// ─────────────────────────────────────────
-//  SECTION 2 — POWERS OF 2  (variable math)
-// ─────────────────────────────────────────
-
 od_ show_powers(){
     int_ &i&pow&:
     int_ &i&i&:
@@ -126,10 +109,6 @@ od_ show_powers(){
     deven_:
 }
 
-
-// ─────────────────────────────────────────
-//  SECTION 3 — STAR PYRAMID  (nested calls)
-// ─────────────────────────────────────────
 
 od_ show_pyramid(){
     int_ &i&rows&:
@@ -153,10 +132,6 @@ od_ show_pyramid(){
 }
 
 
-// ─────────────────────────────────────────
-//  SECTION 4 — PASS-BY-REFERENCE
-// ─────────────────────────────────────────
-
 od_ show_byref(){
     int_ &i&x&:
     x = 3:
@@ -177,10 +152,6 @@ od_ show_byref(){
 }
 
 
-// ─────────────────────────────────────────
-//  SECTION 5 — SQUARES & TRIANGLE NUMBERS
-//              (deven_ n** and function calls)
-// ─────────────────────────────────────────
 
 od_ show_math(){
     int_ &i&i&:
@@ -210,9 +181,6 @@ od_ show_math(){
 }
 
 
-// ─────────────────────────────────────────
-//  SECTION 6 — COUNTDOWN  (will be renamed)
-// ─────────────────────────────────────────
 
 od_ countdown(){
     int_ &i&n&:
@@ -230,9 +198,6 @@ od_ countdown(){
 }
 
 
-// ─────────────────────────────────────────
-//  MAIN
-// ─────────────────────────────────────────
 
 __start(){
     __sep():
@@ -257,7 +222,7 @@ __start(){
     __blank():
 
     lancio --> countdown:
-    println_ &s&"|  [ FUNCTION RENAME: lancio ]       |"&:
+    println_ &s&"|  [ FUNCTION RENAME lancio ]        |"&:
     __sep():
     __lancio():
     __blank():
