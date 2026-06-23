@@ -4798,7 +4798,7 @@ int main(int argc, char *argv[]) {
 
         //SOURCEFILE SETUP
         const char *dot = strrchr(argv[2], '.');
-        if (!dot || strcmp(dot, ".Zim") != 0 || strcmp(dot, ".Zinter") != 0) {
+        if (!dot || (strcmp(dot, ".Zim") != 0 && strcmp(dot, ".Zinter") != 0)) {
             printf("ERROR: formato file non supportato\n");
             return 0;
         }
