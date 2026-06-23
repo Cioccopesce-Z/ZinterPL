@@ -1,0 +1,560 @@
+// ============================================================:
+// libstd.Zlib — ZinterPL Standard Library:
+// Math · String · Terminal · Utility:
+// Attach with: ./Zinterpreter -df file.Zim -libstd.Zlib:
+// ============================================================:
+
+
+// ============================================================:
+// SECTION 1 — MATH UTILITIES:
+// ============================================================:
+
+// abs_ : returns the absolute value of an integer:
+// usage: result = __abs_(v):
+od_ abs_(&i&v&){
+    int_ &i&_r&:
+    if(v < 0){
+        _r = 0:
+        _r = _r - v:
+        deven_ _r:
+    }
+    deven_ v:
+}
+
+// neg_ : returns the negation of an integer (-v):
+// usage: result = __neg_(v):
+od_ neg_(&i&v&){
+    int_ &i&_n&:
+    _n = 0:
+    _n = _n - v:
+    deven_ _n:
+}
+
+// max_ : returns the larger of two integers:
+// usage: result = __max_(a!b):
+od_ max_(&i&a&!&i&b&){
+    if(a > b){
+        deven_ a:
+    }
+    deven_ b:
+}
+
+// min_ : returns the smaller of two integers:
+// usage: result = __min_(a!b):
+od_ min_(&i&a&!&i&b&){
+    if(a < b){
+        deven_ a:
+    }
+    deven_ b:
+}
+
+// clamp_ : clamps v to [lo, hi]:
+// usage: result = __clamp_(v!lo!hi):
+od_ clamp_(&i&v&!&i&lo&!&i&hi&){
+    if(v < lo){
+        deven_ lo:
+    }
+    if(v > hi){
+        deven_ hi:
+    }
+    deven_ v:
+}
+
+// sq_ : returns v squared (v * v):
+// usage: result = __sq_(v):
+od_ sq_(&i&v&){
+    deven_ v**:
+}
+
+// sqrt_ : returns integer square root of v (floor):
+// usage: result = __sqrt_(v):
+od_ sqrt_(&i&v&){
+    deven_ v~~:
+}
+
+// pow2_ : returns 2^n (integer, n >= 0):
+// usage: result = __pow2_(n):
+od_ pow2_(&i&n&){
+    int_ &i&_acc&:
+    int_ &i&_i&:
+    _acc = 1:
+    _i = 0:
+    during(_i < n ! _i++){
+        _acc = _acc * 2:
+    }
+    deven_ _acc:
+}
+
+// iseven_ : returns 1 if v is even, 0 if odd:
+// usage: result = __iseven_(v):
+od_ iseven_(&i&v&){
+    int_ &i&_t&:
+    _t = v / 2:
+    _t = _t * 2:
+    if(_t == v){
+        deven_ 1:
+    }
+    deven_ 0:
+}
+
+// isodd_ : returns 1 if v is odd, 0 if even:
+// usage: result = __isodd_(v):
+od_ isodd_(&i&v&){
+    int_ &i&_e&:
+    _e = __iseven_(v):
+    if(_e == 1){
+        deven_ 0:
+    }
+    deven_ 1:
+}
+
+// inrange_ : returns 1 if lo <= v <= hi:
+// usage: result = __inrange_(v!lo!hi):
+od_ inrange_(&i&v&!&i&lo&!&i&hi&){
+    if(v < lo){
+        deven_ 0:
+    }
+    if(v > hi){
+        deven_ 0:
+    }
+    deven_ 1:
+}
+
+// sum_upto_ : returns 1+2+...+n (Gauss formula):
+// usage: result = __sum_upto_(n):
+od_ sum_upto_(&i&n&){
+    int_ &i&_s&:
+    _s = n * n:
+    _s = _s + n:
+    _s = _s / 2:
+    deven_ _s:
+}
+
+// digits_ : returns number of decimal digits in v (v >= 0):
+// usage: result = __digits_(v):
+od_ digits_(&i&v&){
+    int_ &i&_d&:
+    int_ &i&_x&:
+    _d = 0:
+    _x = v:
+    if(_x == 0){
+        deven_ 1:
+    }
+    during(_x > 0 ! _x = _x / 10){
+        _d++:
+    }
+    deven_ _d:
+}
+
+
+// ============================================================:
+// SECTION 2 — CHAR / STRING UTILITIES:
+// NOTE: ZinterPL cannot pass arrays as arguments.:
+// These functions operate on a shared global char array:
+// named  _sbuf_  declared in __start() of your program.:
+// Declare it as:  char_ &s[128]& _sbuf_ &::
+// All string functions read/write _sbuf_.:
+// ============================================================:
+
+// strlen_ : returns length of _sbuf_ up to first null (0):
+// usage: result = __strlen_():
+od_ strlen_(){
+    int_ &i&_li&:
+    int_ &i&_lv&:
+    _li = 0:
+    _lv = 0:
+    during(_lv == 0 ! _li++){
+        _lv = [_li]_sbuf_:
+        if(_lv == 0){
+            deven_ _li:
+        }
+    }
+    deven_ _li:
+}
+
+// strfill_ : fills first n cells of _sbuf_ with char c, then null:
+// usage: __strfill_(n!c)  (void):
+od_ strfill_(&i&n&!&i&c&){
+    int_ &i&_fi&:
+    _fi = 0:
+    during(_fi < n ! _fi++){
+        [_fi]_sbuf_ = c:
+    }
+    [_fi]_sbuf_ = 0:
+    deven_:
+}
+
+// strclr_ : fills all 128 cells of _sbuf_ with null (0):
+// usage: __strclr_()  (void):
+od_ strclr_(){
+    int_ &i&_ci&:
+    _ci = 0:
+    during(_ci < 128 ! _ci++){
+        [_ci]_sbuf_ = 0:
+    }
+    deven_:
+}
+
+// charat_ : returns the char at position idx in _sbuf_:
+// usage: result = __charat_(idx):
+od_ charat_(&i&idx&){
+    int_ &i&_cv&:
+    _cv = [idx]_sbuf_:
+    deven_ _cv:
+}
+
+// setat_ : sets _sbuf_[idx] = c:
+// usage: __setat_(idx!c)  (void):
+od_ setat_(&i&idx&!&i&c&){
+    [idx]_sbuf_ = c:
+    deven_:
+}
+
+// isdigitc_ : returns 1 if char code c is '0'-'9' (48-57):
+// usage: result = __isdigitc_(c):
+od_ isdigitc_(&i&c&){
+    int_ &i&_ok&:
+    _ok = __inrange_(c!48!57):
+    deven_ _ok:
+}
+
+// isalphac_ : returns 1 if c is 'A'-'Z' (65-90) or 'a'-'z' (97-122):
+// usage: result = __isalphac_(c):
+od_ isalphac_(&i&c&){
+    int_ &i&_up&:
+    int_ &i&_lo&:
+    _up = __inrange_(c!65!90):
+    _lo = __inrange_(c!97!122):
+    if(_up == 1){
+        deven_ 1:
+    }
+    if(_lo == 1){
+        deven_ 1:
+    }
+    deven_ 0:
+}
+
+// isspacec_ : returns 1 if c is space(32), tab(9), or newline(10):
+// usage: result = __isspacec_(c):
+od_ isspacec_(&i&c&){
+    if(c == 32){
+        deven_ 1:
+    }
+    if(c == 9){
+        deven_ 1:
+    }
+    if(c == 10){
+        deven_ 1:
+    }
+    deven_ 0:
+}
+
+// tolower_ : converts uppercase ASCII char to lowercase:
+// usage: result = __tolower_(c):
+od_ tolower_(&i&c&){
+    int_ &i&_isup&:
+    _isup = __inrange_(c!65!90):
+    if(_isup == 1){
+        deven_ c++32:
+    }
+    deven_ c:
+}
+
+// toupper_ : converts lowercase ASCII char to uppercase:
+// usage: result = __toupper_(c):
+od_ toupper_(&i&c&){
+    int_ &i&_islo&:
+    _islo = __inrange_(c!97!122):
+    if(_islo == 1){
+        deven_ c--32:
+    }
+    deven_ c:
+}
+
+// repeatchar_ : prints char c repeated n times (no newline):
+// usage: __repeatchar_(c!n)  (void):
+od_ repeatchar_(&i&c&!&i&n&){
+    int_ &i&_ri&:
+    _ri = 0:
+    during(_ri < n ! _ri++){
+        print_ c:
+    }
+    deven_:
+}
+
+
+// ============================================================:
+// SECTION 3 — TERMINAL / NCURSES-STYLE DRAWING:
+// All drawing functions use ASCII box-drawing via char codes.:
+// ┌ = 218  ─ = 196  ┐ = 191:
+// │ = 179  └ = 192  ┘ = 217:
+// For plain ASCII fallback, see alt versions below.:
+// ============================================================:
+
+// printline_ : prints a horizontal line of n dashes:
+// usage: __printline_(n)  (void):
+od_ printline_(&i&n&){
+    __repeatchar_(45!n):
+    println_:
+    deven_:
+}
+
+// printeq_ : prints a horizontal line of n '=' chars:
+// usage: __printeq_(n)  (void):
+od_ printeq_(&i&n&){
+    __repeatchar_(61!n):
+    println_:
+    deven_:
+}
+
+// printstars_ : prints a horizontal line of n '*' chars:
+// usage: __printstars_(n)  (void):
+od_ printstars_(&i&n&){
+    __repeatchar_(42!n):
+    println_:
+    deven_:
+}
+
+// boxrow_ : prints a plain ASCII box row:  +----+:
+// (width = inner chars, borders are '+' and '-'):
+// usage: __boxrow_(w)  (void):
+od_ boxrow_(&i&w&){
+    print_ &s&"+"&:
+    __repeatchar_(45!w):
+    println_ &s&"+"&:
+    deven_:
+}
+
+// boxside_ : prints a plain ASCII box side:  |    |:
+// (w = inner spaces):
+// usage: __boxside_(w)  (void):
+od_ boxside_(&i&w&){
+    print_ &s&"|"&:
+    __repeatchar_(32!w):
+    println_ &s&"|"&:
+    deven_:
+}
+
+// box_ : draws a complete ASCII box of width w, height h:
+// (w = inner width, h = inner height lines):
+// usage: __box_(w!h)  (void):
+od_ box_(&i&w&!&i&h&){
+    int_ &i&_bi&:
+    __boxrow_(w):
+    _bi = 0:
+    during(_bi < h ! _bi++){
+        __boxside_(w):
+    }
+    __boxrow_(w):
+    deven_:
+}
+
+// banner_ : prints a simple banner with a title line:
+// title must be pre-loaded in _sbuf_:
+// usage: __banner_(w)  (void — reads title from _sbuf_):
+od_ banner_(&i&w&){
+    __printeq_(w):
+    print_ &s&"  "&:
+    println_ _sbuf_:
+    __printeq_(w):
+    deven_:
+}
+
+// indent_ : prints n spaces (indentation helper):
+// usage: __indent_(n)  (void):
+od_ indent_(&i&n&){
+    __repeatchar_(32!n):
+    deven_:
+}
+
+// nl_ : prints n blank lines:
+// usage: __nl_(n)  (void):
+od_ nl_(&i&n&){
+    int_ &i&_ni&:
+    _ni = 0:
+    during(_ni < n ! _ni++){
+        println_:
+    }
+    deven_:
+}
+
+// ruler_ : prints a numeric ruler 0-9 repeated for w chars:
+// usage: __ruler_(w)  (void):
+od_ ruler_(&i&w&){
+    int_ &i&_rui&:
+    int_ &i&_ruc&:
+    _rui = 0:
+    during(_rui < w ! _rui++){
+        _ruc = _rui / 10:
+        _ruc = _rui - _ruc:
+        _ruc = _ruc + 48:
+        print_ _ruc:
+    }
+    println_:
+    deven_:
+}
+
+
+// ============================================================:
+// SECTION 4 — LOGIC / BOOLEAN UTILITIES:
+// ============================================================:
+
+// not_ : logical NOT — returns 1 if v==0, else 0:
+// usage: result = __not_(v):
+od_ not_(&i&v&){
+    if(v == 0){
+        deven_ 1:
+    }
+    deven_ 0:
+}
+
+// and_ : logical AND — returns 1 if both a!=0 and b!=0:
+// usage: result = __and_(a!b):
+od_ and_(&i&a&!&i&b&){
+    if(a == 0){
+        deven_ 0:
+    }
+    if(b == 0){
+        deven_ 0:
+    }
+    deven_ 1:
+}
+
+// or_ : logical OR — returns 1 if a!=0 or b!=0:
+// usage: result = __or_(a!b):
+od_ or_(&i&a&!&i&b&){
+    if(a == 0){
+        if(b == 0){
+            deven_ 0:
+        }
+    }
+    deven_ 1:
+}
+
+// xor_ : logical XOR — returns 1 if exactly one of a,b is nonzero:
+// usage: result = __xor_(a!b):
+od_ xor_(&i&a&!&i&b&){
+    int_ &i&_za&:
+    int_ &i&_zb&:
+    _za = __not_(a):
+    _zb = __not_(b):
+    if(_za == 0){
+        if(_zb == 1){
+            deven_ 1:
+        }
+    }
+    if(_za == 1){
+        if(_zb == 0){
+            deven_ 1:
+        }
+    }
+    deven_ 0:
+}
+
+
+// ============================================================:
+// SECTION 5 — ARRAY UTILITIES (integer arrays):
+// NOTE: arrays cannot be passed as arguments.:
+// These functions operate on a shared global int array:
+// named  _ibuf_  declared in __start() of your program.:
+// Declare it as:  int_ &i[64]& _ibuf_ &::
+// ============================================================:
+
+// arrsum_ : returns sum of first n elements of _ibuf_:
+// usage: result = __arrsum_(n):
+od_ arrsum_(&i&n&){
+    int_ &i&_si&:
+    int_ &i&_sa&:
+    _si = 0:
+    _sa = 0:
+    during(_si < n ! _si++){
+        _sa = _sa + [_si]_ibuf_:
+    }
+    deven_ _sa:
+}
+
+// arrmax_ : returns max value in first n elements of _ibuf_:
+// usage: result = __arrmax_(n):
+od_ arrmax_(&i&n&){
+    int_ &i&_mi&:
+    int_ &i&_mv&:
+    _mi = 1:
+    _mv = [0]_ibuf_:
+    during(_mi < n ! _mi++){
+        if([_mi]_ibuf_ > _mv){
+            _mv = [_mi]_ibuf_:
+        }
+    }
+    deven_ _mv:
+}
+
+// arrmin_ : returns min value in first n elements of _ibuf_:
+// usage: result = __arrmin_(n):
+od_ arrmin_(&i&n&){
+    int_ &i&_ii&:
+    int_ &i&_iv&:
+    _ii = 1:
+    _iv = [0]_ibuf_:
+    during(_ii < n ! _ii++){
+        if([_ii]_ibuf_ < _iv){
+            _iv = [_ii]_ibuf_:
+        }
+    }
+    deven_ _iv:
+}
+
+// arrfill_ : fills first n elements of _ibuf_ with value v:
+// usage: __arrfill_(n!v)  (void):
+od_ arrfill_(&i&n&!&i&v&){
+    int_ &i&_afi&:
+    _afi = 0:
+    during(_afi < n ! _afi++){
+        [_afi]_ibuf_ = v:
+    }
+    deven_:
+}
+
+// arrprint_ : prints first n elements of _ibuf_, space-separated:
+// usage: __arrprint_(n)  (void):
+od_ arrprint_(&i&n&){
+    int_ &i&_pi&:
+    _pi = 0:
+    during(_pi < n ! _pi++){
+        print_ [_pi]_ibuf_:
+        print_ &s&" "&:
+    }
+    println_:
+    deven_:
+}
+
+// arrcount_ : counts occurrences of value v in first n elements of _ibuf_:
+// usage: result = __arrcount_(n!v):
+od_ arrcount_(&i&n&!&i&v&){
+    int_ &i&_ki&:
+    int_ &i&_kc&:
+    _ki = 0:
+    _kc = 0:
+    during(_ki < n ! _ki++){
+        if([_ki]_ibuf_ == v){
+            _kc++:
+        }
+    }
+    deven_ _kc:
+}
+
+// arrreverse_ : reverses first n elements of _ibuf_ in place:
+// usage: __arrreverse_(n)  (void):
+od_ arrreverse_(&i&n&){
+    int_ &i&_rl&:
+    int_ &i&_rr&:
+    int_ &i&_rt&:
+    _rl = 0:
+    _rr = n:
+    _rr--:
+    during(_rl < _rr ! _rl++ ! _rr--){
+        _rt = [_rl]_ibuf_:
+        [_rl]_ibuf_ = [_rr]_ibuf_:
+        [_rr]_ibuf_ = _rt:
+    }
+    deven_:
+}
