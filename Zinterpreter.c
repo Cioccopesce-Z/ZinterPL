@@ -99,7 +99,7 @@ typedef struct {
 //redacted program
 typedef struct {
     int line_number; //di solito è uguale all'indice in program[idx]
-    char instruction[512];
+    char instruction[270];
 } program_line;
 
 //salva stato
@@ -362,7 +362,7 @@ int is_function_(const char *name_or_declaration){
     if(strstr(name_or_declaration,"od_")){ // od_ name(args){ } being declared 
         sscanf(name_or_declaration,"od_%15[^(](%64[^)])",name,args); //name == "name"  args == "args" 
     } 
-         
+        
 
     else if(starts_with(name_or_declaration,"__")){ //__name() being called
         if(deb) printf("found start with __ in is_function \n");
@@ -954,7 +954,7 @@ void set_to_matrix(char name[], char type, int row, int col, float value, char c
         for(int i = 0; i < matrix_count; i++) {
             if(strcmp(matrix[i].name, name) == 0) {
                 if(row >= 0 && row < matrix[i].size_first &&
-                   col >= 0 && col < matrix[i].size_sec) {
+                col >= 0 && col < matrix[i].size_sec) {
                     matrix[i].data[row * matrix[i].size_sec + col] = (int)value;
                 } else {
                     printf("Errore: indici [%d][%d] fuori dai limiti per la matrice int '%s'.\n", row, col, name);
@@ -968,7 +968,7 @@ void set_to_matrix(char name[], char type, int row, int col, float value, char c
         for(int i = 0; i < fl_matrix_count; i++) {
             if(strcmp(fl_matrix[i].name, name) == 0) {
                 if(row >= 0 && row < fl_matrix[i].size_first &&
-                   col >= 0 && col < fl_matrix[i].size_sec) {
+                col >= 0 && col < fl_matrix[i].size_sec) {
                     fl_matrix[i].data[row * matrix[i].size_sec + col] = value;
                 } else {
                     printf("Errore: indici [%d][%d] fuori dai limiti per la matrice float '%s'.\n", row, col, name);
@@ -982,7 +982,7 @@ void set_to_matrix(char name[], char type, int row, int col, float value, char c
         for(int i = 0; i < char_matrix_count; i++) {
             if(strcmp(char_matrix[i].name, name) == 0) {
                 if(row >= 0 && row < char_matrix[i].size_first &&
-                   col >= 0 && col < char_matrix[i].size_sec) {
+                col >= 0 && col < char_matrix[i].size_sec) {
                     char_matrix[i].data[row * matrix[i].size_sec + col] = cvalue;
                 } else {
                     printf("Errore: indici [%d][%d] fuori dai limiti per la matrice char '%s'.\n", row, col, name);
@@ -1541,11 +1541,11 @@ int check_if_same_type(char arg1[], char arg2[]){
     if(deb) printf("type checked: %s %s\n",arg1,arg2);
     /* Allow immediate number 'n' to match integer 'i' */
     if (    (arg1[0] == 'n' && arg2[0] == 'i') || (arg1[0] == 'i' && arg2[0] == 'n') 
-         || (arg1[0] == 'i' && arg2[0] == 'f') || (arg1[0] == 'f' && arg2[0] == 'i') ||
+        || (arg1[0] == 'i' && arg2[0] == 'f') || (arg1[0] == 'f' && arg2[0] == 'i') ||
             (arg1[0] == 'c' && arg2[0] == 'k') || (arg1[0] == 's' && arg2[0] == 'c') 
-         || (arg1[0] == 'c' && arg2[0] == 's') || (arg1[0] == 's' && arg2[0] == 'k') || 
+        || (arg1[0] == 'c' && arg2[0] == 's') || (arg1[0] == 's' && arg2[0] == 'k') || 
             (arg1[0] == 's' && arg2[0] == 'v') || (arg1[0] == 'i' && arg2[0] == 'v') 
-         || (arg1[0] == 'c' && arg2[0] == 'v')) return tru;
+        || (arg1[0] == 'c' && arg2[0] == 'v')) return tru;
 
     else if ( (arg1[0] == 'v' && arg2[0] == 'v') || (arg1[0] != arg2[0]) ) return fal;
 
@@ -1633,7 +1633,7 @@ void exec_set_to(char *text){
             char *nvalue_ptr = (char *)get_index(cvalue);
             if(nvalue_ptr == NULL){ printf("ERROR: cant get %s char_value in %s\n",cvalue,text); return;}
             char nvalue = *nvalue_ptr;
-           
+        
             int *nindex_ptr = (int *)get_index(index);
             if(nindex_ptr == NULL){ printf("ERROR: cant get %s index in %s\n",value,text); return;}
             int nindex = *nindex_ptr;
@@ -1864,11 +1864,12 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         return_hit   = 0;
         return_value = NULL;
 
-                // Tracking rinominazioni per pass-by-reference
+        // Tracking rinominazioni per pass-by-reference
         struct {
             int var_idx;
             char orig_name[max_name_lettere];
-            char type;
+            char type;   // 'i','l','c' per variabili; 'i','l','s' per arr/mat
+            char kind;   // 'v' variabile, 'a' array, 'm' matrice
         } pbr[8];
         int pbr_count = 0;
 
@@ -1892,6 +1893,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
                         if(strcmp(variable[j].name, tok) == 0) {
                             pbr[pbr_count].var_idx = j;
                             pbr[pbr_count].type = 'i';
+                            pbr[pbr_count].kind = 'v';
                             strcpy(pbr[pbr_count].orig_name, tok);
                             pbr_count++;
                             strcpy(variable[j].name, pname);  // rinomina x → v
@@ -1910,6 +1912,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
                         if(strcmp(fl_variable[j].name, tok) == 0) {
                             pbr[pbr_count].var_idx = j;
                             pbr[pbr_count].type = 'l';
+                            pbr[pbr_count].kind = 'v';
                             strcpy(pbr[pbr_count].orig_name, tok);
                             pbr_count++;
                             strcpy(fl_variable[j].name, pname);
@@ -1928,6 +1931,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
                         if(strcmp(char_variable[j].name, tok) == 0) {
                             pbr[pbr_count].var_idx = j;
                             pbr[pbr_count].type = 'c';
+                            pbr[pbr_count].kind = 'v';
                             strcpy(pbr[pbr_count].orig_name, tok);
                             pbr_count++;
                             strcpy(char_variable[j].name, pname);
@@ -1939,6 +1943,68 @@ void* exec_funarg(char *name_plus_args, int is_return) {
                         char *p = (char*)resolve('c', tok);
                         set_to_variable(pname, 'c', 0, p ? *p : 0);
                     }
+                }
+                else if(!is_literal && ptype == 'a') {
+                    int found = 0;
+                    for(int j = 0; j < array_count && !found; j++) {
+                        if(strcmp(array[j].name, tok) == 0) {
+                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 'i', 'a'};
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(array[j].name, pname);
+                            found = 1;
+                        }
+                    }
+                    for(int j = 0; j < fl_array_count && !found; j++) {
+                        if(strcmp(fl_array[j].name, tok) == 0) {
+                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 'l', 'a'};
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(fl_array[j].name, pname);
+                            found = 1;
+                        }
+                    }
+                    for(int j = 0; j < char_array_count && !found; j++) {
+                        if(strcmp(char_array[j].name, tok) == 0) {
+                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 's', 'a'};
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(char_array[j].name, pname);
+                            found = 1;
+                        }
+                    }
+                    if(!found) printf("WARNING: array '%s' non trovato per parametro '%s'\n", tok, pname);
+                }
+                else if(!is_literal && ptype == 'm') {
+                    int found = 0;
+                    for(int j = 0; j < matrix_count && !found; j++) {
+                        if(strcmp(matrix[j].name, tok) == 0) {
+                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 'i', 'm'};
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(matrix[j].name, pname);
+                            found = 1;
+                        }
+                    }
+                    for(int j = 0; j < fl_matrix_count && !found; j++) {
+                        if(strcmp(fl_matrix[j].name, tok) == 0) {
+                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 'l', 'm'};
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(fl_matrix[j].name, pname);
+                            found = 1;
+                        }
+                    }
+                    for(int j = 0; j < char_matrix_count && !found; j++) {
+                        if(strcmp(char_matrix[j].name, tok) == 0) {
+                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 's', 'm'};
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(char_matrix[j].name, pname);
+                            found = 1;
+                        }
+                    }
+                    if(!found) printf("WARNING: matrice '%s' non trovata per parametro '%s'\n", tok, pname);
                 }
                 else {
                     // Letterale: sempre by value
@@ -1964,12 +2030,21 @@ void* exec_funarg(char *name_plus_args, int is_return) {
 
         // Ripristina nomi originali (pass-by-reference)
         for(int j = 0; j < pbr_count; j++) {
-            if(pbr[j].type == 'i')
-                strcpy(variable[pbr[j].var_idx].name,    pbr[j].orig_name);
-            else if(pbr[j].type == 'l')
-                strcpy(fl_variable[pbr[j].var_idx].name, pbr[j].orig_name);
-            else if(pbr[j].type == 'c')
-                strcpy(char_variable[pbr[j].var_idx].name, pbr[j].orig_name);
+            if(pbr[j].kind == 'v') {
+                if(pbr[j].type == 'i')      strcpy(variable[pbr[j].var_idx].name,       pbr[j].orig_name);
+                else if(pbr[j].type == 'l') strcpy(fl_variable[pbr[j].var_idx].name,    pbr[j].orig_name);
+                else if(pbr[j].type == 'c') strcpy(char_variable[pbr[j].var_idx].name,  pbr[j].orig_name);
+            }
+            else if(pbr[j].kind == 'a') {
+                if(pbr[j].type == 'i')      strcpy(array[pbr[j].var_idx].name,          pbr[j].orig_name);
+                else if(pbr[j].type == 'l') strcpy(fl_array[pbr[j].var_idx].name,       pbr[j].orig_name);
+                else if(pbr[j].type == 's') strcpy(char_array[pbr[j].var_idx].name,     pbr[j].orig_name);
+            }
+            else if(pbr[j].kind == 'm') {
+                if(pbr[j].type == 'i')      strcpy(matrix[pbr[j].var_idx].name,         pbr[j].orig_name);
+                else if(pbr[j].type == 'l') strcpy(fl_matrix[pbr[j].var_idx].name,      pbr[j].orig_name);
+                else if(pbr[j].type == 's') strcpy(char_matrix[pbr[j].var_idx].name,    pbr[j].orig_name);
+            }
         }
 
         pop_scope();
@@ -1985,7 +2060,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         return ret;
     }
 }
-//if(deb) 
+
 int math_plus(char *operation, int called_by_parse) {
     char lop[24] = {0}, rop[24] = {0};
     if(deb) printf("DEBUG: math_plus chiamata con %s\n", operation);
@@ -2422,7 +2497,7 @@ int exec_conf(char text[],char op_param[]){
         else{ printf("ERRORE: exec_conf error no operand automatically found\n"); return fal;}
     }
     else{
-       strncpy(op, op_param, sizeof(op)-1);
+    strncpy(op, op_param, sizeof(op)-1);
     }
     
     
@@ -2463,7 +2538,7 @@ int exec_conf(char text[],char op_param[]){
         sscanf(left_operand,  "[%[^]]][%[^]]]%63s", left_i,  left_j,  left_name);
         sscanf(right_operand, "[%[^]]][%[^]]]%63s", right_i, right_j, right_name);
         if(deb) printf("[CHECK] matr x matr | left: [%s][%s]%s | right: [%s][%s]%s\n",
-               left_i, left_j, left_name, right_i, right_j, right_name);
+            left_i, left_j, left_name, right_i, right_j, right_name);
         char bin[16];
         char ltdata[16] = {0}; char ltype = 0;
         char rtdata[16] = {0}; char rtype = 0;
@@ -2536,7 +2611,7 @@ int exec_conf(char text[],char op_param[]){
 
         else if (right_operand[0] == '\'') { /*matr x k*/
             if(deb) printf("[CHECK] matr x k | left: [%s][%s]%s | right: %s\n",
-                   left_i, left_j, left_name, right_operand);
+                left_i, left_j, left_name, right_operand);
             if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch matrix/char\n"); return error_int; }
             char *dest = (char *)get_index(lenc);
             if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
@@ -2544,7 +2619,7 @@ int exec_conf(char text[],char op_param[]){
         }
         else if (isdigit((unsigned char)right_operand[0])) { /*matr x n*/
             if(deb) printf("[CHECK] matr x n | left: [%s][%s]%s | right: %s\n",
-                   left_i, left_j, left_name, right_operand);
+                left_i, left_j, left_name, right_operand);
             if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch matrix/number\n"); return error_int; }
             if (ltype == 'i') {
                 int *dest = (int *)get_index(lenc);
@@ -2559,7 +2634,7 @@ int exec_conf(char text[],char op_param[]){
         else if (strchr(right_operand, ']')) { /*matr x arr*/
             sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
             if(deb) printf("[CHECK] matr x arr | left: [%s][%s]%s | right: [%s]%s\n",
-                   left_i, left_j, left_name, right_i, right_name);
+                left_i, left_j, left_name, right_i, right_name);
 
             char rtdata[16] = {0}; char rtype = 0;
             strcpy(bin, right_name); is_what(bin);
@@ -2592,7 +2667,7 @@ int exec_conf(char text[],char op_param[]){
         else if (strstr(right_operand, "__")) { /*matr x func*/
             if(deb) printf("[CHECK] matr x func | left: [%s][%s]%s | right: %s\n",
                 left_i, left_j, left_name, right_operand);
-           if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch matrix/function\n"); return error_int; }
+        if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch matrix/function\n"); return error_int; }
 
             void *ret = get_index(right_operand);
             if (!ret) { printf("ERROR: null pointer from function\n"); return error_int; }
@@ -2614,7 +2689,7 @@ int exec_conf(char text[],char op_param[]){
         else { /*matr x var*/
             sscanf(right_operand, "%63s", right_name);
             if(deb) printf("[CHECK] matr x var | left: [%s][%s]%s | right: %s\n",
-                   left_i, left_j, left_name, right_name);
+                left_i, left_j, left_name, right_name);
 
             char rtdata[16] = {0}; char rtype = 0;
             strcpy(bin, right_name); is_what(bin);
@@ -2658,7 +2733,7 @@ int exec_conf(char text[],char op_param[]){
         if (strchr(left_operand, ']')) { /*arr x matr*/
             sscanf(left_operand, "[%[^]]]%63s", left_i, left_name);
             if(deb) printf("[CHECK] arr x matr | left: [%s]%s | right: [%s][%s]%s\n",
-                   left_i, left_name, right_i, right_j, right_name);
+                left_i, left_name, right_i, right_j, right_name);
 
             char ltdata[16] = {0}; char ltype = 0;
             strcpy(bin, left_name); is_what(bin);
@@ -2691,7 +2766,7 @@ int exec_conf(char text[],char op_param[]){
         else { /*var x matr*/
             sscanf(left_operand, "%63s", left_name);
             if(deb) printf("[CHECK] var x matr | left: %s | right: [%s][%s]%s\n",
-                   left_name, right_i, right_j, right_name);
+                left_name, right_i, right_j, right_name);
 
             char ltdata[16] = {0}; char ltype = 0;
             strcpy(bin, left_name); is_what(bin);
@@ -2736,7 +2811,7 @@ int exec_conf(char text[],char op_param[]){
         sscanf(left_operand,  "[%[^]]]%63s", left_i,  left_name);
         sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
         if(deb) printf("[CHECK] arr x arr | left: [%s]%s | right: [%s]%s\n",
-               left_i, left_name, right_i, right_name);
+            left_i, left_name, right_i, right_name);
 
         char bin[16];
         char ltdata[16] = {0}; char ltype = 0;
@@ -3026,7 +3101,7 @@ void exec_equal(char *text) {
         sscanf(left_operand,  "[%[^]]][%[^]]]%63s", left_i,  left_j,  left_name);
         sscanf(right_operand, "[%[^]]][%[^]]]%63s", right_i, right_j, right_name);
         if(deb) printf("[CHECK] matr x matr | left: [%s][%s]%s | right: [%s][%s]%s\n",
-               left_i, left_j, left_name, right_i, right_j, right_name);
+            left_i, left_j, left_name, right_i, right_j, right_name);
 
         char bin[16];
         char ltdata[16] = {0}; char ltype = 0;
@@ -3100,7 +3175,7 @@ void exec_equal(char *text) {
 
         else if (right_operand[0] == '\'') { /*matr x k*/
             if(deb) printf("[CHECK] matr x k | left: [%s][%s]%s | right: %s\n",
-                   left_i, left_j, left_name, right_operand);
+                left_i, left_j, left_name, right_operand);
             if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch matrix/char\n"); return; }
             char *dest = (char *)get_index(lenc);
             if (!dest) { printf("ERROR: null pointer\n"); return; }
@@ -3108,7 +3183,7 @@ void exec_equal(char *text) {
         }
         else if (isdigit((unsigned char)right_operand[0])) { /*matr x n*/
             if(deb) printf("[CHECK] matr x n | left: [%s][%s]%s | right: %s\n",
-                   left_i, left_j, left_name, right_operand);
+                left_i, left_j, left_name, right_operand);
             if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch matrix/number\n"); return; }
             if (ltype == 'i') {
                 int *dest = (int *)get_index(lenc);
@@ -3123,7 +3198,7 @@ void exec_equal(char *text) {
         else if (strchr(right_operand, ']')) { /*matr x arr*/
             sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
             if(deb) printf("[CHECK] matr x arr | left: [%s][%s]%s | right: [%s]%s\n",
-                   left_i, left_j, left_name, right_i, right_name);
+                left_i, left_j, left_name, right_i, right_name);
 
             char rtdata[16] = {0}; char rtype = 0;
             strcpy(bin, right_name); is_what(bin);
@@ -3156,7 +3231,7 @@ void exec_equal(char *text) {
         else if (strstr(right_operand, "__")) { /*matr x func*/
             if(deb) printf("[CHECK] matr x func | left: [%s][%s]%s | right: %s\n",
                 left_i, left_j, left_name, right_operand);
-           if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch matrix/function\n"); return; }
+        if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch matrix/function\n"); return; }
 
             void *ret = get_index(right_operand);
             if (!ret) { printf("ERROR: null pointer from function\n"); return; }
@@ -3178,7 +3253,7 @@ void exec_equal(char *text) {
         else { /*matr x var*/
             sscanf(right_operand, "%63s", right_name);
             if(deb) printf("[CHECK] matr x var | left: [%s][%s]%s | right: %s\n",
-                   left_i, left_j, left_name, right_name);
+                left_i, left_j, left_name, right_name);
 
             char rtdata[16] = {0}; char rtype = 0;
             strcpy(bin, right_name); is_what(bin);
@@ -3222,7 +3297,7 @@ void exec_equal(char *text) {
         if (strchr(left_operand, ']')) { /*arr x matr*/
             sscanf(left_operand, "[%[^]]]%63s", left_i, left_name);
             if(deb) printf("[CHECK] arr x matr | left: [%s]%s | right: [%s][%s]%s\n",
-                   left_i, left_name, right_i, right_j, right_name);
+                left_i, left_name, right_i, right_j, right_name);
 
             char ltdata[16] = {0}; char ltype = 0;
             strcpy(bin, left_name); is_what(bin);
@@ -3255,7 +3330,7 @@ void exec_equal(char *text) {
         else { /*var x matr*/
             sscanf(left_operand, "%63s", left_name);
             if(deb) printf("[CHECK] var x matr | left: %s | right: [%s][%s]%s\n",
-                   left_name, right_i, right_j, right_name);
+                left_name, right_i, right_j, right_name);
 
             char ltdata[16] = {0}; char ltype = 0;
             strcpy(bin, left_name); is_what(bin);
@@ -3287,7 +3362,7 @@ void exec_equal(char *text) {
         sscanf(left_operand,  "[%[^]]]%63s", left_i,  left_name);
         sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
         if(deb) printf("[CHECK] arr x arr | left: [%s]%s | right: [%s]%s\n",
-               left_i, left_name, right_i, right_name);
+            left_i, left_name, right_i, right_name);
 
         char bin[16];
         char ltdata[16] = {0}; char ltype = 0;
@@ -4393,9 +4468,9 @@ void parse(int start_line, int eventual_end_line, char direct_line[]){
         else if( starts_with(direct_line, "oth") ){ }
         else if( starts_with(direct_line, "during") ){ exec_during(direct_line); }
         else if( strstr(direct_line,"==") || strstr(direct_line,"^=") ||
-                 strstr(direct_line,">>") || strstr(direct_line,"<<") ||
-                 (strchr(direct_line,'>') && !strstr(direct_line,">>")) ||
-                 (strchr(direct_line,'<') && !strstr(direct_line,"<<")) )
+                strstr(direct_line,">>") || strstr(direct_line,"<<") ||
+                (strchr(direct_line,'>') && !strstr(direct_line,">>")) ||
+                (strchr(direct_line,'<') && !strstr(direct_line,"<<")) )
             { exec_conf(direct_line, "idk"); }
         else if( starts_with(direct_line, "deven_") ){ exec_funarg(direct_line, tru); }
         else if( starts_with(direct_line, "set_to_") ){ exec_set_to(direct_line); }
