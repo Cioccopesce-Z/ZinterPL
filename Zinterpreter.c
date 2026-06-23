@@ -248,6 +248,7 @@ void *exec_plus_plus(char *text);
 void *exec_min_min(char *text);
 void *exec_times_times(char *text);
 void *exec_slash_slash(char *text);
+static int resolve_index(const char *idx_str);
 
 
 void push_scope() {
@@ -627,6 +628,30 @@ void* get_index(char data_sruct_name[]) {
                 if (strcmp(char_array[i].name, arr_name) == 0) {
                     return char_array[i].array_int; // ritorna puntatore al primo elemento
                 }
+            }
+            return NULL;
+        }
+        else if (check_str_print == 3) {
+            int plain_idx = resolve_index(index_str);
+            if(plain_idx < 0) {
+                printf("ERROR: indice '%s' non risolvibile in '%s'\n", index_str, arr_name);
+                return NULL;
+            }
+            if(type == 'i'){
+                for(int j = 0; j < array_count; j++)
+                    if(strcmp(array[j].name, arr_name) == 0 && plain_idx < array[j].size)
+                        return &array[j].array_int[plain_idx];
+                printf("OUT OF BOUNDS int_array '%s'[%d]\n", arr_name, plain_idx);
+            } else if(type == 'l'){
+                for(int j = 0; j < fl_array_count; j++)
+                    if(strcmp(fl_array[j].name, arr_name) == 0 && plain_idx < fl_array[j].size)
+                        return &fl_array[j].array_int[plain_idx];
+                printf("OUT OF BOUNDS fl_array '%s'[%d]\n", arr_name, plain_idx);
+            } else if(type == 's'){
+                for(int j = 0; j < char_array_count; j++)
+                    if(strcmp(char_array[j].name, arr_name) == 0 && plain_idx < char_array[j].size)
+                        return &char_array[j].array_int[plain_idx];
+                printf("OUT OF BOUNDS char_array '%s'[%d]\n", arr_name, plain_idx);
             }
             return NULL;
         }
@@ -1839,12 +1864,16 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         return_hit   = 0;
         return_value = NULL;
 
-        // ---- NUOVO: push scope ----
+                // Tracking rinominazioni per pass-by-reference
+        struct {
+            int var_idx;
+            char orig_name[max_name_lettere];
+            char type;
+        } pbr[8];
+        int pbr_count = 0;
+
         push_scope();
 
-        // ---- NUOVO: trova la entry in state_stack per questa funzione ----
-        // (hai già trovato i nell'indice del loop precedente)
-        // inietta i parametri come variabili locali
         if(strlen(args) > 0) {
             char args_copy[64];
             strncpy(args_copy, args, sizeof(args_copy)-1);
@@ -1855,54 +1884,94 @@ void* exec_funarg(char *name_plus_args, int is_return) {
                 strcpy(pname, state_stack[i].param_names[pi]);
                 char ptype = state_stack[i].param_types[pi];
 
-                declare_variable(pname, ptype);
+                int is_literal = (isdigit((unsigned char)tok[0]) || tok[0] == '-' || tok[0] == '\'');
 
-                if(ptype == 'i') {
-                    int val = 0;
-                    if(isdigit((unsigned char)tok[0]) || tok[0] == '-') {
-                        // numero diretto: 10, -5
-                        val = atoi(tok);
-                    } else {
-                        // nome variabile: cerca tra int e float
+                if(!is_literal && ptype == 'i') {
+                    int found = 0;
+                    for(int j = 0; j < variable_count; j++) {
+                        if(strcmp(variable[j].name, tok) == 0) {
+                            pbr[pbr_count].var_idx = j;
+                            pbr[pbr_count].type = 'i';
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(variable[j].name, pname);  // rinomina x → v
+                            found = 1; break;
+                        }
+                    }
+                    if(!found) {  // fallback by value
+                        declare_variable(pname, 'i');
                         int *p = (int*)resolve('i', tok);
-                        if(p) val = *p;
-                        else { float *pf = (float*)resolve('l', tok); if(pf) val = (int)*pf; }
+                        set_to_variable(pname, 'i', p ? *p : 0, 0);
                     }
-                    set_to_variable(pname, 'i', val, 0);
                 }
-                else if(ptype == 'l') {
-                    float val = 0;
-                    if(isdigit((unsigned char)tok[0]) || tok[0] == '-') {
-                        val = atof(tok);
-                    } else {
+                else if(!is_literal && ptype == 'l') {
+                    int found = 0;
+                    for(int j = 0; j < fl_variable_count; j++) {
+                        if(strcmp(fl_variable[j].name, tok) == 0) {
+                            pbr[pbr_count].var_idx = j;
+                            pbr[pbr_count].type = 'l';
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(fl_variable[j].name, pname);
+                            found = 1; break;
+                        }
+                    }
+                    if(!found) {
+                        declare_variable(pname, 'l');
                         float *p = (float*)resolve('l', tok);
-                        if(p) val = *p;
-                        else { int *pi2 = (int*)resolve('i', tok); if(pi2) val = (float)*pi2; }
+                        set_to_variable(pname, 'l', p ? *p : 0, 0);
                     }
-                    set_to_variable(pname, 'l', val, 0);
                 }
-                else if(ptype == 'c') {
-                    char val = 0;
-                    if(tok[0] == '\'' && tok[2] == '\'') {
-                        // char letterale: 'x'
-                        val = tok[1];
-                    } else {
-                        char *p = (char*)resolve('c', tok);
-                        if(p) val = *p;
+                else if(!is_literal && ptype == 'c') {
+                    int found = 0;
+                    for(int j = 0; j < char_variable_count; j++) {
+                        if(strcmp(char_variable[j].name, tok) == 0) {
+                            pbr[pbr_count].var_idx = j;
+                            pbr[pbr_count].type = 'c';
+                            strcpy(pbr[pbr_count].orig_name, tok);
+                            pbr_count++;
+                            strcpy(char_variable[j].name, pname);
+                            found = 1; break;
+                        }
                     }
-                    set_to_variable(pname, 'c', 0, val);
+                    if(!found) {
+                        declare_variable(pname, 'c');
+                        char *p = (char*)resolve('c', tok);
+                        set_to_variable(pname, 'c', 0, p ? *p : 0);
+                    }
+                }
+                else {
+                    // Letterale: sempre by value
+                    declare_variable(pname, ptype);
+                    if(ptype == 'i') {
+                        set_to_variable(pname, 'i', atoi(tok), 0);
+                    } else if(ptype == 'l') {
+                        set_to_variable(pname, 'l', atof(tok), 0);
+                    } else if(ptype == 'c') {
+                        char cv = (tok[0]=='\'' && tok[2]=='\'') ? tok[1] : tok[0];
+                        set_to_variable(pname, 'c', 0, cv);
+                    }
                 }
 
                 pi++;
                 tok = strtok(NULL, "!");
             }
         }
-        // ---- parse esistente ----
+
         return_hit   = 0;
         return_value = NULL;
-        parse(st_ip, end_ip,"void");
+        parse(st_ip, end_ip, "void");
 
-        // ---- NUOVO: pop scope ----
+        // Ripristina nomi originali (pass-by-reference)
+        for(int j = 0; j < pbr_count; j++) {
+            if(pbr[j].type == 'i')
+                strcpy(variable[pbr[j].var_idx].name,    pbr[j].orig_name);
+            else if(pbr[j].type == 'l')
+                strcpy(fl_variable[pbr[j].var_idx].name, pbr[j].orig_name);
+            else if(pbr[j].type == 'c')
+                strcpy(char_variable[pbr[j].var_idx].name, pbr[j].orig_name);
+        }
+
         pop_scope();
 
         // dopo parse il valore è in return_value; reset il flag per il chiamante
@@ -4729,7 +4798,7 @@ int main(int argc, char *argv[]) {
 
         //SOURCEFILE SETUP
         const char *dot = strrchr(argv[2], '.');
-        if (!dot || strcmp(dot, ".Zim") != 0) {
+        if (!dot || strcmp(dot, ".Zim") != 0 || strcmp(dot, ".Zinter") != 0) {
             printf("ERROR: formato file non supportato\n");
             return 0;
         }
