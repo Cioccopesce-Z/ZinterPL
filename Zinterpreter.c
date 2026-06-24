@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 #include <string.h>
 
 #define max_name_lettere 16
@@ -99,7 +100,7 @@ typedef struct {
 //redacted program
 typedef struct {
     int line_number; //di solito è uguale all'indice in program[idx]
-    char instruction[270];
+    char instruction[1024];
 } program_line;
 
 //salva stato
@@ -2280,197 +2281,96 @@ int dimconf(char *rname, char *lname, char *datatype, char type, char *op){
     if(deb) printf("DEBUG: confronto di dimensione di array o matrici non inficizzate\n");
 
     int rdim = 0, ldim = 0;
-    //potrei ridurre della meta i cicli ma sono le 2 di mattina e non ne ho voglia
     if(strcmp(datatype,"matrix") == 0){
 
         if(type == 'i'){
-            for(int i = 0; i < matrix_count; i++){ //resolve rightdim
-                if(strcmp(rname,matrix[i].name) == 0){
-                    rdim = matrix[i].size_first * matrix[i].size_sec;
-                    break;
-                }
+            for(int i = 0; i < matrix_count; i++){
+                if(strcmp(rname,matrix[i].name) == 0){ rdim = matrix[i].size_first * matrix[i].size_sec; break; }
             }
-            
-            for(int i = 0; i < matrix_count; i++){ //resolve leftdim
-                if(strcmp(lname,matrix[i].name) == 0){
-                    ldim = matrix[i].size_first * matrix[i].size_sec;
-                    break;
-                }
+            for(int i = 0; i < matrix_count; i++){
+                if(strcmp(lname,matrix[i].name) == 0){ ldim = matrix[i].size_first * matrix[i].size_sec; break; }
             }
         }
-
         if(type == 'l'){
-            for(int i = 0; i < fl_matrix_count; i++){ //resolve rightdim
-                if(strcmp(rname,fl_matrix[i].name) == 0){
-                    rdim = fl_matrix[i].size_first * fl_matrix[i].size_sec;
-                    break;
-                }
+            for(int i = 0; i < fl_matrix_count; i++){
+                if(strcmp(rname,fl_matrix[i].name) == 0){ rdim = fl_matrix[i].size_first * fl_matrix[i].size_sec; break; }
             }
-            
-            for(int i = 0; i < fl_matrix_count; i++){ //resolve leftdim
-                if(strcmp(lname,fl_matrix[i].name) == 0){
-                    ldim = fl_matrix[i].size_first * fl_matrix[i].size_sec;
-                    break;
-                }
+            for(int i = 0; i < fl_matrix_count; i++){
+                if(strcmp(lname,fl_matrix[i].name) == 0){ ldim = fl_matrix[i].size_first * fl_matrix[i].size_sec; break; }
             }
         }
-
         if(type == 's'){
-            for(int i = 0; i < char_matrix_count; i++){ //resolve rightdim
-                if(strcmp(rname,char_matrix[i].name) == 0){
-                    rdim = char_matrix[i].size_first * char_matrix[i].size_sec;
-                    break;
-                }
+            for(int i = 0; i < char_matrix_count; i++){
+                if(strcmp(rname,char_matrix[i].name) == 0){ rdim = char_matrix[i].size_first * char_matrix[i].size_sec; break; }
             }
-            
-            for(int i = 0; i < char_matrix_count; i++){ //resolve leftdim
-                if(strcmp(lname,char_matrix[i].name) == 0){
-                    ldim = char_matrix[i].size_first * char_matrix[i].size_sec;
-                    break;
-                }
+            for(int i = 0; i < char_matrix_count; i++){
+                if(strcmp(lname,char_matrix[i].name) == 0){ ldim = char_matrix[i].size_first * char_matrix[i].size_sec; break; }
+            }
+        }
+    }
+    else if(strcmp(datatype,"array") == 0){
+        if(type == 'i'){
+            for(int i = 0; i < array_count; i++){
+                if(strcmp(rname,array[i].name) == 0){ rdim = array[i].size; break; }
+            }
+            for(int i = 0; i < array_count; i++){
+                if(strcmp(lname,array[i].name) == 0){ ldim = array[i].size; break; }
+            }
+        }
+        if(type == 'l'){
+            for(int i = 0; i < fl_array_count; i++){
+                if(strcmp(rname,fl_array[i].name) == 0){ rdim = fl_array[i].size; break; }
+            }
+            for(int i = 0; i < fl_array_count; i++){
+                if(strcmp(lname,fl_array[i].name) == 0){ ldim = fl_array[i].size; break; }
+            }
+        }
+        if(type == 's'){
+            for(int i = 0; i < char_array_count; i++){
+                if(strcmp(rname,char_array[i].name) == 0){ rdim = char_array[i].size; break; }
+            }
+            for(int i = 0; i < char_array_count; i++){
+                if(strcmp(lname,char_array[i].name) == 0){ ldim = char_array[i].size; break; }
             }
         }
     }
 
-    else if(strcmp(datatype,"array") == 0){
-            if(type == 'i'){
-                for(int i = 0; i < array_count; i++){ //resolve rightdim
-                    if(strcmp(rname,array[i].name) == 0){
-                        rdim = array[i].size;
-                        break;
-                    }
-                }
-                
-                for(int i = 0; i < array_count; i++){ //resolve leftdim
-                    if(strcmp(lname,array[i].name) == 0){
-                        ldim = array[i].size;
-                        break;
-                    }
-                }
-            }
-
-            if(type == 'l'){
-                for(int i = 0; i < fl_array_count; i++){ //resolve rightdim
-                    if(strcmp(rname,fl_array[i].name) == 0){
-                        rdim = fl_array[i].size;
-                        break;
-                    }
-                }
-                
-                for(int i = 0; i < fl_array_count; i++){ //resolve leftdim
-                    if(strcmp(lname,fl_array[i].name) == 0){
-                        ldim = fl_array[i].size;
-                        break;
-                    }
-                }
-            }
-
-            if(type == 's'){
-                for(int i = 0; i < char_array_count;i++){ //resolve rightdim
-                    if(strcmp(rname,char_array[i].name) == 0){
-                        rdim = char_array[i].size;
-                        break;
-                    }
-                }
-                
-                for(int i = 0; i < char_array_count; i++){ //resolve leftdim
-                    if(strcmp(lname,char_array[i].name) == 0){
-                        ldim = char_array[i].size;
-                        break;
-                    }
-                }
-            }
-        }
-        
-
-        if(strcmp(op,"==") == 0){
-            if(ldim == rdim) return tru;
-        }
-        else if(strcmp(op,"^=") == 0){
-            if(ldim != rdim) return tru;
-        }
-        else if(strcmp(op,"<") == 0){
-            if(ldim < rdim) return tru;
-        }
-        else if(strcmp(op,">") == 0){
-            if(ldim > rdim) return tru;
-        }
-        else if(strcmp(op,"<<") == 0){
-            if(ldim <= rdim) return tru;
-        }
-        else if(strcmp(op,">>") == 0){
-            if(ldim >= rdim) return tru;
-        }
-        return fal;
-    
+    if     (strcmp(op,"==") == 0){ if(ldim == rdim) return tru; }
+    else if(strcmp(op,"^=") == 0){ if(ldim != rdim) return tru; }
+    else if(strcmp(op,"<")  == 0){ if(ldim <  rdim) return tru; }
+    else if(strcmp(op,">")  == 0){ if(ldim >  rdim) return tru; }
+    else if(strcmp(op,"<<") == 0){ if(ldim <= rdim) return tru; }
+    else if(strcmp(op,">>") == 0){ if(ldim >= rdim) return tru; }
+    return fal;
 }
 
 int itotalconf(int dest, int src, char *op){
-
-    if(strcmp(op,"==") == 0){
-        if(dest == src) return tru;
-    }
-    else if(strcmp(op,"^=") == 0){
-        if(dest != src) return tru;
-    }
-    else if(strcmp(op,"<") == 0){
-        if(dest < src) return tru;
-    }
-    else if(strcmp(op,">") == 0){
-        if(dest > src) return tru;
-    }
-    else if(strcmp(op,"<<") == 0){
-        if(dest <= src) return tru;
-    }
-    else if(strcmp(op,">>") == 0){
-        if(dest >= src) return tru;
-    }
+    if     (strcmp(op,"==") == 0){ if(dest == src) return tru; }
+    else if(strcmp(op,"^=") == 0){ if(dest != src) return tru; }
+    else if(strcmp(op,"<")  == 0){ if(dest <  src) return tru; }
+    else if(strcmp(op,">")  == 0){ if(dest >  src) return tru; }
+    else if(strcmp(op,"<<") == 0){ if(dest <= src) return tru; }
+    else if(strcmp(op,">>") == 0){ if(dest >= src) return tru; }
     return fal;
 }
 
 int ltotalconf(float dest, float src, char *op){
-
-    if(strcmp(op,"==") == 0){
-        if(dest == src) return tru;
-    }
-    else if(strcmp(op,"^=") == 0){
-        if(dest != src) return tru;
-    }
-    else if(strcmp(op,"<") == 0){
-        if(dest < src) return tru;
-    }
-    else if(strcmp(op,">") == 0){
-        if(dest > src) return tru;
-    }
-    else if(strcmp(op,"<<") == 0){
-        if(dest <= src) return tru;
-    }
-    else if(strcmp(op,">>") == 0){
-        if(dest >= src) return tru;
-    }
+    if     (strcmp(op,"==") == 0){ if(dest == src) return tru; }
+    else if(strcmp(op,"^=") == 0){ if(dest != src) return tru; }
+    else if(strcmp(op,"<")  == 0){ if(dest <  src) return tru; }
+    else if(strcmp(op,">")  == 0){ if(dest >  src) return tru; }
+    else if(strcmp(op,"<<") == 0){ if(dest <= src) return tru; }
+    else if(strcmp(op,">>") == 0){ if(dest >= src) return tru; }
     return fal;
 }
 
 int stotalconf(char dest, char src, char *op){
-
-    if(strcmp(op,"==") == 0){
-        if(dest == src) return tru;
-    }
-    else if(strcmp(op,"^=") == 0){
-        if(dest != src) return tru;
-    }
-    else if(strcmp(op,"<") == 0){
-        if(dest < src) return tru;
-    }
-    else if(strcmp(op,">") == 0){
-        if(dest > src) return tru;
-    }
-    else if(strcmp(op,"<<") == 0){
-        if(dest <= src) return tru;
-    }
-    else if(strcmp(op,">>") == 0){
-        if(dest >= src) return tru;
-    }
+    if     (strcmp(op,"==") == 0){ if(dest == src) return tru; }
+    else if(strcmp(op,"^=") == 0){ if(dest != src) return tru; }
+    else if(strcmp(op,"<")  == 0){ if(dest <  src) return tru; }
+    else if(strcmp(op,">")  == 0){ if(dest >  src) return tru; }
+    else if(strcmp(op,"<<") == 0){ if(dest <= src) return tru; }
+    else if(strcmp(op,">>") == 0){ if(dest >= src) return tru; }
     return fal;
 }
 
@@ -2483,34 +2383,32 @@ static int split_operands(const char *text, const char *op, char *left, char *ri
     return 1;
 }
 
-//op can now be idk to make it found it autonomally
-int exec_conf(char text[],char op_param[]){
+/* op can be "idk" per farselo trovare autonomamente */
+int exec_conf(char text[], char op_param[]){
 
     char op[3] = {0};
 
     if(strcmp(op_param,"idk") == 0){
         char buffer[64] = {0};
-        strcpy(buffer,text);
-        if(deb) printf("DEBUG EXEC_CONF: received:%s buffer:%s\n",text,buffer);
+        strcpy(buffer, text);
+        if(deb) printf("DEBUG EXEC_CONF: received:%s buffer:%s\n", text, buffer);
         has_condition(buffer);
-        if(strstr(buffer,"has")) sscanf(buffer,"%[^.].",op);
-        else{ printf("ERRORE: exec_conf error no operand automatically found\n"); return fal;}
+        if(strstr(buffer,"has")) sscanf(buffer, "%[^.].", op);
+        else { printf("ERRORE: exec_conf error no operand automatically found\n"); return fal; }
     }
-    else{
-    strncpy(op, op_param, sizeof(op)-1);
+    else {
+        strncpy(op, op_param, sizeof(op)-1);
     }
-    
-    
-    char left_operand[32] = {0};
-    char right_operand[32] = {0};
 
+    char left_operand[32]  = {0};
+    char right_operand[32] = {0};
 
     if (!split_operands(text, op, left_operand, right_operand)) {
         printf("ERROR: parse error in exec_conf: op='%s' text='%s'\n", op, text);
         return error_int;
     }
     if(deb) printf("CONF DEBUG: text: %s op: %s, left: %s, right: %s\n",
-                text, op, left_operand, right_operand);
+                   text, op, left_operand, right_operand);
 
     char left_name[64]  = {0};
     char right_name[64] = {0};
@@ -2519,554 +2417,548 @@ int exec_conf(char text[],char op_param[]){
     char left_j[16]     = {0};
     char right_j[16]    = {0};
 
+    /* ------------------------------------------------------------------ */
+    /*  MATRICE x MATRICE                                                  */
+    /* ------------------------------------------------------------------ */
+    if (strstr(left_operand, "][") && strstr(right_operand, "][")) {
 
-    /*MATRIX*/
-    if (strstr(left_operand, "][") && strstr(right_operand, "][")) { /*matr x matr*/
-
+        /* [][]name — confronto dimensione */
         if (left_operand[0]=='[' && left_operand[1]==']' && left_operand[2]=='[' && left_operand[3]==']' &&
-                right_operand[0]=='[' && right_operand[1]==']' && right_operand[2]=='[' && right_operand[3]==']') {
-                char ln[64]={0}, rn[64]={0};
-                sscanf(left_operand,  "[][]%63s", ln);
-                sscanf(right_operand, "[][]%63s", rn);
-                char bin[16]; char ltdata[16]={0}; char ltype=0;
-                strcpy(bin, ln); is_what(bin);
-                sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-                if(strcmp(ltdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",ln); return error_int; }
-                return dimconf(rn, ln, "matrix", ltype, op);
+            right_operand[0]=='[' && right_operand[1]==']' && right_operand[2]=='[' && right_operand[3]==']') {
+            char ln[64]={0}, rn[64]={0};
+            sscanf(left_operand,  "[][]%63s", ln);
+            sscanf(right_operand, "[][]%63s", rn);
+            char bin[16]; char ltdata[16]={0}; char ltype=0;
+            strcpy(bin, ln); is_what(bin);
+            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+            if(strcmp(ltdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",ln); return error_int; }
+            return dimconf(rn, ln, "matrix", ltype, op);
         }
 
         sscanf(left_operand,  "[%[^]]][%[^]]]%63s", left_i,  left_j,  left_name);
         sscanf(right_operand, "[%[^]]][%[^]]]%63s", right_i, right_j, right_name);
         if(deb) printf("[CHECK] matr x matr | left: [%s][%s]%s | right: [%s][%s]%s\n",
-            left_i, left_j, left_name, right_i, right_j, right_name);
+                       left_i, left_j, left_name, right_i, right_j, right_name);
+
         char bin[16];
-        char ltdata[16] = {0}; char ltype = 0;
-        char rtdata[16] = {0}; char rtype = 0;
+        char ltdata[16]={0}; char ltype=0;
+        char rtdata[16]={0}; char rtype=0;
 
         strcpy(bin, left_name);  is_what(bin);
         sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-        if (strcmp(ltdata, "matrix") != 0) { printf("ERROR: %s is not a matrix\n", left_name); return error_int; }
+        if (strcmp(ltdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",left_name); return error_int; }
 
         strcpy(bin, right_name); is_what(bin);
         sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-        if (strcmp(rtdata, "matrix") != 0) { printf("ERROR: %s is not a matrix\n", right_name); return error_int; }
+        if (strcmp(rtdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",right_name); return error_int; }
 
-        if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+        if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
-        int li = resolve_index(left_i),  lj = resolve_index(left_j);
-        int ri = resolve_index(right_i), rj = resolve_index(right_j);
-        if (li < 0 || lj < 0 || ri < 0 || rj < 0) return error_int;
+        int li=resolve_index(left_i),  lj=resolve_index(left_j);
+        int ri=resolve_index(right_i), rj=resolve_index(right_j);
+        if (li<0||lj<0||ri<0||rj<0) return error_int;
 
         char lenc[128], renc[128];
         snprintf(lenc, sizeof(lenc), "&%c[%d][%d]&%s&", ltype, li, lj, left_name);
         snprintf(renc, sizeof(renc), "&%c[%d][%d]&%s&", rtype, ri, rj, right_name);
 
-        if (ltype == 'i') {
-            int *dest = (int *)get_index(lenc);
-            int *src  = (int *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+        if (ltype=='i'){
+            int *dest=(int*)get_index(lenc); int *src=(int*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
             return itotalconf(*dest,*src,op);
-        } else if (ltype == 'l') {
-            float *dest = (float *)get_index(lenc);
-            float *src  = (float *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
+        } else if (ltype=='l'){
+            float *dest=(float*)get_index(lenc); float *src=(float*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
             return ltotalconf(*dest,*src,op);
-        } else if (ltype == 's') {
-            char *dest = (char *)get_index(lenc);
-            char *src  = (char *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            return stotalconf(*dest,*src,op); 
+        } else if (ltype=='s'){
+            char *dest=(char*)get_index(lenc); char *src=(char*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+            return stotalconf(*dest,*src,op);
         }
     }
 
-    else if (strstr(left_operand, "][") && !strstr(right_operand, "][")) { /*matr x boh*/
+    /* ------------------------------------------------------------------ */
+    /*  MATRICE x BOH                                                      */
+    /* ------------------------------------------------------------------ */
+    else if (strstr(left_operand,"][") && !strstr(right_operand,"][")) {
         sscanf(left_operand, "[%[^]]][%[^]]]%63s", left_i, left_j, left_name);
 
         char bin[16];
-        char ltdata[16] = {0}; char ltype = 0;
+        char ltdata[16]={0}; char ltype=0;
         strcpy(bin, left_name); is_what(bin);
         sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-        if (strcmp(ltdata, "matrix") != 0) { printf("ERROR: %s is not a matrix\n", left_name); return error_int; }
+        if (strcmp(ltdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",left_name); return error_int; }
 
-        int li = resolve_index(left_i), lj = resolve_index(left_j);
-        if (li < 0 || lj < 0) return error_int;
+        int li=resolve_index(left_i), lj=resolve_index(left_j);
+        if (li<0||lj<0) return error_int;
 
         char lenc[128];
         snprintf(lenc, sizeof(lenc), "&%c[%d][%d]&%s&", ltype, li, lj, left_name);
 
         int math_res = is_math(right_operand);
-        if(math_res != error_int) {
-            if(deb) printf("[CHECK] matr x math | left: [%s][%s]%s | right: %s\n", left_i, left_j, left_name, right_operand);
-            if(ltype=='i'){
-                int *dest = (int*)get_index(lenc);
+        if (math_res != error_int) {                                            /* matr x math */
+            if(deb) printf("[CHECK] matr x math | left: [%s][%s]%s | right: %s\n",
+                           left_i, left_j, left_name, right_operand);
+            if (!types_match(ltype,'n')){ printf("ERROR: type mismatch matrix/math\n"); return error_int; }
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc);
                 if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
-                *dest = math_res;
-            } else if(ltype=='l'){
-                float *dest = (float*)get_index(lenc);
+                return itotalconf(*dest, math_res, op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc);
                 if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
-                *dest = (float)math_res;
+                return ltotalconf(*dest, (float)math_res, op);
             }
-            return error_int;
         }
-
-        else if (right_operand[0] == '\'') { /*matr x k*/
+        else if (right_operand[0]=='\'') {                                      /* matr x k */
             if(deb) printf("[CHECK] matr x k | left: [%s][%s]%s | right: %s\n",
-                left_i, left_j, left_name, right_operand);
-            if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch matrix/char\n"); return error_int; }
-            char *dest = (char *)get_index(lenc);
-            if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-            *dest = right_operand[1];
+                           left_i, left_j, left_name, right_operand);
+            if (!types_match(ltype,'k')){ printf("ERROR: type mismatch matrix/char\n"); return error_int; }
+            char *dest=(char*)get_index(lenc);
+            if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+            return stotalconf(*dest, right_operand[1], op);
         }
-        else if (isdigit((unsigned char)right_operand[0])) { /*matr x n*/
+        else if (isdigit((unsigned char)right_operand[0])) {                    /* matr x n */
             if(deb) printf("[CHECK] matr x n | left: [%s][%s]%s | right: %s\n",
-                left_i, left_j, left_name, right_operand);
-            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch matrix/number\n"); return error_int; }
-            if (ltype == 'i') {
-                int *dest = (int *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = atoi(right_operand);
-            } else if (ltype == 'l') {
-                float *dest = (float *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = (float)atof(right_operand);
+                           left_i, left_j, left_name, right_operand);
+            if (!types_match(ltype,'n')){ printf("ERROR: type mismatch matrix/number\n"); return error_int; }
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest, atoi(right_operand), op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest, (float)atof(right_operand), op);
             }
         }
-        else if (strchr(right_operand, ']')) { /*matr x arr*/
+        else if (strchr(right_operand,']')) {                                   /* matr x arr */
             sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
             if(deb) printf("[CHECK] matr x arr | left: [%s][%s]%s | right: [%s]%s\n",
-                left_i, left_j, left_name, right_i, right_name);
+                           left_i, left_j, left_name, right_i, right_name);
 
-            char rtdata[16] = {0}; char rtype = 0;
+            char rtdata[16]={0}; char rtype=0;
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-            if (strcmp(rtdata, "array") != 0) { printf("ERROR: %s is not an array\n", right_name); return error_int; }
-            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+            if (strcmp(rtdata,"array")!=0){ printf("ERROR: %s is not an array\n",right_name); return error_int; }
+            if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
-            int ri = resolve_index(right_i);
-            if (ri < 0) return error_int;
+            int ri=resolve_index(right_i);
+            if (ri<0) return error_int;
             char renc[128];
             snprintf(renc, sizeof(renc), "&%c[%d]&%s&", rtype, ri, right_name);
 
-            if (ltype == 'i') {
-                int *dest = (int *)get_index(lenc);
-                int *src  = (int *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return itotalconf(*dest, *src, op);
-            } else if (ltype == 'l') {
-                float *dest = (float *)get_index(lenc);
-                float *src  = (float *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return ltotalconf(*dest, *src, op);
-            } else if (ltype == 's') {
-                char *dest = (char *)get_index(lenc);
-                char *src  = (char *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return stotalconf(*dest, *src, op);
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc); int *src=(int*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest,*src,op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc); float *src=(float*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest,*src,op);
+            } else if (ltype=='s'){
+                char *dest=(char*)get_index(lenc); char *src=(char*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return stotalconf(*dest,*src,op);
             }
         }
-        else if (strstr(right_operand, "__")) { /*matr x func*/
+        else if (strstr(right_operand,"__")) {                                  /* matr x func */
             if(deb) printf("[CHECK] matr x func | left: [%s][%s]%s | right: %s\n",
-                left_i, left_j, left_name, right_operand);
-        if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch matrix/function\n"); return error_int; }
+                           left_i, left_j, left_name, right_operand);
 
-            void *ret = get_index(right_operand);
-            if (!ret) { printf("ERROR: null pointer from function\n"); return error_int; }
+            void *ret=get_index(right_operand);
+            if(!ret){ printf("ERROR: null pointer from function\n"); return error_int; }
 
-            if (ltype == 'i') {
-                int *dest = (int *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(int *)ret;
-            } else if (ltype == 'l') {
-                float *dest = (float *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(float *)ret;
-            } else if (ltype == 's') {
-                char *dest = (char *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(char *)ret;
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest, *(int*)ret, op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest, *(float*)ret, op);
+            } else if (ltype=='s'){
+                char *dest=(char*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return stotalconf(*dest, *(char*)ret, op);
             }
         }
-        else { /*matr x var*/
+        else {                                                                   /* matr x var */
             sscanf(right_operand, "%63s", right_name);
             if(deb) printf("[CHECK] matr x var | left: [%s][%s]%s | right: %s\n",
-                left_i, left_j, left_name, right_name);
+                           left_i, left_j, left_name, right_name);
 
-            char rtdata[16] = {0}; char rtype = 0;
+            char rtdata[16]={0}; char rtype=0;
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-            if (strcmp(rtdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", right_name); return error_int; }
-            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+            if (strcmp(rtdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",right_name); return error_int; }
+            if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
-            if (ltype == 'i') {
-                int *dest = (int *)get_index(lenc);
-                int *src  = (int *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
-            } else if (ltype == 'l') {
-                float *dest = (float *)get_index(lenc);
-                float *src  = (float *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
-            } else if (ltype == 's') {
-                char *dest = (char *)get_index(lenc);
-                char *src  = (char *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                if(*dest == *src) return tru; else return fal;
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc); int *src=(int*)resolve(rtype,right_name);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest,*src,op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc); float *src=(float*)resolve(rtype,right_name);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest,*src,op);
+            } else if (ltype=='s'){
+                char *dest=(char*)get_index(lenc); char *src=(char*)resolve(rtype,right_name);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return stotalconf(*dest,*src,op);
             }
         }
     }
 
-    else if (!strstr(left_operand, "][") && strstr(right_operand, "][")) { /*boh x matr*/
+    /* ------------------------------------------------------------------ */
+    /*  BOH x MATRICE                                                      */
+    /* ------------------------------------------------------------------ */
+    else if (!strstr(left_operand,"][") && strstr(right_operand,"][")) {
         sscanf(right_operand, "[%[^]]][%[^]]]%63s", right_i, right_j, right_name);
 
         char bin[16];
-        char rtdata[16] = {0}; char rtype = 0;
+        char rtdata[16]={0}; char rtype=0;
         strcpy(bin, right_name); is_what(bin);
         sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-        if (strcmp(rtdata, "matrix") != 0) { printf("ERROR: %s is not a matrix\n", right_name); return error_int; }
+        if (strcmp(rtdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",right_name); return error_int; }
 
-        int ri = resolve_index(right_i), rj = resolve_index(right_j);
-        if (ri < 0 || rj < 0) return error_int;
+        int ri=resolve_index(right_i), rj=resolve_index(right_j);
+        if (ri<0||rj<0) return error_int;
         char renc[128];
         snprintf(renc, sizeof(renc), "&%c[%d][%d]&%s&", rtype, ri, rj, right_name);
 
-        if (strchr(left_operand, ']')) { /*arr x matr*/
+        if (strchr(left_operand,']')) {                                         /* arr x matr */
             sscanf(left_operand, "[%[^]]]%63s", left_i, left_name);
             if(deb) printf("[CHECK] arr x matr | left: [%s]%s | right: [%s][%s]%s\n",
-                left_i, left_name, right_i, right_j, right_name);
+                           left_i, left_name, right_i, right_j, right_name);
 
-            char ltdata[16] = {0}; char ltype = 0;
+            char ltdata[16]={0}; char ltype=0;
             strcpy(bin, left_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-            if (strcmp(ltdata, "array") != 0) { printf("ERROR: %s is not an array\n", left_name); return error_int; }
-            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+            if (strcmp(ltdata,"array")!=0){ printf("ERROR: %s is not an array\n",left_name); return error_int; }
+            if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
-            int li = resolve_index(left_i);
-            if (li < 0) return error_int;
+            int li=resolve_index(left_i);
+            if (li<0) return error_int;
             char lenc[128];
             snprintf(lenc, sizeof(lenc), "&%c[%d]&%s&", ltype, li, left_name);
 
-            if (ltype == 'i') {
-                int *dest = (int *)get_index(lenc);
-                int *src  = (int *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return itotalconf(*dest, *src, op);
-            } else if (ltype == 'l') {
-                float *dest = (float *)get_index(lenc);
-                float *src  = (float *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return ltotalconf(*dest, *src, op);
-            } else if (ltype == 's') {
-                char *dest = (char *)get_index(lenc);
-                char *src  = (char *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return stotalconf(*dest, *src, op);
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc); int *src=(int*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest,*src,op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc); float *src=(float*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest,*src,op);
+            } else if (ltype=='s'){
+                char *dest=(char*)get_index(lenc); char *src=(char*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return stotalconf(*dest,*src,op);
             }
         }
-        else { /*var x matr*/
+        else {                                                                   /* var x matr */
             sscanf(left_operand, "%63s", left_name);
             if(deb) printf("[CHECK] var x matr | left: %s | right: [%s][%s]%s\n",
-                left_name, right_i, right_j, right_name);
+                           left_name, right_i, right_j, right_name);
 
-            char ltdata[16] = {0}; char ltype = 0;
+            char ltdata[16]={0}; char ltype=0;
             strcpy(bin, left_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-            if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
-            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+            if (strcmp(ltdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",left_name); return error_int; }
+            if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
-            if (ltype == 'i') {
-                int *dest = (int *)resolve(ltype, left_name);
-                int *src  = (int *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return itotalconf(*dest, *src, op);
-            } else if (ltype == 'l') {
-                float *dest = (float *)resolve(ltype, left_name);
-                float *src  = (float *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return ltotalconf(*dest, *src, op);
-            } else if (ltype == 'c') {
-                char *dest = (char *)resolve(ltype, left_name);
-                char *src  = (char *)get_index(renc);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return stotalconf(*dest, *src, op);
+            if (ltype=='i'){
+                int *dest=(int*)resolve(ltype,left_name); int *src=(int*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest,*src,op);
+            } else if (ltype=='l'){
+                float *dest=(float*)resolve(ltype,left_name); float *src=(float*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest,*src,op);
+            } else if (ltype=='c'){
+                char *dest=(char*)resolve(ltype,left_name); char *src=(char*)get_index(renc);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return stotalconf(*dest,*src,op);
             }
         }
     }
 
-    /*ARRAY*/
-    else if (strchr(left_operand, ']') && strchr(right_operand, ']')) { /*arr x arr*/
+    /* ------------------------------------------------------------------ */
+    /*  ARRAY x ARRAY                                                      */
+    /* ------------------------------------------------------------------ */
+    else if (strchr(left_operand,']') && strchr(right_operand,']')) {
 
-            if (left_operand[0]=='[' && left_operand[1]==']' &&
-                right_operand[0]=='[' && right_operand[1]==']') {
-                char ln[64]={0}, rn[64]={0};
-                sscanf(left_operand,  "[]%63s", ln);
-                sscanf(right_operand, "[]%63s", rn);
-                char bin[16]; char ltdata[16]={0}; char ltype=0;
-                strcpy(bin, ln); is_what(bin);
-                sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-                if(strcmp(ltdata,"array")!=0){ printf("ERROR: %s is not an array\n",ln); return error_int; }
-                return dimconf(rn, ln, "array", ltype, op);
-            }
+        /* []name — confronto dimensione */
+        if (left_operand[0]=='[' && left_operand[1]==']' &&
+            right_operand[0]=='[' && right_operand[1]==']') {
+            char ln[64]={0}, rn[64]={0};
+            sscanf(left_operand,  "[]%63s", ln);
+            sscanf(right_operand, "[]%63s", rn);
+            char bin[16]; char ltdata[16]={0}; char ltype=0;
+            strcpy(bin, ln); is_what(bin);
+            sscanf(bin, "%15[^.].%c", ltdata, &ltype);
+            if(strcmp(ltdata,"array")!=0){ printf("ERROR: %s is not an array\n",ln); return error_int; }
+            return dimconf(rn, ln, "array", ltype, op);
+        }
 
         sscanf(left_operand,  "[%[^]]]%63s", left_i,  left_name);
         sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
         if(deb) printf("[CHECK] arr x arr | left: [%s]%s | right: [%s]%s\n",
-            left_i, left_name, right_i, right_name);
+                       left_i, left_name, right_i, right_name);
 
         char bin[16];
-        char ltdata[16] = {0}; char ltype = 0;
-        char rtdata[16] = {0}; char rtype = 0;
+        char ltdata[16]={0}; char ltype=0;
+        char rtdata[16]={0}; char rtype=0;
 
         strcpy(bin, left_name);  is_what(bin);
         sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-        if (strcmp(ltdata, "array") != 0) { printf("ERROR: %s is not an array\n", left_name); return error_int; }
+        if (strcmp(ltdata,"array")!=0){ printf("ERROR: %s is not an array\n",left_name); return error_int; }
 
         strcpy(bin, right_name); is_what(bin);
         sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-        if (strcmp(rtdata, "array") != 0) { printf("ERROR: %s is not an array\n", right_name); return error_int; }
+        if (strcmp(rtdata,"array")!=0){ printf("ERROR: %s is not an array\n",right_name); return error_int; }
 
-        if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+        if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
-        int li = resolve_index(left_i);
-        int ri = resolve_index(right_i);
-        if (li < 0 || ri < 0) return error_int;
+        int li=resolve_index(left_i), ri=resolve_index(right_i);
+        if (li<0||ri<0) return error_int;
 
         char lenc[128], renc[128];
         snprintf(lenc, sizeof(lenc), "&%c[%d]&%s&", ltype, li, left_name);
         snprintf(renc, sizeof(renc), "&%c[%d]&%s&", rtype, ri, right_name);
 
-        if (ltype == 'i') {
-            int *dest = (int *)get_index(lenc);
-            int *src  = (int *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            return itotalconf(*dest, *src, op);
-        } else if (ltype == 'l') {
-            float *dest = (float *)get_index(lenc);
-            float *src  = (float *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            return ltotalconf(*dest, *src, op);
-        } else if (ltype == 's' || ltype == 'c') {
-            char *dest = (char *)get_index(lenc);
-            char *src  = (char *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            return stotalconf(*dest, *src, op);
-        }   
+        if (ltype=='i'){
+            int *dest=(int*)get_index(lenc); int *src=(int*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+            return itotalconf(*dest,*src,op);
+        } else if (ltype=='l'){
+            float *dest=(float*)get_index(lenc); float *src=(float*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+            return ltotalconf(*dest,*src,op);
+        } else if (ltype=='s'||ltype=='c'){
+            char *dest=(char*)get_index(lenc); char *src=(char*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+            return stotalconf(*dest,*src,op);
+        }
     }
 
-    else if (strchr(left_operand, ']') && !strchr(right_operand, ']')) { /*arr x boh*/
+    /* ------------------------------------------------------------------ */
+    /*  ARRAY x BOH                                                        */
+    /* ------------------------------------------------------------------ */
+    else if (strchr(left_operand,']') && !strchr(right_operand,']')) {
         sscanf(left_operand, "[%[^]]]%63s", left_i, left_name);
 
         char bin[16];
-        char ltdata[16] = {0}; char ltype = 0;
+        char ltdata[16]={0}; char ltype=0;
         strcpy(bin, left_name); is_what(bin);
         sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-        if (strcmp(ltdata, "array") != 0) { printf("ERROR: %s is not an array\n", left_name); return error_int; }
+        if (strcmp(ltdata,"array")!=0){ printf("ERROR: %s is not an array\n",left_name); return error_int; }
 
-        int li = resolve_index(left_i);
-        if (li < 0) return error_int;
+        int li=resolve_index(left_i);
+        if (li<0) return error_int;
         char lenc[128];
         snprintf(lenc, sizeof(lenc), "&%c[%d]&%s&", ltype, li, left_name);
 
         int math_res = is_math(right_operand);
-        if(math_res != error_int) {
-            if(deb) printf("[CHECK] arr x math | left: [%s]%s | right: %s\n", left_i, left_name, right_operand);
-            if(ltype=='i'){
-                int *dest = (int*)get_index(lenc);
+        if (math_res != error_int) {                                            /* arr x math */
+            if(deb) printf("[CHECK] arr x math | left: [%s]%s | right: %s\n",
+                           left_i, left_name, right_operand);
+            if (!types_match(ltype,'n')){ printf("ERROR: type mismatch array/math\n"); return error_int; }
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc);
                 if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
-                *dest = math_res;
-            } else if(ltype=='l'){
-                float *dest = (float*)get_index(lenc);
+                return itotalconf(*dest, math_res, op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc);
                 if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
-                *dest = (float)math_res;
-            }
-            return error_int;
-        }
-        else if (right_operand[0] == '\'') { /*arr x k*/
-            if(deb) printf("[CHECK] arr x k | left: [%s]%s | right: %s\n", left_i, left_name, right_operand);
-            if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch array/char\n"); return error_int; }
-            char *dest = (char *)get_index(lenc);
-            if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-            *dest = right_operand[1];
-        }
-        else if (isdigit((unsigned char)right_operand[0])) { /*arr x n*/
-            if(deb) printf("[CHECK] arr x n | left: [%s]%s | right: %s\n", left_i, left_name, right_operand);
-            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch array/number\n"); return error_int; }
-            if (ltype == 'i') {
-                int *dest = (int *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = atoi(right_operand);
-            } else if (ltype == 'l') {
-                float *dest = (float *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = (float)atof(right_operand);
+                return ltotalconf(*dest, (float)math_res, op);
             }
         }
-        else if (strstr(right_operand, "__")) { /*arr x func*/
+        else if (right_operand[0]=='\'') {                                      /* arr x k */
+            if(deb) printf("[CHECK] arr x k | left: [%s]%s | right: %s\n",
+                           left_i, left_name, right_operand);
+            if (!types_match(ltype,'k')){ printf("ERROR: type mismatch array/char\n"); return error_int; }
+            char *dest=(char*)get_index(lenc);
+            if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+            return stotalconf(*dest, right_operand[1], op);
+        }
+        else if (isdigit((unsigned char)right_operand[0])) {                    /* arr x n */
+            if(deb) printf("[CHECK] arr x n | left: [%s]%s | right: %s\n",
+                           left_i, left_name, right_operand);
+            if (!types_match(ltype,'n')){ printf("ERROR: type mismatch array/number\n"); return error_int; }
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest, atoi(right_operand), op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest, (float)atof(right_operand), op);
+            }
+        }
+        else if (strstr(right_operand,"__")) {                                  /* arr x func */
             if(deb) printf("[CHECK] arr x func | left: [%s]%s | right: %s\n",
-                left_i, left_name, right_operand);
-                if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch array/function\n"); return error_int; }
+                           left_i, left_name, right_operand);
 
-            void *ret = get_index(right_operand);
-            if (!ret) { printf("ERROR: null pointer from function\n"); return error_int; }
+            void *ret=get_index(right_operand);
+            if(!ret){ printf("ERROR: null pointer from function\n"); return error_int; }
 
-            if (ltype == 'i') {
-                int *dest = (int *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(int *)ret;
-            } else if (ltype == 'l') {
-                float *dest = (float *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(float *)ret;
-            } else if (ltype == 's') {
-                char *dest = (char *)get_index(lenc);
-                if (!dest) { printf("ERROR: null pointer\n"); return error_int; }
-                *dest = *(char *)ret;
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest, *(int*)ret, op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest, *(float*)ret, op);
+            } else if (ltype=='s'){
+                char *dest=(char*)get_index(lenc);
+                if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
+                return stotalconf(*dest, *(char*)ret, op);
             }
         }
-        else { /*arr x var*/
+        else {                                                                   /* arr x var */
             sscanf(right_operand, "%63s", right_name);
-            if(deb) printf("[CHECK] arr x var | left: [%s]%s | right: %s\n", left_i, left_name, right_name);
+            if(deb) printf("[CHECK] arr x var | left: [%s]%s | right: %s\n",
+                           left_i, left_name, right_name);
 
-            char rtdata[16] = {0}; char rtype = 0;
+            char rtdata[16]={0}; char rtype=0;
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-            if (strcmp(rtdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", right_name); return error_int; }
-            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+            if (strcmp(rtdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",right_name); return error_int; }
+            if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
-            if (ltype == 'i') {
-                int *dest = (int *)get_index(lenc);
-                int *src  = (int *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return itotalconf(*dest, *src, op);
-            } else if (ltype == 'l') {
-                float *dest = (float *)get_index(lenc);
-                float *src  = (float *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return ltotalconf(*dest, *src, op);
-            } else if (ltype == 's' || ltype == 'c') {
-                char *dest = (char *)get_index(lenc);
-                char *src  = (char *)resolve(rtype, right_name);
-                if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-                return stotalconf(*dest, *src, op);
+            if (ltype=='i'){
+                int *dest=(int*)get_index(lenc); int *src=(int*)resolve(rtype,right_name);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return itotalconf(*dest,*src,op);
+            } else if (ltype=='l'){
+                float *dest=(float*)get_index(lenc); float *src=(float*)resolve(rtype,right_name);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return ltotalconf(*dest,*src,op);
+            } else if (ltype=='s'||ltype=='c'){
+                char *dest=(char*)get_index(lenc); char *src=(char*)resolve(rtype,right_name);
+                if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+                return stotalconf(*dest,*src,op);
             }
         }
     }
 
-    else if (!strchr(left_operand, ']') && strchr(right_operand, ']')) { /*var x arr*/
+    /* ------------------------------------------------------------------ */
+    /*  VAR x ARR                                                          */
+    /* ------------------------------------------------------------------ */
+    else if (!strchr(left_operand,']') && strchr(right_operand,']')) {
         sscanf(left_operand,  "%63s",        left_name);
         sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
-        if(deb) printf("[CHECK] var x arr | left: %s | right: [%s]%s\n", left_name, right_i, right_name);
+        if(deb) printf("[CHECK] var x arr | left: %s | right: [%s]%s\n",
+                       left_name, right_i, right_name);
 
         char bin[16];
-        char ltdata[16] = {0}; char ltype = 0;
-        char rtdata[16] = {0}; char rtype = 0;
+        char ltdata[16]={0}; char ltype=0;
+        char rtdata[16]={0}; char rtype=0;
 
         strcpy(bin, left_name);  is_what(bin);
         sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-        if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+        if (strcmp(ltdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",left_name); return error_int; }
 
         strcpy(bin, right_name); is_what(bin);
         sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-        if (strcmp(rtdata, "array") != 0) { printf("ERROR: %s is not an array\n", right_name); return error_int; }
+        if (strcmp(rtdata,"array")!=0){ printf("ERROR: %s is not an array\n",right_name); return error_int; }
 
-        if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+        if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
-        int ri = resolve_index(right_i);
-        if (ri < 0) return error_int;
+        int ri=resolve_index(right_i);
+        if (ri<0) return error_int;
         char renc[128];
         snprintf(renc, sizeof(renc), "&%c[%d]&%s&", rtype, ri, right_name);
 
-        if (ltype == 'i') {
-            int *dest = (int *)resolve(ltype, left_name);
-            int *src  = (int *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            return itotalconf(*dest, *src, op);
-        } else if (ltype == 'l') {
-            float *dest = (float *)resolve(ltype, left_name);
-            float *src  = (float *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            return ltotalconf(*dest, *src, op);
-        } else if (ltype == 's' || ltype == 'c') {
-            char *dest = (char *)resolve(ltype, left_name);
-            char *src  = (char *)get_index(renc);
-            if (!dest || !src) { printf("ERROR: null pointer\n"); return error_int; }
-            return stotalconf(*dest, *src, op);
+        if (ltype=='i'){
+            int *dest=(int*)resolve(ltype,left_name); int *src=(int*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+            return itotalconf(*dest,*src,op);
+        } else if (ltype=='l'){
+            float *dest=(float*)resolve(ltype,left_name); float *src=(float*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+            return ltotalconf(*dest,*src,op);
+        } else if (ltype=='s'||ltype=='c'){
+            char *dest=(char*)resolve(ltype,left_name); char *src=(char*)get_index(renc);
+            if(!dest||!src){ printf("ERROR: null pointer\n"); return error_int; }
+            return stotalconf(*dest,*src,op);
         }
     }
 
-    /*VARIABILI*/
-    else if (!strchr(left_operand, ']') && (!strchr(right_operand, ']') || strstr(right_operand,"__")) ) {
+    /* ------------------------------------------------------------------ */
+    /*  VARIABILI                                                          */
+    /* ------------------------------------------------------------------ */
+    else if (!strchr(left_operand,']') && (!strchr(right_operand,']') || strstr(right_operand,"__"))) {
 
         sscanf(left_operand, "%63s", left_name);
 
         char bin[16];
-        char ltdata[16] = {0}; char ltype = 0;
+        char ltdata[16]={0}; char ltype=0;
         strcpy(bin, left_name); is_what(bin);
         sscanf(bin, "%15[^.].%c", ltdata, &ltype);
-        if (strcmp(ltdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", left_name); return error_int; }
+        if (strcmp(ltdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",left_name); return error_int; }
 
-        /* Risolve il puntatore sinistro una volta sola */
         void *dest_ptr = resolve(ltype, left_name);
-        if (!dest_ptr) { printf("ERROR: null pointer\n"); return error_int; }
+        if (!dest_ptr){ printf("ERROR: null pointer\n"); return error_int; }
 
         int math_res = is_math(right_operand);
-        if (math_res != error_int) { /*var x math*/
+        if (math_res != error_int) {                                            /* var x math */
             if(deb) printf("[CHECK] var x math | left: %s | right: %s\n", left_name, right_operand);
-            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch var/math\n"); return error_int; }
-            if      (ltype == 'i') return itotalconf(*(int   *)dest_ptr, (int)math_res,   op);
-            else if (ltype == 'l') return ltotalconf(*(float *)dest_ptr, (float)math_res, op);
+            if (!types_match(ltype,'n')){ printf("ERROR: type mismatch var/math\n"); return error_int; }
+            if      (ltype=='i') return itotalconf(*(int*)dest_ptr,   (int)math_res,   op);
+            else if (ltype=='l') return ltotalconf(*(float*)dest_ptr, (float)math_res, op);
         }
-
-        else if (right_operand[0] == '\'') { /*var x k*/
+        else if (right_operand[0]=='\'') {                                      /* var x k */
             if(deb) printf("[CHECK] var x k | left: %s | right: %s\n", left_name, right_operand);
-            if (!types_match(ltype, 'k')) { printf("ERROR: type mismatch var/char\n"); return error_int; }
-            char *dest = (char *)dest_ptr;
-            return stotalconf(*dest, right_operand[1], op);
+            if (!types_match(ltype,'k')){ printf("ERROR: type mismatch var/char\n"); return error_int; }
+            return stotalconf(*(char*)dest_ptr, right_operand[1], op);
         }
-
-        else if (isdigit((unsigned char)right_operand[0])) { /*var x n*/
+        else if (isdigit((unsigned char)right_operand[0])) {                   /* var x n */
             if(deb) printf("[CHECK] var x n | left: %s | right: %s\n", left_name, right_operand);
-            if (!types_match(ltype, 'n')) { printf("ERROR: type mismatch var/number\n"); return error_int; }
-            if      (ltype == 'i') return itotalconf(*(int   *)dest_ptr, atoi(right_operand),          op);
-            else if (ltype == 'l') return ltotalconf(*(float *)dest_ptr, (float)atof(right_operand),   op);
+            if (!types_match(ltype,'n')){ printf("ERROR: type mismatch var/number\n"); return error_int; }
+            if      (ltype=='i') return itotalconf(*(int*)dest_ptr,   atoi(right_operand),        op);
+            else if (ltype=='l') return ltotalconf(*(float*)dest_ptr, (float)atof(right_operand), op);
         }
-
-        else if (strstr(right_operand, "__")) { /*var x func*/
+        else if (strstr(right_operand,"__")) {                                  /* var x func */
             sscanf(right_operand, "%63s", right_name);
             if(deb) printf("[CHECK] var x func | left: %s | right: %s\n", left_name, right_name);
 
-            char rtdata[16] = {0}; char rtype = 0;
+            char rtdata[16]={0}; char rtype=0;
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-            if (strcmp(rtdata, "function") != 0) { printf("ERROR: %s is not a function\n", right_name); return error_int; }
-            if (!types_match(ltype, 'v')) { printf("ERROR: type mismatch var/function\n"); return error_int; }
+            if (strcmp(rtdata,"function")!=0){ printf("ERROR: %s is not a function\n",right_name); return error_int; }
+            if (!types_match(ltype,'v')){ printf("ERROR: type mismatch var/function\n"); return error_int; }
 
             void *ret = get_index(right_name);
-            if (!ret) { printf("ERROR: null pointer from function\n"); return error_int; }
+            if (!ret){ printf("ERROR: null pointer from function\n"); return error_int; }
 
-            if      (ltype == 'i') return itotalconf(*(int   *)dest_ptr, *(int   *)ret, op);
-            else if (ltype == 'l') return ltotalconf(*(float *)dest_ptr, *(float *)ret, op);
-            else if (ltype == 'c') return stotalconf(*(char  *)dest_ptr, *(char  *)ret, op);
+            if      (ltype=='i') return itotalconf(*(int*)dest_ptr,   *(int*)ret,   op);
+            else if (ltype=='l') return ltotalconf(*(float*)dest_ptr, *(float*)ret, op);
+            else if (ltype=='c') return stotalconf(*(char*)dest_ptr,  *(char*)ret,  op);
         }
-
-        else { /*var x var*/
+        else {                                                                   /* var x var */
             sscanf(right_operand, "%63s", right_name);
             if(deb) printf("[CHECK] var x var | left: %s | right: %s\n", left_name, right_name);
 
-            char rtdata[16] = {0}; char rtype = 0;
+            char rtdata[16]={0}; char rtype=0;
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
-            if (strcmp(rtdata, "variable") != 0) { printf("ERROR: %s is not a variable\n", right_name); return error_int; }
-            if (!types_match(ltype, rtype)) { printf("ERROR: type mismatch\n"); return error_int; }
+            if (strcmp(rtdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",right_name); return error_int; }
+            if (!types_match(ltype,rtype)){ printf("ERROR: type mismatch\n"); return error_int; }
 
             void *src_ptr = resolve(rtype, right_name);
-            if (!src_ptr) { printf("ERROR: null pointer\n"); return error_int; }
+            if (!src_ptr){ printf("ERROR: null pointer\n"); return error_int; }
 
-            if      (ltype == 'i') return itotalconf(*(int   *)dest_ptr, *(int   *)src_ptr, op);
-            else if (ltype == 'l') return ltotalconf(*(float *)dest_ptr, *(float *)src_ptr, op);
-            else if (ltype == 'c') return stotalconf(*(char  *)dest_ptr, *(char  *)src_ptr, op);
+            if      (ltype=='i') return itotalconf(*(int*)dest_ptr,   *(int*)src_ptr,   op);
+            else if (ltype=='l') return ltotalconf(*(float*)dest_ptr, *(float*)src_ptr, op);
+            else if (ltype=='c') return stotalconf(*(char*)dest_ptr,  *(char*)src_ptr,  op);
         }
     }
+
+    return fal;
 }
 
 
@@ -3813,38 +3705,59 @@ void *exec_times_times(char *text) {
 
     char lop[16] = {0};
     char rop[16] = {0};
-    int has_rop = (sscanf(text, "%15[^*]**%15s", lop, rop) == 2);
-    if (!has_rop)
-        sscanf(text, "%15[^*]**", lop);
+    int has_rop = 0;
+
+    // Parsing manuale per evitare il problema di * in sscanf
+    char *op = strstr(text, "**");
+    if (op) {
+        int llen = op - text;
+        strncpy(lop, text, llen < 16 ? llen : 15);
+        lop[15] = '\0';
+        // Rimuovi eventuale spazio finale
+        int i = strlen(lop) - 1;
+        while (i >= 0 && (lop[i] == ' ' || lop[i] == '\t')) lop[i--] = '\0';
+
+        char *after = op + 2;
+        while (*after == ' ' || *after == '\t') after++;
+        if (*after && *after != ':' && *after != '\n' && *after != '\0') {
+            sscanf(after, "%15[^: \t\n]", rop);
+            if (strlen(rop) > 0) has_rop = 1;
+        }
+    }
 
     // tipo di lop
     char buffer[16], junk[16]; char type = 0;
     strcpy(buffer, lop);
     is_what(buffer);
     sscanf(buffer, "%15[^.].%c", junk, &type);
-    if(deb) printf("DEBUG: timestimes lop=%s type=%c has_rop=%d rop=%s\n", lop, type, has_rop, rop);
+    if (deb) printf("DEBUG: timestimes lop=%s type=%c has_rop=%d rop=%s\n", lop, type, has_rop, rop);
 
-    // valore di rop (default 1)
-    int ropv = 1;
-    if (has_rop) {
-        char rbuffer[16]; char rtype = 0;
-        strcpy(rbuffer, rop);
-        is_what(rbuffer);
-        sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
-        int *rptr = (int *)resolve(rtype, rop);
-        if (!rptr) { printf("ERROR: cannot resolve rop '%s' in **\n", rop); return pt_place_holder; }
-        ropv = *rptr;
-    }
-
-    // INT: sottrazione diretta
+    // INT
     if (type == 'i') {
         int *dest = (int *)resolve(type, lop);
         if (!dest) { printf("ERROR: resolve failed for '%s' in **\n", lop); return pt_place_holder; }
-        *dest *= ropv;
+
+        if (!has_rop) {
+            // Nessun rop: quadrato (n ** = n^2)
+            *dest *= *dest;
+        } else {
+            // rop presente: potenza intera (n ** k)
+            char rbuffer[16]; char rtype = 0;
+            strcpy(rbuffer, rop);
+            is_what(rbuffer);
+            sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
+            int *rptr = (int *)resolve(rtype, rop);
+            if (!rptr) { printf("ERROR: cannot resolve rop '%s' in **\n", rop); return pt_place_holder; }
+            int base = *dest;
+            int exp  = *rptr;
+            int result = 1;
+            for (int e = 0; e < exp; e++) result *= base;
+            *dest = result;
+        }
         return dest;
     }
 
-    // CHAR ARRAY: copia arr[src] in arr[src-ropv]
+    // CHAR ARRAY
     else if (type == 's') {
         char idx_str[8] = {0}, arr_name[16] = {0};
         if (sscanf(lop, "[%7[^]]]%15s", idx_str, arr_name) != 2) {
@@ -3852,10 +3765,21 @@ void *exec_times_times(char *text) {
             return pt_char_place_holder;
         }
         int src_idx = resolve_index(idx_str);
-        int dst_idx = src_idx * ropv;
+
+        int ropv = 1;
+        if (has_rop) {
+            char rbuffer[16]; char rtype = 0;
+            strcpy(rbuffer, rop);
+            is_what(rbuffer);
+            sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
+            int *rptr = (int *)resolve(rtype, rop);
+            if (!rptr) { printf("ERROR: cannot resolve rop '%s' in **\n", rop); return pt_char_place_holder; }
+            ropv = *rptr;
+        }
+        int dst_idx = has_rop ? src_idx * ropv : src_idx * src_idx;
 
         if (dst_idx < 0) {
-            printf("ERROR: ** underflow su char array '%s' [%d - %d]\n", arr_name, src_idx, ropv);
+            printf("ERROR: ** underflow su char array '%s' [%d]\n", arr_name, dst_idx);
             return pt_char_place_holder;
         }
 
@@ -3880,38 +3804,57 @@ void *exec_slash_slash(char *text) {
 
     char lop[16] = {0};
     char rop[16] = {0};
-    int has_rop = (sscanf(text, "%15[^~]~~%15s", lop, rop) == 2);
-    if (!has_rop)
-        sscanf(text, "%15[^~]~~", lop);
+    int has_rop = 0;
+
+    // Parsing manuale
+    char *op = strstr(text, "~~");
+    if (op) {
+        int llen = op - text;
+        strncpy(lop, text, llen < 16 ? llen : 15);
+        lop[15] = '\0';
+        int i = strlen(lop) - 1;
+        while (i >= 0 && (lop[i] == ' ' || lop[i] == '\t')) lop[i--] = '\0';
+
+        char *after = op + 2;
+        while (*after == ' ' || *after == '\t') after++;
+        if (*after && *after != ':' && *after != '\n' && *after != '\0') {
+            sscanf(after, "%15[^: \t\n]", rop);
+            if (strlen(rop) > 0) has_rop = 1;
+        }
+    }
 
     // tipo di lop
     char buffer[16], junk[16]; char type = 0;
     strcpy(buffer, lop);
     is_what(buffer);
     sscanf(buffer, "%15[^.].%c", junk, &type);
-    if(deb) printf("DEBUG: slash_slash lop=%s type=%c has_rop=%d rop=%s\n", lop, type, has_rop, rop);
+    if (deb) printf("DEBUG: slash_slash lop=%s type=%c has_rop=%d rop=%s\n", lop, type, has_rop, rop);
 
-    // valore di rop (default 1)
-    int ropv = 1;
-    if (has_rop) {
-        char rbuffer[16]; char rtype = 0;
-        strcpy(rbuffer, rop);
-        is_what(rbuffer);
-        sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
-        int *rptr = (int *)resolve(rtype, rop);
-        if (!rptr) { printf("ERROR: cannot resolve rop '%s' in ~~\n", rop); return pt_place_holder; }
-        ropv = *rptr;
-    }
-
-    // INT: sottrazione diretta
+    // INT
     if (type == 'i') {
         int *dest = (int *)resolve(type, lop);
         if (!dest) { printf("ERROR: resolve failed for '%s' in ~~\n", lop); return pt_place_holder; }
-        *dest /= ropv;
+
+        if (!has_rop) {
+            // Nessun rop: radice quadrata intera (n ~~ = floor(sqrt(n)))
+            if (*dest < 0) { printf("ERROR: ~~ radice di numero negativo '%s'\n", lop); return pt_place_holder; }
+            *dest = (int)sqrt((double)*dest);
+        } else {
+            // rop presente: radice k-esima intera
+            char rbuffer[16]; char rtype = 0;
+            strcpy(rbuffer, rop);
+            is_what(rbuffer);
+            sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
+            int *rptr = (int *)resolve(rtype, rop);
+            if (!rptr) { printf("ERROR: cannot resolve rop '%s' in ~~\n", rop); return pt_place_holder; }
+            if (*rptr == 0) { printf("ERROR: ~~ radice di grado 0\n"); return pt_place_holder; }
+            if (*dest < 0 && (*rptr % 2 == 0)) { printf("ERROR: ~~ radice pari di numero negativo\n"); return pt_place_holder; }
+            *dest = (int)round(pow((double)*dest, 1.0 / (double)*rptr));
+        }
         return dest;
     }
 
-    // CHAR ARRAY: copia arr[src] in arr[src-ropv]
+    // CHAR ARRAY
     else if (type == 's') {
         char idx_str[8] = {0}, arr_name[16] = {0};
         if (sscanf(lop, "[%7[^]]]%15s", idx_str, arr_name) != 2) {
@@ -3919,10 +3862,21 @@ void *exec_slash_slash(char *text) {
             return pt_char_place_holder;
         }
         int src_idx = resolve_index(idx_str);
-        int dst_idx = src_idx / ropv;
+
+        int ropv = 1;
+        if (has_rop) {
+            char rbuffer[16]; char rtype = 0;
+            strcpy(rbuffer, rop);
+            is_what(rbuffer);
+            sscanf(rbuffer, "%15[^.].%c", junk, &rtype);
+            int *rptr = (int *)resolve(rtype, rop);
+            if (!rptr) { printf("ERROR: cannot resolve rop '%s' in ~~\n", rop); return pt_char_place_holder; }
+            ropv = *rptr;
+        }
+        int dst_idx = has_rop ? src_idx / ropv : (int)sqrt((double)src_idx);
 
         if (dst_idx < 0) {
-            printf("ERROR: ~~ underflow su char array '%s' [%d - %d]\n", arr_name, src_idx, ropv);
+            printf("ERROR: ~~ underflow su char array '%s' [%d]\n", arr_name, dst_idx);
             return pt_char_place_holder;
         }
 
@@ -4476,6 +4430,8 @@ void parse(int start_line, int eventual_end_line, char direct_line[]){
         else if( starts_with(direct_line, "set_to_") ){ exec_set_to(direct_line); }
         else if( strchr(direct_line, '=') ){ exec_equal(direct_line); }
         else if( strstr(direct_line, "++") ){ exec_plus_plus(direct_line); }
+        else if( strstr(direct_line, "**") ){ exec_times_times(direct_line); }
+        else if( strstr(direct_line, "~~") ){ exec_slash_slash(direct_line); }
         else if( strstr(direct_line, "--") ){ exec_min_min(direct_line); }
         else if( starts_with(direct_line, "scan_") ){ }
 
@@ -4519,6 +4475,8 @@ void parse(int start_line, int eventual_end_line, char direct_line[]){
         else if( starts_with (program[global_ip].instruction, "set_to_") ){ exec_set_to(program[global_ip].instruction); }
         else if( strchr (program[global_ip].instruction, '=') ){ exec_equal(program[global_ip].instruction); }
         else if( strstr (program[global_ip].instruction, "++") ){ exec_plus_plus(program[global_ip].instruction); }
+        else if( strstr (program[global_ip].instruction, "**") ){ exec_times_times(program[global_ip].instruction); }
+        else if( strstr (program[global_ip].instruction, "~~") ){ exec_slash_slash(program[global_ip].instruction); }
         else if( strstr (program[global_ip].instruction, "--") ){ exec_min_min(program[global_ip].instruction); }
         else if( starts_with (program[global_ip].instruction, "scan_") ){ }
 
