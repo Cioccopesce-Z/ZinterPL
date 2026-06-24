@@ -35,7 +35,10 @@ od_ stars(&i&n&){
 
 
 od_ sq(&i&n&){
-    deven_ n**:
+    int_ &i&tmp&:
+    tmp = n:
+    tmp**:
+    deven_ tmp:
 }
 
 od_ succ(&i&n&){
@@ -123,7 +126,7 @@ od_ show_pyramid(){
         print_ &s&"   "&:
         sp = rows - i:
         st = i * 2:
-        st = st - 1:
+        st = st -1:
         __spaces(sp):
         __stars(st):
         println_:
