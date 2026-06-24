@@ -747,7 +747,7 @@ __start(){
 ## Build & Run
 
 ```bash
-gcc Zinterpreter.c -o Zinterpreter
+gcc Zinterpreter.c -o Zinterpreter -lm
 ./Zinterpreter -df myprogram.Zim
 ```
 
@@ -815,7 +815,7 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 
 ## Memory Footprint
 
-Measured by running `status_` on the actual interpreter (compiled with gcc, Ubuntu):
+Measured by running `status_` on the actual interpreter (compiled with gcc, Ubuntu, Debian, Arch):
 
 | State | RAM used |
 |-------|----------|
