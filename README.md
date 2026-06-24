@@ -335,11 +335,11 @@ print_ __retfunc():       // → differenza() → 6:
 
 ### Pass-by-reference for function arguments
 
-When a variable is passed to a function as an argument, it is passed **by reference**: if the called function modifies it, the change is visible in the caller after the call returns.
+In ZinterPL, **all function arguments are passed by reference** — scalars, arrays, and matrices alike. This means a function never receives a copy of its argument: it receives a direct alias to the original. Any modification made inside the called function is immediately and permanently visible in the caller after the call returns.
 
-This also propagates across call chains. A variable passed into function A, then forwarded to function B, will reflect changes made in B when A returns.
+This propagates across the full call chain. If function A passes a variable to function B, and B modifies it, the change is visible in A when B returns — and visible in whoever called A as well.
 
-**Example from `Zcomplete.Zim`:**
+#### Scalar pass-by-reference
 
 ```
 od_ addone(&i&value&){
@@ -358,7 +358,7 @@ Calling `__addone(5)`:
 
 1. `addone` receives `value = 5`
 2. `value++` → `value = 6`
-3. `__addtwo(value)` is called — `addtwo` receives the same `value` and increments it by 2 → `value = 8`
+3. `__addtwo(value)` — `addtwo` receives the same alias and increments by 2 → `value = 8`
 4. Back in `addone`, `value` is now `8` (the change from `addtwo` propagated back)
 5. `deven_ value` returns `8`
 
@@ -366,7 +366,72 @@ Calling `__addone(5)`:
 print_ __addone(5):   // prints 8:
 ```
 
-> ⚠️ **Limitation:** arrays and matrices cannot currently be passed as function arguments. This is the next planned feature.
+#### Array and matrix pass-by-reference
+
+Arrays and matrices follow the exact same rule. When an array is passed to a function, the function works directly on the original array in the caller's scope — there is no copy. Writing to any element inside the function writes through to the original.
+
+```
+od_ fill(&i[5]&arr&){
+    [0]arr = 10:
+    [1]arr = 20:
+    [2]arr = 30:
+    deven_:
+}
+
+__start(){
+    int_ &i[5]&data&:
+    __fill(data):
+    println_ [0]data:    // prints 10:
+    println_ [1]data:    // prints 20:
+    println_ [2]data:    // prints 30:
+}
+```
+
+The same applies to matrices:
+
+```
+od_ zero_matrix(&i[3][3]&mat&){
+    [0][0]mat = 0:
+    [1][1]mat = 0:
+    [2][2]mat = 0:
+    deven_:
+}
+```
+
+#### ⚠️ Side-effect trap with `deven_` expressions
+
+Because all arguments are aliases, any `deven_` expression that modifies the argument in place **also modifies the original variable in the caller**. This is the most common source of bugs with pass-by-reference.
+
+`deven_ n**` does not compute a temporary square — it modifies `n` in place, and since `n` is an alias of whatever was passed, the caller's variable is overwritten too.
+
+**Wrong — destroys the loop variable:**
+
+```
+od_ sq(&i&n&){
+    deven_ n**:     // n** modifies n in place — the caller's i gets overwritten:
+}
+
+__start(){
+    int_ &i&i&:
+    i = 1:
+    during(i < 9 ! i++){
+        print_ __sq(i):    // after sq(3): i becomes 9 in __start, loop breaks:
+    }
+}
+```
+
+**Correct — use a local copy:**
+
+```
+od_ sq(&i&n&){
+    int_ &i&tmp&:
+    tmp = n:        // copy the value into a local variable:
+    tmp**:          // square the local copy — n (and the caller's variable) untouched:
+    deven_ tmp:
+}
+```
+
+The rule is simple: if a `deven_` expression uses `**`, `~~`, `++`, or `--` on a parameter, always copy the parameter into a local variable first and operate on that.
 
 ---
 
@@ -638,7 +703,6 @@ The interpreter merges the library into the source before parsing.
 
 ## Limitations
 
-- **Arrays and matrices cannot be passed as function arguments.** Workaround: use global-style naming conventions or pass individual elements. Proper array-passing support is the next planned feature.
 - **Arrays and matrices cannot be returned from functions** via `deven_`. Only scalar values (`int`, `char`, `float`) are returnable.
 
 ---
@@ -728,8 +792,9 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Matrices (2D) | Stable |
 | Functions + return values | Stable |
 | Function arguments (scalars) | Stable |
-| Function arguments (arrays/matrices) | Planned |
-| Pass-by-reference for function args | Stable |
+| Function arguments (arrays/matrices) | Stable |
+| Pass-by-reference for function args (scalars) | Stable |
+| Pass-by-reference for function args (arrays/matrices) | Stable |
 | Function renaming (`-->`) | Stable |
 | Variable renaming (`-->`) | Stable |
 | Inline C (`C{ }`) | Planned |
