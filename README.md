@@ -15,8 +15,8 @@ Source files use the `.Zim` extension. Library files use `.Zlib`.
 - `during` unified loop construct (count-style and condition-style) — both fully functional
 - Extended `deven_` return expressions: arithmetic, power, square root, and nested function calls
 - Function argument pass-by-reference: modifications made inside a called function are reflected back in the caller
-- Function renaming: permanently rename any function with `newname --> oldname`
-- Variable renaming: permanently rename any variable with `newname --> oldname`
+- Function renaming: permanently rename any function with `newname -> oldname`
+- Variable renaming: permanently rename any variable with `newname -> oldname`
 - `++N` / `--N` operations accept variables or function calls as `N`
 - Input via `scan_`
 - Built-in `status_` diagnostic command
@@ -368,10 +368,10 @@ print_ __addone(5):   // prints 8:
 
 #### Array and matrix pass-by-reference
 
-Arrays and matrices follow the exact same rule. When an array is passed to a function, the function works directly on the original array in the caller's scope — there is no copy. Writing to any element inside the function writes through to the original.
+Arrays and matrices follow the exact same rule. When an array is passed to a function, the function works directly on the original array in the caller's scope — there is no copy. Writing to any element inside the function writes through to the original, the only execption is that the type for the arrays or matrices passed are, in order, a & m, the interpreter automatically resolve for the right data type.
 
 ```
-od_ fill(&i[5]&arr&){
+od_ fill(&a&arr&){
     [0]arr = 10:
     [1]arr = 20:
     [2]arr = 30:
@@ -390,7 +390,7 @@ __start(){
 The same applies to matrices:
 
 ```
-od_ zero_matrix(&i[3][3]&mat&){
+od_ zero_matrix(&m&mat&){
     [0][0]mat = 0:
     [1][1]mat = 0:
     [2][2]mat = 0:
@@ -437,28 +437,28 @@ The rule is simple: if a `deven_` expression uses `**`, `~~`, `++`, or `--` on a
 
 ### Function renaming
 
-A function can be permanently renamed using the `-->` operator. After the rename, the function is only accessible under the new name; the old name is no longer valid:
+A function can be permanently renamed using the `->` operator. After the rename, the function is only accessible under the new name; the old name is no longer valid:
 
 ```
-newname --> oldname:
+newname -> oldname:
 ```
 
 This works for plain function names as well as for array-indexed and matrix-indexed forms:
 
 ```
-newname     --> originalfunc:       // function rename:
-[i]newname  --> [i]originalfunc:    // array-form rename:
-[r][c]newname --> [r][c]original:   // matrix-form rename:
+newname     -> originalfunc:       // function rename:
+[i]newname  -> [i]originalfunc:    // array-form rename:
+[r][c]newname -> [r][c]original:   // matrix-form rename:
 ```
 
 ---
 
 ### Variable renaming
 
-Scalar variables can be permanently renamed using the same `-->` operator:
+Scalar variables can be permanently renamed using the same `->` operator:
 
 ```
-newname --> oldname:
+newname -> oldname:
 ```
 
 After this, the variable is only accessible under `newname`. The old name is no longer valid:
@@ -466,7 +466,7 @@ After this, the variable is only accessible under `newname`. The old name is no 
 ```
 int_ &i&score&:
 score = 42:
-punti --> score:
+punti -> score:
 println_ punti:    // prints 42:
 println_ score:    // score no longer exists — returns 0:
 ```
@@ -795,8 +795,8 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Function arguments (arrays/matrices) | Stable |
 | Pass-by-reference for function args (scalars) | Stable |
 | Pass-by-reference for function args (arrays/matrices) | Stable |
-| Function renaming (`-->`) | Stable |
-| Variable renaming (`-->`) | Stable |
+| Function renaming (`->`) | Stable |
+| Variable renaming (`->`) | Stable |
 | Inline C (`C{ }`) | Planned |
 | Extended `deven_` expressions (`++`, `--`, `**`, `~~`, function) | Stable |
 | `++N` / `--N` with variable or function as `N` | Stable |
