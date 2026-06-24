@@ -1,9 +1,0 @@
-od_ printciao(){
-    println_ &s&"ciao"&:
-    return_ NULL:
-}
-
-od_ printhello(){
-    println_ &s&"hello"&:
-    return_:
-}
