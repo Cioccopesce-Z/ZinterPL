@@ -3,80 +3,6 @@
     exec_:
 }
 
-od_ retretunc(&i&pass&){
-    deven_ __valueplus(pass):
-}
-
-od_ retfunc(){
-    deven_ __differenza():
-}
-
-od_ valueplus(&i&inner&){
-    print_ inner: println_ &s&" 5 - inner form valueplus"&:
-    deven_ inner++:
-}
-
-od_ somma(){
-    int_ &i&a&:
-    int_ &i&b&:
-    a = 3:
-    b = 5:
-    int_ &i&res&:
-    res = a + b:
-    deven_ res:
-}
-
-od_ differenza(){
-    int_ &i&a&:
-    int_ &i&b&:
-    a = 10:
-    b = 4:
-    int_ &i&res&:
-    res = a - b:
-    deven_ res:
-}
-
-od_ prodotto(){
-    int_ &i&a&:
-    int_ &i&b&:
-    a = 6:
-    b = 7&:
-    int_ &i&res&:
-    res = a * b:
-    deven_ res:
-}
-
-od_ divisione(){
-    int_ &i&a&:
-    int_ &i&b&:
-    a = 20:
-    b = 4:
-    int_ &i&res&:
-    res = a / b:
-    deven_ res:
-}
-
-od_ testargs(&i&a&!&i&b&){
-    int_&i&risultato&:
-    risultato=a+b:
-    deven_ risultato:
-}
-
-od_ hello(){
-    println_ &s&"hello from void function"&:
-    deven_:
-}
-
-od_ get_char(){
-    char_ &c&ch&:
-    ch = 'Z':
-    deven_ ch:
-}
-
-od_ retv(&i&value&){
-    deven_ value:
-}
-
 __start(){
 
     //=== TEST LIB FUNCTION ===:
@@ -109,15 +35,20 @@ __start(){
     print_ __testargs(10!20): println_ &s&" 30 - testargs(10!20)"&:
 
     println_:
-    //=== CONCATENED FUNCTION ===  NON VA!!!!!!!!!:
+    //=== CONCATENED FUNCTION ===:
     println_ &s&"=== CONCATENED FUNCTION ==="&:
     print_ __retretunc(5): println_ &s&" 6 - retretunc(5)-->valueplus(5)-->6"&:
 
     println_:
-    //=== RETURN FUNCTION ===  NON VA!!!!!!:
+    //=== RETURN FUNCTION ===:
     println_ &s&"=== RETURN FUNCTION ==="&:
     print_ __retv(5): println_ &s&" 5 - retv(5)"&:
 
+    println_:
+    //=== MOVED VAR IN FUNCTION ===:
+    println_ &s&"=== MOVED VAR IN FUNCTION ==="&:
+    print_ __addone(5): println_ &s&" 8 - addone(5)-->5+1-->addtwo(6)-->6+2-->8"&:
+    
 
     println_:
     //=== FUNCTION IN VAR ===:
@@ -191,8 +122,10 @@ __start(){
     plusplus--4:
     print_ plusplus: println_ &s&" 1 - plusplus--4"&:
 
-    plusplus++__retv(5):
-    print_ plusplus: println_ &s&" 6 - plusplus++__retv(5)"&:
+    rett --> retv:
+
+    plusplus++__rett(5):
+    print_ plusplus: println_ &s&" 6 - plusplus++__rett(5)"&:
 
 
     println_:
@@ -385,19 +318,25 @@ __start(){
     println_ repetition:
     println_:
 
-//    during(5){
-//        println_ &s&"ciao 5 volte"&:
-//    }
-//
-//    during(repetition){
-//        println_ &s&"hello 3 volte"&:
-//    }
-//
-//    during([4]tion){
-//        println_ &s&"hi 2 volte"&:
-//    }
+    during(5){
+        println_ &s&"5 volte"&:
+    }
 
-    during(repetition < 7 ! repetition++ ! println_ &s&"any legal function can be executed here"&){
+    println_:
+
+    during(repetition){
+        println_ &s&"3 volte"&:
+    }
+
+    println_:
+
+    during([4]tion){
+        println_ &s&"2 volte"&:
+    }
+
+    println_:
+
+    during(repetition < 7 ! repetition++){
         print_ repetition: println_ &s&" 4 volte"&: 
     }
 
@@ -411,10 +350,27 @@ __start(){
     println_:
     //====== ERROR VAR TEST ============:
     println_ &s&"====== ERROR VAR TEST ============"&:
-    
+
     b = 0: // non dovrebbe essere accessibile:
     print_ b: println_ &s&"non dovrebbe essere accessibile"&:
+
+
+    println_:
+    //====== ARG ARRAY AND MATRICES TEST ============:
+    println_ &s&"====== ARG ARRAY AND MATRICES TEST ============"&:
     
+    int_ &i[7]&argarray&:
+    int_ &i[7][7]&argmatris&:
+
+    __addseven(argarray ! 7):
+    print_ [5]argarray: println_ &s&" if(novar ^= 7) 7 oth 6 __addseven(argarray, 7)"&:
+
+    __addsix(argarray):
+    print_ [1]argarray: println_ &s&" 6 __addsix(argarray)"&:
+
+    __addnine(argmatris):
+    print_ [1][1]argmatris: println_ &s&" 9 __addnine(argmatris)"&:
+
     println_:
     //====== MEMORY READ AND RESET TEST ============:
     println_ &s&"====== MEMORY READ AND RESET TEST ============"&:
