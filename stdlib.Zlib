@@ -1,45 +1,45 @@
 // ============================================================:
 //  stdlib.Zlib  —  Libreria standard per il linguaggio Zim:
-//  Sezioni: STRING | MATH | UTILITY:
+//  Sezioni STRING | MATH | UTILITY:
 //:
-//  Uso:   ./Zinterpreter -df tuo_file.Zim -stdlib.Zlib:
-//
+//  Uso   ./Zinterpreter -df tuo_file.Zim -stdlib.Zlib:
+//:
 //  Convenzioni nomi:
-//    - funzioni comuni  → nome corto  (__len, __abs, __max …)
-//    - funzioni rare    → nome lungo  (__array_fill, __matrix_zero …)
-//
+//    - funzioni comuni  → nome corto  (__len, __abs, __max …):
+//    - funzioni rare    → nome lungo  (__array_fill, __matrix_zero …):
+//:
 //  Note:
-//    - __toupper / __tolower sono stub: ZinterPL non ha aritmetica
-//      su char, quindi la conversione ASCII non e' implementabile
-//      senza inline C. Le funzioni esistono ma non trasformano.
-//    - __gcd usa Euclide iterativo con variabile temporanea locale.
-//    - Tutti i parametri usano prefissi unici per evitare collisioni
-//      con variabili del chiamante.
-// ============================================================
+//    - __toupper / __tolower sono stub ZinterPL non ha aritmetica:
+//      su char, quindi la conversione ASCII non e' implementabile:
+//      senza inline C. Le funzioni esistono ma non trasformano.:
+//    - __gcd usa Euclide iterativo con variabile temporanea locale.:
+//    - Tutti i parametri usano prefissi unici per evitare collisioni:
+//      con variabili del chiamante.:
+// ============================================================:
 
 
-// ============================================================
-//  SEZIONE 1 — STRING
-//
-//  __string_at(arr, i)         → char all'indice i
-//  __len(arr, n)               → numero di char non '\0' nei primi n
-//  __copy(src, dst, n)         → copia n char da src a dst
-//  __cmp(a, b, n)              → 1 se uguali sui primi n, 0 altrimenti
-//  __string_fill(arr, ch, n)   → riempie n celle con ch
-//  __string_count(arr, ch, n)  → occorrenze di ch nei primi n
-//  __reverse(arr, n)           → inverte i primi n char in-place
-//  __toupper(arr, n)           → STUB: non disponibile senza inline C
-//  __tolower(arr, n)           → STUB: non disponibile senza inline C
-// ============================================================
+// ============================================================:
+//  SEZIONE 1 — STRING:
+//:
+//  __string_at(arr, i)         → char all'indice i:
+//  __len(arr, n)               → numero di char non '\0' nei primi n:
+//  __copy(src, dst, n)         → copia n char da src a dst:
+//  __cmp(a, b, n)              → 1 se uguali sui primi n, 0 altrimenti:
+//  __string_fill(arr, ch, n)   → riempie n celle con ch:
+//  __string_count(arr, ch, n)  → occorrenze di ch nei primi n:
+//  __reverse(arr, n)           → inverte i primi n char in-place:
+//  __toupper(arr, n)           → STUB non disponibile senza inline C:
+//  __tolower(arr, n)           → STUB non disponibile senza inline C:
+// ============================================================:
 
-// --- __string_at : legge il char all'indice sa_i ---
+// --- __string_at  legge il char all'indice sa_i ---:
 od_ string_at(&a&sa_arr& ! &i&sa_i&){
     char_ &c&sa_ch&:
     sa_ch = [sa_i]sa_arr:
     deven_ sa_ch:
 }
 
-// --- __len : conta caratteri non '\0' nei primi n celle ---
+// --- __len  conta caratteri non '\0' nei primi n celle ---:
 od_ len(&a&str& ! &i&n&){
     int_  &i&len_i&:
     int_  &i&len_result&:
@@ -57,7 +57,7 @@ od_ len(&a&str& ! &i&n&){
     deven_ len_result:
 }
 
-// --- __copy : copia i primi copy_n char da copy_src a copy_dst ---
+// --- __copy  copia i primi copy_n char da copy_src a copy_dst ---:
 od_ copy(&a&copy_src& ! &a&copy_dst& ! &i&copy_n&){
     int_  &i&copy_i&:
     char_ &c&copy_ch&:
@@ -69,7 +69,7 @@ od_ copy(&a&copy_src& ! &a&copy_dst& ! &i&copy_n&){
     deven_:
 }
 
-// --- __cmp : 1 se i primi cmp_n char di cmp_a e cmp_b sono uguali ---
+// --- __cmp  1 se i primi cmp_n char di cmp_a e cmp_b sono uguali ---:
 od_ cmp(&a&cmp_a& ! &a&cmp_b& ! &i&cmp_n&){
     int_  &i&cmp_i&:
     int_  &i&cmp_res&:
@@ -89,7 +89,7 @@ od_ cmp(&a&cmp_a& ! &a&cmp_b& ! &i&cmp_n&){
     deven_ cmp_res:
 }
 
-// --- __string_fill : riempie sf_n celle con il carattere sf_ch ---
+// --- __string_fill  riempie sf_n celle con il carattere sf_ch ---:
 od_ string_fill(&a&sf_arr& ! &c&sf_ch& ! &i&sf_n&){
     int_ &i&sf_i&:
     sf_i = 0:
@@ -99,7 +99,7 @@ od_ string_fill(&a&sf_arr& ! &c&sf_ch& ! &i&sf_n&){
     deven_:
 }
 
-// --- __string_count : conta le occorrenze di sc_ch nei primi sc_n ---
+// --- __string_count  conta le occorrenze di sc_ch nei primi sc_n ---:
 od_ string_count(&a&sc_arr& ! &c&sc_ch& ! &i&sc_n&){
     int_  &i&sc_i&:
     int_  &i&sc_cnt&:
@@ -117,9 +117,9 @@ od_ string_count(&a&sc_arr& ! &c&sc_ch& ! &i&sc_n&){
     deven_ sc_cnt:
 }
 
-// --- __reverse : inverte i primi rev_n char di rev_arr in-place ---
-// Usa condition-style con due contatori perche' count-style
-// valuterebbe N una sola volta all'ingresso.
+// --- __reverse  inverte i primi rev_n char di rev_arr in-place ---:
+// Usa condition-style con due contatori perche' count-style:
+// valuterebbe N una sola volta all'ingresso.:
 od_ reverse(&a&rev_arr& ! &i&rev_n&){
     int_  &i&rev_l&:
     int_  &i&rev_r&:
@@ -138,41 +138,41 @@ od_ reverse(&a&rev_arr& ! &i&rev_n&){
     deven_:
 }
 
-// --- __toupper : STUB ---
-// ZinterPL non supporta aritmetica su char (es. ch - 32).
-// Senza inline C questa funzione non puo' convertire il caso.
-// Lasciata come no-op per compatibilita' futura.
+// --- __toupper  STUB ---:
+// ZinterPL non supporta aritmetica su char (es. ch - 32).:
+// Senza inline C questa funzione non puo' convertire il caso.:
+// Lasciata come no-op per compatibilita' futura.:
 od_ toupper(&a&up_arr& ! &i&up_n&){
     deven_:
 }
 
-// --- __tolower : STUB ---
+// --- __tolower  STUB ---:
 od_ tolower(&a&lo_arr& ! &i&lo_n&){
     deven_:
 }
 
 
-// ============================================================
-//  SEZIONE 2 — MATH
-//
-//  __abs(x)                → valore assoluto
-//  __max(a, b)             → maggiore tra due int
-//  __min(a, b)             → minore tra due int
-//  __clamp(x, lo, hi)      → x limitato a [lo, hi]
-//  __pow(base, exp)        → base^exp  (exp >= 0)
-//  __sqrt_int(x)           → floor(sqrt(x))
-//  __factorial(n)          → n!  (n >= 0)
-//  __divmod_rem(a, b)      → a % b
-//  __divmod_quot(a, b)     → a / b  (quoziente intero)
-//  __gcd(a, b)             → massimo comun divisore
-//  __lcm(a, b)             → minimo comune multiplo
-//  __is_even(n)            → 1 se n e' pari
-//  __is_odd(n)             → 1 se n e' dispari
-//  __sign(n)               → 1 / 0 / -1
-// ============================================================
+// ============================================================:
+//  SEZIONE 2 — MATH:
+//:
+//  __abs(x)                → valore assoluto:
+//  __max(a, b)             → maggiore tra due int:
+//  __min(a, b)             → minore tra due int:
+//  __clamp(x, lo, hi)      → x limitato a [lo, hi]:
+//  __pow(base, exp)        → base^exp  (exp >= 0):
+//  __sqrt_int(x)           → floor(sqrt(x)):
+//  __factorial(n)          → n!  (n >= 0):
+//  __divmod_rem(a, b)      → a % b:
+//  __divmod_quot(a, b)     → a / b  (quoziente intero):
+//  __gcd(a, b)             → massimo comun divisore:
+//  __lcm(a, b)             → minimo comune multiplo:
+//  __is_even(n)            → 1 se n e' pari:
+//  __is_odd(n)             → 1 se n e' dispari:
+//  __sign(n)               → 1 / 0 / -1:
+// ============================================================:
 
-// --- __abs ---
-// Copia n in variabile locale per non distruggere il parametro.
+// --- __abs ---:
+// Copia n in variabile locale per non distruggere il parametro.:
 od_ abs(&i&abs_x&){
     int_ &i&abs_r&:
     int_ &i&abs_v&:
@@ -187,7 +187,7 @@ od_ abs(&i&abs_x&){
     deven_ abs_r:
 }
 
-// --- __max ---
+// --- __max ---:
 od_ max(&i&max_a& ! &i&max_b&){
     int_ &i&max_r&:
     max_r = max_a:
@@ -199,7 +199,7 @@ od_ max(&i&max_a& ! &i&max_b&){
     deven_ max_r:
 }
 
-// --- __min ---
+// --- __min ---:
 od_ min(&i&min_a& ! &i&min_b&){
     int_ &i&min_r&:
     min_r = min_a:
@@ -211,7 +211,7 @@ od_ min(&i&min_a& ! &i&min_b&){
     deven_ min_r:
 }
 
-// --- __clamp ---
+// --- __clamp ---:
 od_ clamp(&i&cl_x& ! &i&cl_lo& ! &i&cl_hi&){
     int_ &i&cl_r&:
     cl_r = cl_x:
@@ -226,7 +226,7 @@ od_ clamp(&i&cl_x& ! &i&cl_lo& ! &i&cl_hi&){
     deven_ cl_r:
 }
 
-// --- __pow : base^exp con exp >= 0. pow(x,0)=1 ---
+// --- __pow  base^exp con exp >= 0. pow(x,0)=1 ---:
 od_ pow(&i&pw_base& ! &i&pw_exp&){
     int_ &i&pw_r&:
     int_ &i&pw_i&:
@@ -238,8 +238,8 @@ od_ pow(&i&pw_base& ! &i&pw_exp&){
     deven_ pw_r:
 }
 
-// --- __sqrt_int : usa l'operatore ~~ nativo ---
-// Copia in locale per non sovrascrivere il parametro (pass-by-ref).
+// --- __sqrt_int  usa l'operatore ~~ nativo ---:
+// Copia in locale per non sovrascrivere il parametro (pass-by-ref).:
 od_ sqrt_int(&i&sq_x&){
     int_ &i&sq_r&:
     sq_r = sq_x:
@@ -247,7 +247,7 @@ od_ sqrt_int(&i&sq_x&){
     deven_ sq_r:
 }
 
-// --- __factorial : n! con n >= 0. factorial(0)=1, factorial(1)=1 ---
+// --- __factorial  n! con n >= 0. factorial(0)=1, factorial(1)=1 ---:
 od_ factorial(&i&fac_n&){
     int_ &i&fac_r&:
     int_ &i&fac_i&:
@@ -256,7 +256,7 @@ od_ factorial(&i&fac_n&){
     during(fac_i < fac_n ! fac_i++){
         fac_r = fac_r * fac_i:
     }
-    // moltiplica per n solo se n >= 2 (evita n=0 che darebbe 0)
+    // moltiplica per n solo se n >= 2 (evita n=0 che darebbe 0):
     if(fac_n >> 2){
         fac_r = fac_r * fac_n:
     }
@@ -265,7 +265,7 @@ od_ factorial(&i&fac_n&){
     deven_ fac_r:
 }
 
-// --- __divmod_rem : a % b  (resto intero) ---
+// --- __divmod_rem  a % b  (resto intero) ---:
 od_ divmod_rem(&i&dr_a& ! &i&dr_b&){
     int_ &i&dr_q&:
     int_ &i&dr_r&:
@@ -275,15 +275,15 @@ od_ divmod_rem(&i&dr_a& ! &i&dr_b&){
     deven_ dr_r:
 }
 
-// --- __divmod_quot : a / b  (quoziente intero) ---
+// --- __divmod_quot  a / b  (quoziente intero) ---:
 od_ divmod_quot(&i&dq_a& ! &i&dq_b&){
     int_ &i&dq_r&:
     dq_r = dq_a / dq_b:
     deven_ dq_r:
 }
 
-// --- __gcd : massimo comun divisore con algoritmo di Euclide ---
-// Usa variabili locali per non distruggere i parametri (pass-by-ref).
+// --- __gcd  massimo comun divisore con algoritmo di Euclide ---:
+// Usa variabili locali per non distruggere i parametri (pass-by-ref).:
 od_ gcd(&i&gcd_a& ! &i&gcd_b&){
     int_ &i&ga&:
     int_ &i&gb&:
@@ -300,7 +300,7 @@ od_ gcd(&i&gcd_a& ! &i&gcd_b&){
     deven_ ga:
 }
 
-// --- __lcm : minimo comune multiplo ---
+// --- __lcm  minimo comune multiplo ---:
 od_ lcm(&i&lcm_a& ! &i&lcm_b&){
     int_ &i&lcm_g&:
     int_ &i&lcm_r&:
@@ -310,7 +310,7 @@ od_ lcm(&i&lcm_a& ! &i&lcm_b&){
     deven_ lcm_r:
 }
 
-// --- __is_even : 1 se n e' pari, 0 altrimenti ---
+// --- __is_even  1 se n e' pari, 0 altrimenti ---:
 od_ is_even(&i&ie_n&){
     int_ &i&ie_r&:
     int_ &i&ie_mod&:
@@ -324,7 +324,7 @@ od_ is_even(&i&ie_n&){
     deven_ ie_r:
 }
 
-// --- __is_odd : 1 se n e' dispari, 0 altrimenti ---
+// --- __is_odd  1 se n e' dispari, 0 altrimenti ---:
 od_ is_odd(&i&io_n&){
     int_ &i&io_r&:
     io_r = __is_even(io_n):
@@ -337,7 +337,7 @@ od_ is_odd(&i&io_n&){
     deven_ io_r:
 }
 
-// --- __sign : 1 se n>0, -1 se n<0, 0 se n==0 ---
+// --- __sign  1 se n>0, -1 se n<0, 0 se n==0 ---:
 od_ sign(&i&sg_n&){
     int_ &i&sg_r&:
     sg_r = 0:
@@ -354,25 +354,25 @@ od_ sign(&i&sg_n&){
 }
 
 
-// ============================================================
-//  SEZIONE 3 — UTILITY  (array e matrici int)
-//
-//  __array_fill(arr, val, n)       → riempie n celle con val
-//  __array_sum(arr, n)             → somma dei primi n elementi
-//  __array_min(arr, n)             → minimo nei primi n
-//  __array_max(arr, n)             → massimo nei primi n
-//  __array_reverse(arr, n)         → inverte i primi n elementi
-//  __array_contains(arr, val, n)   → 1 se val e' presente
-//  __array_index_of(arr, val, n)   → primo indice di val, -99 se assente
-//  __array_copy(src, dst, n)       → copia n elementi da src a dst
-//  __bubble_sort(arr, n)           → ordina crescente i primi n elementi
-//  __matrix_zero(mat, rows, cols)  → azzera tutta la matrice
-//  __matrix_fill(mat, val, r, c)   → riempie la matrice con val
-//  __matrix_sum(mat, rows, cols)   → somma di tutti gli elementi
-//  __matrix_trace(mat, n)          → traccia di una matrice quadrata n x n
-// ============================================================
+// ============================================================:
+//  SEZIONE 3 — UTILITY  (array e matrici int):
+//:
+//  __array_fill(arr, val, n)       → riempie n celle con val:
+//  __array_sum(arr, n)             → somma dei primi n elementi:
+//  __array_min(arr, n)             → minimo nei primi n:
+//  __array_max(arr, n)             → massimo nei primi n:
+//  __array_reverse(arr, n)         → inverte i primi n elementi:
+//  __array_contains(arr, val, n)   → 1 se val e' presente:
+//  __array_index_of(arr, val, n)   → primo indice di val, -99 se assente:
+//  __array_copy(src, dst, n)       → copia n elementi da src a dst:
+//  __bubble_sort(arr, n)           → ordina crescente i primi n elementi:
+//  __matrix_zero(mat, rows, cols)  → azzera tutta la matrice:
+//  __matrix_fill(mat, val, r, c)   → riempie la matrice con val:
+//  __matrix_sum(mat, rows, cols)   → somma di tutti gli elementi:
+//  __matrix_trace(mat, n)          → traccia di una matrice quadrata n x n:
+// ============================================================:
 
-// --- __array_fill ---
+// --- __array_fill ---:
 od_ array_fill(&a&af_arr& ! &i&af_val& ! &i&af_n&){
     int_ &i&af_i&:
     af_i = 0:
@@ -382,7 +382,7 @@ od_ array_fill(&a&af_arr& ! &i&af_val& ! &i&af_n&){
     deven_:
 }
 
-// --- __array_sum ---
+// --- __array_sum ---:
 od_ array_sum(&a&as_arr& ! &i&as_n&){
     int_ &i&as_i&:
     int_ &i&as_s&:
@@ -394,7 +394,7 @@ od_ array_sum(&a&as_arr& ! &i&as_n&){
     deven_ as_s:
 }
 
-// --- __array_min ---
+// --- __array_min ---:
 od_ array_min(&a&amin_arr& ! &i&amin_n&){
     int_ &i&amin_i&:
     int_ &i&amin_m&:
@@ -410,7 +410,7 @@ od_ array_min(&a&amin_arr& ! &i&amin_n&){
     deven_ amin_m:
 }
 
-// --- __array_max ---
+// --- __array_max ---:
 od_ array_max(&a&amax_arr& ! &i&amax_n&){
     int_ &i&amax_i&:
     int_ &i&amax_m&:
@@ -426,8 +426,8 @@ od_ array_max(&a&amax_arr& ! &i&amax_n&){
     deven_ amax_m:
 }
 
-// --- __array_reverse : inverte i primi arv_n elementi int ---
-// Usa condition-style: count-style valuterebbe N una sola volta.
+// --- __array_reverse  inverte i primi arv_n elementi int ---:
+// Usa condition-style count-style valuterebbe N una sola volta.:
 od_ array_reverse(&a&arv_arr& ! &i&arv_n&){
     int_ &i&arv_l&:
     int_ &i&arv_r&:
@@ -444,7 +444,7 @@ od_ array_reverse(&a&arv_arr& ! &i&arv_n&){
     deven_:
 }
 
-// --- __array_contains : 1 se ac_val e' presente, 0 altrimenti ---
+// --- __array_contains  1 se ac_val e' presente, 0 altrimenti ---:
 od_ array_contains(&a&ac_arr& ! &i&ac_val& ! &i&ac_n&){
     int_ &i&ac_i&:
     int_ &i&ac_r&:
@@ -460,7 +460,7 @@ od_ array_contains(&a&ac_arr& ! &i&ac_val& ! &i&ac_n&){
     deven_ ac_r:
 }
 
-// --- __array_index_of : primo indice di aio_val, -99 se assente ---
+// --- __array_index_of  primo indice di aio_val, -99 se assente ---:
 od_ array_index_of(&a&aio_arr& ! &i&aio_val& ! &i&aio_n&){
     int_ &i&aio_i&:
     int_ &i&aio_r&:
@@ -484,7 +484,7 @@ od_ array_index_of(&a&aio_arr& ! &i&aio_val& ! &i&aio_n&){
     deven_ aio_r:
 }
 
-// --- __array_copy : copia acp_n elementi int da acp_src a acp_dst ---
+// --- __array_copy  copia acp_n elementi int da acp_src a acp_dst ---:
 od_ array_copy(&a&acp_src& ! &a&acp_dst& ! &i&acp_n&){
     int_ &i&acp_i&:
     acp_i = 0:
@@ -494,8 +494,8 @@ od_ array_copy(&a&acp_src& ! &a&acp_dst& ! &i&acp_n&){
     deven_:
 }
 
-// --- __bubble_sort : ordina crescente i primi bs_n elementi int ---
-// bs_jn dichiarata fuori dal loop per non consumare slot ad ogni iter.
+// --- __bubble_sort  ordina crescente i primi bs_n elementi int ---:
+// bs_jn dichiarata fuori dal loop per non consumare slot ad ogni iter.:
 od_ bubble_sort(&a&bs_arr& ! &i&bs_n&){
     int_ &i&bs_i&:
     int_ &i&bs_j&:
@@ -523,7 +523,7 @@ od_ bubble_sort(&a&bs_arr& ! &i&bs_n&){
     deven_:
 }
 
-// --- __matrix_zero : azzera tutta la matrice mz_mat ---
+// --- __matrix_zero  azzera tutta la matrice mz_mat ---:
 od_ matrix_zero(&m&mz_mat& ! &i&mz_rows& ! &i&mz_cols&){
     int_ &i&mz_i&:
     int_ &i&mz_j&:
@@ -537,7 +537,7 @@ od_ matrix_zero(&m&mz_mat& ! &i&mz_rows& ! &i&mz_cols&){
     deven_:
 }
 
-// --- __matrix_fill : riempie tutta la matrice mf_mat con mf_val ---
+// --- __matrix_fill  riempie tutta la matrice mf_mat con mf_val ---:
 od_ matrix_fill(&m&mf_mat& ! &i&mf_val& ! &i&mf_rows& ! &i&mf_cols&){
     int_ &i&mf_i&:
     int_ &i&mf_j&:
@@ -551,7 +551,7 @@ od_ matrix_fill(&m&mf_mat& ! &i&mf_val& ! &i&mf_rows& ! &i&mf_cols&){
     deven_:
 }
 
-// --- __matrix_sum : somma di tutti gli elementi di ms_mat ---
+// --- __matrix_sum  somma di tutti gli elementi di ms_mat ---:
 od_ matrix_sum(&m&ms_mat& ! &i&ms_rows& ! &i&ms_cols&){
     int_ &i&ms_i&:
     int_ &i&ms_j&:
@@ -567,7 +567,7 @@ od_ matrix_sum(&m&ms_mat& ! &i&ms_rows& ! &i&ms_cols&){
     deven_ ms_s:
 }
 
-// --- __matrix_trace : somma della diagonale principale di una matrice n x n ---
+// --- __matrix_trace  somma della diagonale principale di una matrice n x n ---:
 od_ matrix_trace(&m&mt_mat& ! &i&mt_n&){
     int_ &i&mt_i&:
     int_ &i&mt_s&:
