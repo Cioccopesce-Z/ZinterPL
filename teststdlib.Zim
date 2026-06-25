@@ -1,0 +1,33 @@
+#{
+    debug_ -df:
+    exec_:
+}
+
+__start(){
+    
+    char_ &s[5]&stringat&:
+    char_ &c&res&:
+
+    [4]stringat = 'j':
+    [3]stringat = 'r':
+    [2]stringat = '\0':
+    [1]stringat = 's':
+    [0]stringat = 'f':
+
+    res = __string_at(stringat ! 4):
+    if(res == 'j' ){
+        print_ res: println_ &s&" string_at OK"&:
+    }
+    oth{
+        println_ &s&"__string_at NOT OK"&:
+    }
+
+    int_ &i&ris&:
+    ris = len(stringat ! 5):
+    if(ris == '4' ){
+        print_ res: println_ &s&" string_at OK"&:
+    }
+    oth{
+        println_ &s&"__string_at NOT OK"&:
+    }
+}
