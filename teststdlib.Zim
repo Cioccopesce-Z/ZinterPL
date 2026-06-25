@@ -5,25 +5,25 @@
 
 __start(){
     
-    // ============================================================ :
-    // INIZIALIZZAZIONE AMBIENTE E CONTATORE
-    // ============================================================ :
+    // ============================================================:
+    // INIZIALIZZAZIONE AMBIENTE E CONTATORE:
+    // ============================================================:
     int_ &i&err_count&:
     err_count = 0:
 
     println_ &s&"=== INIZIO TEST AUTOMATICO STDLIB ==="&:
     println_:
 
-    // Variabili d'appoggio generali :
+    // Variabili d'appoggio generali:
     char_ &s[5]&stringat&:
     char_ &s[5]&strcopy&:
     char_ &c&res&:
     int_ &i&ris&:
     int_ &i&negval&:
 
-    // ============================================================ :
-    // SEZIONE 1: TEST STRING
-    // ============================================================ :
+    // ============================================================:
+    // SEZIONE 1: TEST STRING:
+    // ============================================================:
     println_ &s&"--- TEST STRING ---"&:
 
     [4]stringat = 'j':
@@ -32,7 +32,7 @@ __start(){
     [1]stringat = 's':
     [0]stringat = 'f':
 
-    // Test string_at :
+    // Test string_at:
     res = __string_at(stringat ! 4):
     if(res == 'j'){
         println_ &s&"[OK] string_at"&:
@@ -42,7 +42,7 @@ __start(){
         err_count++:
     }
 
-    // Test len :
+    // Test len:
     ris = __len(stringat ! 5):
     if(ris == 4){
         println_ &s&"[OK] len"&:
@@ -52,7 +52,7 @@ __start(){
         err_count++:
     }
 
-    // Test copy :
+    // Test copy:
     __copy(stringat ! strcopy ! 5):
     res = __string_at(strcopy ! 4):
     if(res == 'j'){
@@ -63,7 +63,7 @@ __start(){
         err_count++:
     }
 
-    // Test cmp :
+    // Test cmp:
     ris = __cmp(stringat ! strcopy ! 5):
     if(ris == 1){
         println_ &s&"[OK] cmp"&:
@@ -73,7 +73,7 @@ __start(){
         err_count++:
     }
 
-    // Test string_fill :
+    // Test string_fill:
     __string_fill(strcopy ! 'A' ! 5):
     res = __string_at(strcopy ! 0):
     if(res == 'A'){
@@ -84,7 +84,7 @@ __start(){
         err_count++:
     }
 
-    // Test string_count :
+    // Test string_count:
     ris = __string_count(strcopy ! 'A' ! 5):
     if(ris == 5){
         println_ &s&"[OK] string_count"&:
@@ -94,7 +94,7 @@ __start(){
         err_count++:
     }
 
-    // Test reverse :
+    // Test reverse:
     __reverse(stringat ! 5):
     res = __string_at(stringat ! 0):
     if(res == 'j'){
@@ -106,16 +106,16 @@ __start(){
     }
     println_:
 
-    // ============================================================ :
-    // SEZIONE 2: TEST MATH
-    // ============================================================ :
+    // ============================================================:
+    // SEZIONE 2: TEST MATH:
+    // ============================================================:
     println_ &s&"--- TEST MATH ---"&:
     
-    // Genero un valore negativo senza letterali negativi nativi :
+    // Genero un valore negativo senza letterali negativi nativi:
     negval = 0:
     negval--5: 
 
-    // Test abs :
+    // Test abs:
     ris = __abs(negval):
     if(ris == 5){
         println_ &s&"[OK] abs"&:
@@ -125,7 +125,7 @@ __start(){
         err_count++:
     }
 
-    // Test max :
+    // Test max:
     ris = __max(10 ! 20):
     if(ris == 20){
         println_ &s&"[OK] max"&:
@@ -135,7 +135,7 @@ __start(){
         err_count++:
     }
 
-    // Test min :
+    // Test min:
     ris = __min(10 ! 20):
     if(ris == 10){
         println_ &s&"[OK] min"&:
@@ -145,7 +145,7 @@ __start(){
         err_count++:
     }
 
-    // Test clamp :
+    // Test clamp:
     ris = __clamp(25 ! 0 ! 10):
     if(ris == 10){
         println_ &s&"[OK] clamp"&:
@@ -155,7 +155,7 @@ __start(){
         err_count++:
     }
 
-    // Test pow :
+    // Test pow:
     ris = __pow(2 ! 3):
     if(ris == 8){
         println_ &s&"[OK] pow"&:
@@ -165,7 +165,7 @@ __start(){
         err_count++:
     }
 
-    // Test factorial :
+    // Test factorial:
     ris = __factorial(4):
     if(ris == 24){
         println_ &s&"[OK] factorial"&:
@@ -175,7 +175,7 @@ __start(){
         err_count++:
     }
 
-    // Test divmod_rem :
+    // Test divmod_rem:
     ris = __divmod_rem(10 ! 3):
     if(ris == 1){
         println_ &s&"[OK] divmod_rem"&:
@@ -185,7 +185,7 @@ __start(){
         err_count++:
     }
 
-    // Test gcd :
+    // Test gcd:
     ris = __gcd(54 ! 24):
     if(ris == 6){
         println_ &s&"[OK] gcd"&:
@@ -195,7 +195,7 @@ __start(){
         err_count++:
     }
 
-    // Test lcm :
+    // Test lcm:
     ris = __lcm(4 ! 6):
     if(ris == 12){
         println_ &s&"[OK] lcm"&:
@@ -205,7 +205,7 @@ __start(){
         err_count++:
     }
 
-    // Test is_even :
+    // Test is_even:
     ris = __is_even(4):
     if(ris == 1){
         println_ &s&"[OK] is_even"&:
@@ -215,14 +215,14 @@ __start(){
         err_count++:
     }
 
-    // Test sign :
+    // Test sign:
     ris = __sign(negval):
     if(ris == -1){
         println_ &s&"[OK] sign"&:
     }
     oth{
         // Se non compila -1 come letterale gestiamo un controllo alternativo:
-        // dato che -1 in zinterpl potrebbe esser un problema logico :
+        // dato che -1 in zinterpl potrebbe esser un problema logico:
         if(ris < 0){
             println_ &s&"[OK] sign (verificato minore di 0)"&:
         }
@@ -233,14 +233,14 @@ __start(){
     }
     println_:
 
-    // ============================================================ :
-    // SEZIONE 3: TEST UTILITY (ARRAY & MATRICI)
-    // ============================================================ :
+    // ============================================================:
+    // SEZIONE 3: TEST UTILITY (ARRAY & MATRICI):
+    // ============================================================:
     println_ &s&"--- TEST UTILITY ---"&:
     int_ &i[5]&iarr&:
     int_ &i[3][3]&imat&:
 
-    // Test array_fill :
+    // Test array_fill:
     __array_fill(iarr ! 7 ! 5):
     if([0]iarr == 7){
         println_ &s&"[OK] array_fill"&:
@@ -250,14 +250,14 @@ __start(){
         err_count++:
     }
 
-    // Prep dati per i prossimi test array :
+    // Prep dati per i prossimi test array:
     [0]iarr = 2:
     [1]iarr = 4:
     [2]iarr = 6:
     [3]iarr = 8:
     [4]iarr = 10:
 
-    // Test array_sum :
+    // Test array_sum:
     ris = __array_sum(iarr ! 5):
     if(ris == 30){
         println_ &s&"[OK] array_sum"&:
@@ -267,7 +267,7 @@ __start(){
         err_count++:
     }
 
-    // Test array_min :
+    // Test array_min:
     ris = __array_min(iarr ! 5):
     if(ris == 2){
         println_ &s&"[OK] array_min"&:
@@ -277,7 +277,7 @@ __start(){
         err_count++:
     }
 
-    // Test array_max :
+    // Test array_max:
     ris = __array_max(iarr ! 5):
     if(ris == 10){
         println_ &s&"[OK] array_max"&:
@@ -287,7 +287,7 @@ __start(){
         err_count++:
     }
 
-    // Test array_contains :
+    // Test array_contains:
     ris = __array_contains(iarr ! 8 ! 5):
     if(ris == 1){
         println_ &s&"[OK] array_contains"&:
@@ -297,7 +297,7 @@ __start(){
         err_count++:
     }
 
-    // Test array_index_of :
+    // Test array_index_of:
     ris = __array_index_of(iarr ! 8 ! 5):
     if(ris == 3){
         println_ &s&"[OK] array_index_of"&:
@@ -307,7 +307,7 @@ __start(){
         err_count++:
     }
 
-    // Test array_reverse :
+    // Test array_reverse:
     __array_reverse(iarr ! 5):
     if([0]iarr == 10){
         println_ &s&"[OK] array_reverse"&:
@@ -317,7 +317,7 @@ __start(){
         err_count++:
     }
 
-    // Test Bubble Sort :
+    // Test Bubble Sort:
     [0]iarr = 9:
     [1]iarr = 1:
     [2]iarr = 5:
@@ -338,7 +338,7 @@ __start(){
         err_count++:
     }
 
-    // Test matrix_fill e matrix_sum :
+    // Test matrix_fill e matrix_sum:
     __matrix_fill(imat ! 3 ! 3 ! 3):
     ris = __matrix_sum(imat ! 3 ! 3):
     if(ris == 27){
@@ -349,7 +349,7 @@ __start(){
         err_count++:
     }
 
-    // Test matrix_zero e matrix_trace :
+    // Test matrix_zero e matrix_trace:
     __matrix_zero(imat ! 3 ! 3):
     [0][0]imat = 5:
     [1][1]imat = 5:
@@ -364,9 +364,9 @@ __start(){
     }
 
     println_:
-    // ============================================================ :
-    // RESOCONTO FINALE
-    // ============================================================ :
+    // ============================================================:
+    // RESOCONTO FINALE:
+    // ============================================================:
     println_ &s&"====== RISULTATI TEST ======"&:
     
     if(err_count == 0){
