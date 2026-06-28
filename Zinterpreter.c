@@ -4304,7 +4304,7 @@ void exec_change_var_name(char *text){
     char new_name[16] = {0};
     char data[28] = {0};
 
-    sscanf(text,"%15[^-]-->%27s",new_name,data);
+    sscanf(text,"%15[^-]->%27s",new_name,data);
     int i = 0;
 
     char buffer[28] = {0};
@@ -4321,7 +4321,7 @@ void exec_change_var_name(char *text){
         if(!strstr(buffer,"od_")){strcpy(buffer,"od_"); strcat(buffer,new_name);}  //od_nuovonome
 
         while(i < return_state){
-            if(deb) printf("DEBUG -->: nome_function:%s to search:%s\n",state_stack[i].nome_function,old_name);
+            if(deb) printf("DEBUG ->: nome_function:%s to search:%s\n",state_stack[i].nome_function,old_name);
             if( strcmp(state_stack[i].nome_function, old_name) == 0){
                 strcpy(state_stack[i].nome_function, buffer);
                 break;
