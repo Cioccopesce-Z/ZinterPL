@@ -11,12 +11,12 @@ Source files use the `.Zim` extension. Library files use `.Zlib`.
 - Statically typed: `int`, `char`, `float`
 - Variables, 1D arrays, and 2D matrices for all types
 - Functions with arguments and return values — **typeless**: a function can return any scalar value (`int`, `char`, `float`)
+- Default values for scalar function arguments
 - `if / oth if / oth` branching — any number of `oth if` chains
 - `during` unified loop construct (count-style and condition-style) — both fully functional
 - Extended `deven_` return expressions: arithmetic, power, square root, and nested function calls
 - Function argument pass-by-reference: modifications made inside a called function are reflected back in the caller
-- Function renaming: permanently rename any function with `newname -> oldname`
-- Variable renaming: permanently rename any variable with `newname -> oldname`
+- Renaming via `->`: permanently rename any data — functions, variables, arrays, and matrices
 - `++N` / `--N` operations accept variables or function calls as `N`
 - Input via `scan_`
 - Built-in `status_` diagnostic command
@@ -263,12 +263,66 @@ Functions are **typeless**: there is no return-type declaration. A function can 
 Arguments separated by `!`:
 
 ```
-od_ testargs(&i&a&!&i&b&){
-    int_&i&risultato&:
+od_ testargs(&i&a& ! &i&b&){
+    int_ &i&risultato&:
     risultato = a + b:
     deven_ risultato:
 }
 ```
+
+#### Default argument values
+
+A scalar argument can be given a **default value** by placing the value after the argument token, separated by a space. When the function is called without providing that argument, the default is used instead.
+
+```
+od_ defaultest(&i&var0& 5){
+    print_ &s&" "&:
+    print_ var0:
+    deven_:
+}
+
+__start(){
+    __defaultest():      // var0 uses default → prints 5:
+    __defaultest(10):    // var0 = 10 → prints 10:
+}
+```
+
+The default value can be a numeric literal or a variable name accessible in the caller's scope at call time.
+
+**Rules for default arguments:**
+
+- Default arguments must appear **at the end** of the argument list. Non-default arguments cannot follow a default argument.
+- **Arrays and matrices cannot have default values** — only scalar types (`int`, `char`, `float`) can.
+- There is a maximum of **16 arguments** per function (this limit can be raised by changing the constant in the interpreter source).
+- When calling a function, if you omit one default argument you must omit **all remaining** default arguments after it — you cannot skip one and provide the next. Doing so is a parse error.
+
+```
+// ✓ correct — default is last:
+od_ myfunc(&i&var& ! &a&arr& ! &i&varr& 5){}
+
+// ✗ wrong — default is not at the end:
+od_ myfunc(&i&var& 5 ! &a&arr& ! &i&varr&){}
+
+// ✗ wrong — arrays cannot have defaults:
+od_ myfunc(&i&var& ! &a&arr& 0 ! &i&varr&){}
+```
+
+Multiple trailing defaults are allowed:
+
+```
+od_ multi(&i&a& ! &i&b& 10 ! &i&c& 20){
+    // b defaults to 10, c defaults to 20:
+    deven_ a:
+}
+
+__start(){
+    __multi(1):         // a=1, b=10, c=20:
+    __multi(1 ! 2):     // a=1, b=2,  c=20:
+    __multi(1 ! 2 ! 3): // a=1, b=2,  c=3:
+}
+```
+
+---
 
 #### Calling functions
 
@@ -368,7 +422,7 @@ print_ __addone(5):   // prints 8:
 
 #### Array and matrix pass-by-reference
 
-Arrays and matrices follow the exact same rule. When an array is passed to a function, the function works directly on the original array in the caller's scope — there is no copy. Writing to any element inside the function writes through to the original, the only execption is that the type for the arrays or matrices passed are, in order, a & m, the interpreter automatically resolve for the right data type.
+Arrays and matrices follow the exact same rule. When an array is passed to a function, the function works directly on the original array in the caller's scope — there is no copy. Writing to any element inside the function writes through to the original. The type tokens for arrays and matrices passed as arguments are `&a&` and `&m&` respectively; the interpreter resolves the actual element type automatically.
 
 ```
 od_ fill(&a&arr&){
@@ -435,33 +489,23 @@ The rule is simple: if a `deven_` expression uses `**`, `~~`, `++`, or `--` on a
 
 ---
 
-### Function renaming
+### Renaming (`->`)
 
-A function can be permanently renamed using the `->` operator. After the rename, the function is only accessible under the new name; the old name is no longer valid:
-
-```
-newname -> oldname:
-```
-
-This works for plain function names as well as for array-indexed and matrix-indexed forms:
-
-```
-newname     -> originalfunc:       // function rename:
-[i]newname  -> [i]originalfunc:    // array-form rename:
-[r][c]newname -> [r][c]original:   // matrix-form rename:
-```
-
----
-
-### Variable renaming
-
-Scalar variables can be permanently renamed using the same `->` operator:
+The `->` operator permanently renames any named entity in the VM: **functions, scalar variables, arrays, and matrices**. After the rename the entity is only accessible under the new name; the old name is no longer valid.
 
 ```
 newname -> oldname:
 ```
 
-After this, the variable is only accessible under `newname`. The old name is no longer valid:
+#### Functions
+
+```
+newname -> originalfunc:           // function rename:
+[i]newname  -> [i]originalfunc:    // array-indexed function form:
+[r][c]newname -> [r][c]original:   // matrix-indexed function form:
+```
+
+#### Scalar variables
 
 ```
 int_ &i&score&:
@@ -470,6 +514,28 @@ punti -> score:
 println_ punti:    // prints 42:
 println_ score:    // score no longer exists — returns 0:
 ```
+
+#### Arrays
+
+```
+int_ &i[5]&data&:
+[0]data = 99:
+numeri -> data:
+println_ [0]numeri:    // prints 99:
+println_ [0]data:      // data no longer exists — returns 0:
+```
+
+#### Matrices
+
+```
+int_ &i[3][3]&grid&:
+[0][0]grid = 7:
+tavola -> grid:
+println_ [0][0]tavola:    // prints 7:
+println_ [0][0]grid:      // grid no longer exists — returns 0:
+```
+
+In all cases the rename is immediate and permanent for the remainder of the program's execution.
 
 ---
 
@@ -679,11 +745,20 @@ status_:
 
 Prints the current state of all declared variables, arrays, and matrices. Useful for debugging.
 
+#### Clearing state
+
+Adding a clear keyword causes `status_` to **wipe the VM state** after printing. The accepted keywords are `cls`, `clear`, and `clr` — all three are equivalent. The optional flag `y` can appear anywhere in the statement, in any position relative to the clear keyword:
+
 ```
+status_ cls:
+status_ clear:
+status_ clr:
 status_ cls y:
+status_ y cls:
+status_ y clear:
 ```
 
-Clears internal state after printing (useful for resetting the VM snapshot mid-program).
+> ⚠️ After a clear, all variables, arrays, and matrices that were declared before the `status_` call are **no longer accessible**. Their memory is wiped and any subsequent reads will return zero/null. Only declare new variables after the clear if you need them.
 
 ---
 
@@ -704,6 +779,8 @@ The interpreter merges the library into the source before parsing.
 ## Limitations
 
 - **Arrays and matrices cannot be returned from functions** via `deven_`. Only scalar values (`int`, `char`, `float`) are returnable.
+- **Arrays and matrices cannot have default argument values.** Only scalar parameters support defaults.
+- **Maximum 16 arguments per function** (adjustable by changing the limit constant in the interpreter source).
 
 ---
 
@@ -793,10 +870,10 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Functions + return values | Stable |
 | Function arguments (scalars) | Stable |
 | Function arguments (arrays/matrices) | Stable |
+| Default argument values (scalars only) | Stable |
 | Pass-by-reference for function args (scalars) | Stable |
 | Pass-by-reference for function args (arrays/matrices) | Stable |
-| Function renaming (`->`) | Stable |
-| Variable renaming (`->`) | Stable |
+| Renaming (`->`) — functions, variables, arrays, matrices | Stable |
 | Inline C (`C{ }`) | Planned |
 | Extended `deven_` expressions (`++`, `--`, `**`, `~~`, function) | Stable |
 | `++N` / `--N` with variable or function as `N` | Stable |
