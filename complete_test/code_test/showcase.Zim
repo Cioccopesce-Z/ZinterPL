@@ -1,0 +1,252 @@
+#{
+    debug_ -df:
+    exec_:
+}
+
+
+
+od_ sep(){
+    println_ &s&"+====================================+"&:
+    deven_:
+}
+
+od_ blank(){
+    println_:
+    deven_:
+}
+
+od_ spaces(&i&n&){
+    int_ &i&j&:
+    j = 0:
+    during(j < n ! j++){
+        print_ &s&" "&:
+    }
+    deven_:
+}
+
+od_ stars(&i&n&){
+    int_ &i&j&:
+    j = 0:
+    during(j < n ! j++){
+        print_ &s&"*"&:
+    }
+    deven_:
+}
+
+
+od_ sq(&i&n&){
+    int_ &i&tmp&:
+    tmp = n:
+    tmp**:
+    deven_ tmp:
+}
+
+od_ succ(&i&n&){
+    deven_ n++:
+}
+
+od_ triangle(&i&n&){
+    int_ &i&tmp&:
+    int_ &i&res&:
+    tmp = n + 1:
+    res = n * tmp:
+    res = res / 2:
+    deven_ res:
+}
+
+
+
+od_ double_val(&i&v&){
+    v = v * 2:
+    deven_:
+}
+
+
+
+od_ show_fib(){
+    int_ &i[13]&f&:
+    int_ &i&i&:
+    int_ &i&a&:
+    int_ &i&b&:
+    int_ &i&va&:
+    int_ &i&vb&:
+
+    [0]f = 0:
+    [1]f = 1:
+    i = 2:
+    during(i < 13 ! i++){
+        a = i - 1:
+        b = i - 2:
+        va = [a]f:
+        vb = [b]f:
+        [i]f = va + vb:
+    }
+
+    println_ &s&"|  [ FIBONACCI - 13 terms ]          |"&:
+    __sep():
+    print_ &s&"   "&:
+    i = 0:
+    during(i < 13 ! i++){
+        print_ [i]f:
+        print_ &s&" "&:
+    }
+    println_:
+    deven_:
+}
+
+
+od_ show_powers(){
+    int_ &i&pow&:
+    int_ &i&i&:
+    pow = 1:
+    i = 0:
+    println_ &s&"|  [ POWERS OF 2 - first 10 ]        |"&:
+    __sep():
+    print_ &s&"   "&:
+    during(i < 10 ! i++){
+        pow = pow * 2:
+        print_ pow:
+        print_ &s&" "&:
+    }
+    println_:
+    deven_:
+}
+
+
+od_ show_pyramid(){
+    int_ &i&rows&:
+    int_ &i&i&:
+    int_ &i&sp&:
+    int_ &i&st&:
+    rows = 7:
+    i = 1:
+    println_ &s&"|  [ STAR PYRAMID ]                  |"&:
+    __sep():
+    during(i < 8 ! i++){
+        print_ &s&"   "&:
+        sp = rows - i:
+        st = i * 2:
+        st = st -1:
+        __spaces(sp):
+        __stars(st):
+        println_:
+    }
+    deven_:
+}
+
+
+od_ show_byref(){
+    int_ &i&x&:
+    x = 3:
+    println_ &s&"|  [ PASS-BY-REFERENCE ]             |"&:
+    __sep():
+    print_ &s&"   x = "&:
+    println_ x:
+    __double_val(x):
+    print_ &s&"   double_val(x)  ->  x = "&:
+    println_ x:
+    __double_val(x):
+    print_ &s&"   double_val(x)  ->  x = "&:
+    println_ x:
+    __double_val(x):
+    print_ &s&"   double_val(x)  ->  x = "&:
+    println_ x:
+    deven_:
+}
+
+
+
+od_ show_math(){
+    int_ &i&i&:
+
+    println_ &s&"|  [ SQUARES  via  deven_ n** ]      |"&:
+    __sep():
+    print_ &s&"   "&:
+    i = 1:
+    during(i < 9 ! i++){
+        print_ __sq(i):
+        print_ &s&" "&:
+    }
+    println_:
+
+    __blank():
+
+    println_ &s&"|  [ TRIANGLE NUMBERS ]              |"&:
+    __sep():
+    print_ &s&"   "&:
+    i = 1:
+    during(i < 9 ! i++){
+        print_ __triangle(i):
+        print_ &s&" "&:
+    }
+    println_:
+    deven_:
+}
+
+
+
+od_ countdown(){
+    int_ &i&n&:
+    n = 10:
+    println_ &s&"|  [ COUNTDOWN ]                     |"&:
+    __sep():
+    print_ &s&"   "&:
+    during(n > 0 ! n--){
+        print_ n:
+        print_ &s&" "&:
+    }
+    print_ &s&"LAUNCH!"&:
+    println_:
+    deven_:
+}
+
+od_ defaultest(&i&var0& var5){
+    print_ &s&"   "&:
+    print_ var0:
+    deven_:
+}
+
+
+
+__start(){
+    int_ &i&var5&:
+    var5 = 5:
+
+    __sep():
+    println_ &s&"|         Z i n t e r P L           |"&:
+    println_ &s&"|           S H O W C A S E         |"&:
+    __sep():
+    __blank():
+
+    __show_fib():
+    __blank():
+
+    __show_powers():
+    __blank():
+
+    __show_pyramid():
+    __blank():
+
+    __show_byref():
+    __blank():
+
+    __show_math():
+    __blank():
+
+    lancio -> countdown:
+    println_ &s&"|  [ FUNCTION RENAME lancio ]        |"&:
+    __sep():
+    __blank():
+    __lancio():
+    __blank():
+
+    println_ &s&"|  [ DEFAULT VALUE ]                |"&:
+    __sep():
+    __defaultest(): println_ &s&"  5 the default value is five"&:
+    __defaultest(10): println_ &s&" 10 the default value is changed to ten"&:
+    __blank():
+
+    __sep():
+    println_ &s&"|           -- FINE --               |"&:
+    __sep():
+}
