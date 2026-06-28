@@ -1,0 +1,62 @@
+
+declare_variable(char name[], char type)
+declare_array(char name[], char type, int size)
+
+set_to_variable(char name[], char type, int value, char cvalue)
+set_to_array(char name[], char type, int index, int value, char cvalue)
+
+is_var_(const char *name) ---> prende in ingresso il nome di un dato e restituisce 1 se è una var int, 2 se è una var char, 0 se non è una variabile
+
+get_index("string") ---> prende in ingresso il formato &i/c/s[reg/&n&num&/&i&var&]&var_name/arr_name& e restituice l'indirizzo di memoria del dato
+
+clean_memory(); ---> resetta tutti i count
+
+read_code_from_file("file_name") --> ritorna un puntatore a una stringa 
+    es: char *prog = read_code_from_file("test")
+    il codice viene scritto su un`unica riga saltando tab e newline
+
+format_code(const char code) --> divide il codice in righe e manda a capo ogni {, }, : 
+                                 i due punti non vengono copiati e il codice viene salvato in uno struct
+                                 in cui si ha line, instr rispettivamente la linea che viene associata alla 
+                                 funzione e la stringa contenete la funzione stessa
+    es:
+        #import_%f%libr.z%:
+
+        start_(){
+    
+        int_ %i%input%:
+        scan_ %i%input%:
+        }
+    viene scritto come:
+        0, #import_%f%libr.z%     <-- program[0].line = 0 && program[0].instr = "#import_%f%libr.z%
+        1, start_(){
+        2, int_%i%input%
+        3, scan_%i%input%
+        4, }
+
+build_state() ---> questa funzione riconosce tutte le varie funzioni o condizioni che hanno {} riconoscendo la 
+                   riga di inizio e di fine e a che condizione/funzione appartengono (numerandole in ordine crescente
+                   delle funzioni chiuse in un intervallo dettato appunto da riga di inizio e di fine
+    es:
+        0, #import_&f&stfn.zlibr&
+        1, __calcola_doppio_e_tripli(&i&input&){
+        2, =+&i&temp&&i&input&&i&input&
+        3, =+&i&temp&&i&temp&&i&input&
+        4, return&i&temp&
+        5, }
+    viene redatto come:
+        riga di inizio condizione n0: 1, posizione skip(chiusura) 5
+
+        salvato in: 
+            typedef struct {
+                char nome_function[16];
+                int posizione_ritorno; //inizio
+                int codice; //per concatenamenti spesso uguale al numero assegnato alla funzione stessa (quando viene numerata da build_state)
+                int posizione_skip; //fine
+                } program_state;
+
+                program_state state_stack[max_number_of_concatened_condition];
+                int return_state = 0; //indice per il salvataggio dello stato
+ 
+ 
+

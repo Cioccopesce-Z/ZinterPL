@@ -1,0 +1,41 @@
+__addseven(argarray!7)
+│
+├─ exec_funarg(..., fal)
+│   ├─ trova "od_addseven" in state_stack
+│   ├─ push_scope()
+│   ├─ args="argarray!7" spezzato su '!'
+│   │   ├─ "argarray" + ptype='a' → rinomina array[j].name "argarray"→"ar"  [PBR]
+│   │   └─ "7"       + ptype='i' → declare+set "novar"=7                    [PBV]
+│   ├─ parse(corpo addseven)
+│   │   ├─ exec_if("if(novar^=7)")
+│   │   │   └─ exec_conf("novar^=7","^=") → 7^=7 → falso
+│   │   └─ oth → exec_equal("[5]ar=6") → argarray[5]=6
+│   ├─ deven_ → return_hit=1, return_value=NULL
+│   ├─ ripristina "ar"→"argarray"
+│   └─ pop_scope() → distrugge "novar"
+│
+└─ torna al chiamante
+   print_[5]argarray → stampa 6
+
+con default:
+
+__printstr(array)
+│
+├─ args = "array"
+├─ arg_tokens[0] = "array",  arg_count = 1
+│
+├─ pi=0: pname="string", ptype='a', tok=arg_tokens[0]="array"
+│   └─ array trovato → rinomina "array"→"string"  [PBR]
+│
+├─ pi=1: pname="end", ptype='i', pi>=arg_count → usa default "5"
+│   └─ is_literal=1 → declare_variable("end",'i'), set=5  [PBV]
+│
+├─ pi=2: pname="ch", ptype='c', pi>=arg_count → usa default "k"
+│   └─ is_literal=1 (è char literal) → declare_variable("ch",'c'), set='k'  [PBV]
+│
+├─ pi=3: pname="fl", ptype='l', pi>=arg_count → usa default "3.14"
+│   └─ is_literal=1 → declare_variable("fl",'l'), set=3.14  [PBV]
+│
+└─ parse(corpo printstr)
+    ripristina "string"→"array"
+    pop_scope() → distrugge end, ch, fl

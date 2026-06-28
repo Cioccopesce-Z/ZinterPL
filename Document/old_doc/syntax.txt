@@ -1,0 +1,209 @@
+Z LANGUAGE - SYNTAX REFERENCE
+==============================
+
+variables, arrays aet matrices are referred to as "data"
+every instruction ends with :
+spaces are ignored except inside ""
+execution starts from __start(){ }
+
+=DATA TYPES=
+i  = integer variable
+l  = float variable
+c  = char variable
+s  = char array / string
+f  = file
+n  = immediate integer (read only)
+k  = immediate char (read only)
+
+=EXTENDED SYNTAX (for declarations)=
+&type&name&
+&i&var&         integer variable
+&l&var&         float variable
+&c&var&         char variable
+&i[N]&arr&      int array of N
+&l[N]&arr&      float array of N
+&s[N]&arr&      char array / string of N
+&i[R][C]&mat&   int matrix R x C
+&l[R][C]&mat&   float matrix R x C
+&s[R][C]&mat&   char matrix R x C
+idx can be a constant N or a variable: &i&var_name&
+
+=DECLARATIONS=
+int_ &i&var&:
+int_ &i[N]&arr&:
+int_ &i[R][C]&mat&:
+float_ &l&var&:          (not yet implemented, use int_ with l type)
+char_ &c&var&:
+char_ &s[N]&arr&:
+char_ &s[R][C]&mat&:
+
+=DATA ACCESS=
+var               direct name
+[idx]arr          array element
+[r][c]mat         matrix element
+idx can be a constant or an integer variable
+
+=ASSIGNMENT (=)=
+var = value:
+[idx]arr = value:
+[r][c]mat = value:
+value can be: number, variable, array element, matrix element, function return
+examples:
+a = 10:
+a = b:
+[0]arr = a:
+[r][c]mat = [idx]arr:
+a = __func():
+
+=ALTERNATIVE ASSIGNMENT=
+set_to_variable_ name,type,value,cvalue:
+set_to_array_    name,type,idx,value,cvalue:
+set_to_matrix_   name,type,idx1,idx2,value,cvalue:
+use @ as placeholder for unused value or cvalue
+examples:
+set_to_variable_ a,i,10,@:
+set_to_array_ arr,i,0,10,@:
+set_to_matrix_ mat,i,0,0,42,@:
+
+=MATH OPERATORS=
+supported: + - * /
+result = a + b:
+result = a - b:
+result = a * b:
+result = a / b:
+operands can be numbers, variables, array/matrix elements, function returns
+result = [0]arr + [1]arr:
+result = __func() + 5:
+
+=INCREMENT / DECREMENT=
+var++:           var += 1
+var--:           var -= 1
+var++N:          var += N  (N can be variable)
+var--N:          var -= N
+[idx]arr++:      copies arr[idx] into arr[idx+1]
+[idx]arr--:      copies arr[idx] into arr[idx-1]
+[idx]arr++N:     copies arr[idx] into arr[idx+N]
+
+=COMPARISON OPERATORS=
+==   equal              returns 1 (true) or 0 (false)
+^=   not equal
+>    greater than
+<    less than
+>>   greater or equal
+<<   less or equal
+these are used inside if_ fke_ for_ or as standalone expressions
+
+=IF=
+
+if_(condition){
+}
+else_{
+}
+logical operators: et (and)   || (or)
+examples:
+if_(a>b){ }
+if_(a>b et c<d){ }
+if_(a==b || c==d){ }
+condition operators: == ^= > < >> <<
+
+=WHILE=
+fke_(condition){
+}
+example:
+fke_(a<10){
+    a++:
+}
+
+=FOR=
+for_(condition!operation){
+}
+examples:
+for_(i<10!i++){ } the variable count is always declared automatically
+for_(i^=100!i++2){ }
+operation is any valid increment/decrement or assignment
+
+=FUNCTIONS=
+declaration:
+od_ name(){
+}
+with arguments (separated by !):
+od_ sum(&i&a&!&i&b&){
+}
+argument format: &type&name&
+
+call (void):
+__name():
+call (with return):
+result = __name():
+call with arguments:
+__name(10!20):
+result = __name(a!b):
+functions can be used in: assignments, print_, deven_
+
+=RETURN=
+deven_:          empty return (same as deven_ NULL)
+deven_ NULL:
+deven_ value:
+deven_ [idx]arr:
+deven_ [r][c]mat:
+deven_ __func():
+
+=INPUT=
+scan_ var:
+scan_ [idx]arr:
+scan_ [r][c]mat:
+scan_ []arr:      reads whole string till sendkey
+
+=OUTPUT=
+print_ var:
+print_ [idx]arr:
+print_ [r][c]mat:
+print_ []arr:             prints whole string
+print_ &s&"text"&:        prints literal text
+print_ &s&&:              prints a space
+println_ value:           prints value then newline
+lnprint_ value:           newline then prints value
+println_:                 newline only
+lnprint_:                 newline only
+
+=STATUS=
+status_:          prints interpreter memory usage aet internal state
+status_ clr:      clears all variables/arrays/matrices (asks confirmation)
+status_ clry:     clears all without confirmation
+
+=SYSTEM / LIBRARY BLOCK=
+#{
+    debug_ -dt:   enable debug output
+    debug_ -df:   disable debug output
+    exec_:        jumps execution to __start (must be last before the last graph)
+}
+
+=COMMAet LINE=
+./Zinterpreter -dt|-df file.Zinter -libname.Zlib ...
+-dt   debug true
+-df   debug false
+additional .Zlib files are prepended to the source before execution
+
+=MINIMAL PROGRAM=
+#{
+    debug_ -df:
+    exec_:
+}
+__start(){
+    int_ &i&a&:
+    int_ &i&b&:
+    a = 3:
+    b = 5:
+    print_ a:
+    println_:
+}
+
+=NOTES=
+- functions declared with od_ are fouet by build_state before execution
+- __start is mandatory, # block is optional but recommended
+- arrays aet matrices are heap-allocated (calloc), freed only by status_ clr
+- float declarations use l type, char arrays use s type
+- immediate chars use single quotes: 'x'
+- string literals in print use double quotes: "hello world"
+- array/matrix size can be a constant or an integer variable at declaration time
+- comparison on unindexed arrays/matrices ([]arr == []arr) compares their sizes
