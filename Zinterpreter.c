@@ -1736,9 +1736,86 @@ void* exec_funarg(char *name_plus_args, int is_return) {
 
     if(strstr(name_plus_args,"start")) return pt_place_holder;
 
-    // ======= IF RETURN ========== (INVARIATO)
+    // ======= IF RETURN ==========
     if (is_return) {
-        // ... tutto identico a prima, nessuna modifica
+
+        if(deb) printf("DEBUG: funarg called with is_return line: %s\n", name_plus_args);
+
+        char buffer[128] = {0};
+        sscanf(name_plus_args, "deven_%127s", buffer);
+
+        if (strlen(buffer) == 0 || strcmp(buffer, "NULL") == 0) {
+            if(deb) printf("WARNING: no item to deven\n");
+            return_value = NULL;
+            return_hit   = 1;
+            return NULL;
+        }
+        else if(strchr(buffer,'(') && !strstr(buffer,"__")){
+            char line_to_parse[96] = {0};
+            char actual_return[16] = {0};
+            sscanf(buffer,"(%95[^)])%15s",line_to_parse,actual_return);
+            exec_steps(0,line_to_parse);
+            char type = type_of_var(actual_return);
+            return resolve(type,actual_return);
+        }
+        else if(strstr(buffer, "++") && !strchr(buffer, '(')) {
+            void *ret = exec_plus_plus(buffer);
+            return_type  = 'i';
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
+        }
+        else if(strstr(buffer, "--") && !strchr(buffer, '(')) {
+            void *ret = exec_min_min(buffer);
+            return_type  = 'i';
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
+        }
+        else if(strstr(buffer, "**") && !strchr(buffer, '(')) {
+            void *ret = exec_times_times(buffer);
+            return_type  = 'i';
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
+        }
+        else if(strstr(buffer, "~~") && !strchr(buffer, '(')) {
+            void *ret = exec_slash_slash(buffer);
+            return_type  = 'i';
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
+        }
+        else {
+            void *ret = NULL;
+            char bin[32] = {0};
+            strncpy(bin, buffer, sizeof(bin) - 1);
+            is_what(bin);
+
+            char genre[16] = {0};
+            char type = 0;
+            sscanf(bin, "%15[^.].%c", genre, &type);
+
+            if (type == 'v') {
+                void *inner = exec_funarg(buffer, fal);
+                return_type  = return_type;
+                return_value = inner;
+                return_hit   = 1;
+                return inner;
+            }
+
+            return_type = type;
+
+            if (strchr(buffer, '&')) {
+                ret = get_index(buffer);
+            } else {
+                ret = resolve(type, buffer);
+            }
+
+            return_value = ret;
+            return_hit   = 1;
+            return ret;
+        }
     }
 
     // ======= CALL FUNCTION ==========
@@ -1783,9 +1860,6 @@ void* exec_funarg(char *name_plus_args, int is_return) {
 
         push_scope();
 
-        // ===================================================
-        // NUOVO: pre-raccolta token argomenti reali
-        // ===================================================
         char args_copy[64] = {0};
         strncpy(args_copy, args, sizeof(args_copy)-1);
 
@@ -1803,10 +1877,6 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         if(deb) printf("DEBUG: arg_count=%d, param_count=%d\n",
                        arg_count, state_stack[i].param_count);
 
-        // ===================================================
-        // NUOVO: verifica che tutti i parametri senza default
-        // abbiano un argomento corrispondente
-        // ===================================================
         for(int pi = 0; pi < state_stack[i].param_count; pi++) {
             if(pi >= arg_count && !state_stack[i].param_has_default[pi]) {
                 printf("ERROR: parametro '%s' non passato e senza default in funzione '%s'\n",
@@ -1816,10 +1886,6 @@ void* exec_funarg(char *name_plus_args, int is_return) {
             }
         }
 
-        // ===================================================
-        // LOOP PRINCIPALE: itera sui parametri formali
-        // (non più sui token, che potrebbero essere meno)
-        // ===================================================
         for(int pi = 0; pi < state_stack[i].param_count; pi++) {
 
             char pname[max_name_lettere];
@@ -1841,12 +1907,6 @@ void* exec_funarg(char *name_plus_args, int is_return) {
                 tok = default_buf;
                 if(deb) printf("DEBUG: param[%d]='%s' usa default '%s'\n", pi, pname, tok);
             }
-
-            // ===================================================
-            // DA QUI IN POI: identico al codice originale
-            // l'unica differenza e' che tok viene da arg_tokens
-            // oppure da default_buf invece che da strtok diretto
-            // ===================================================
 
             int is_literal = (isdigit((unsigned char)tok[0]) || tok[0] == '-' || tok[0] == '\'');
 
@@ -4523,6 +4583,7 @@ void build_state() {
                     }
                     tok = strtok(NULL, "!");
                 }
+                state_stack[return_state].param_count = pc;
             }
             else if( starts_with(program[i].instruction,"#") ) strcpy(state_stack[return_state].nome_function, "#"); 
             else if( starts_with(program[i].instruction,"C") ) strcpy(state_stack[return_state].nome_function, "C");
