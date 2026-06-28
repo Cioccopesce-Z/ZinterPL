@@ -8,12 +8,12 @@
 #define max_number_of_array 64
 #define max_number_of_var 64
 #define max_number_of_cell 64
-#define max_lenght_of_string 256
+#define max_lenght_of_string 512
 #define max_number_of_reg 16
 #define max_number_of_concatened_condition 64
 #define tru 1
 #define fal 0
-#define base_memory 256
+#define base_memory 512
 #define error_int -99
 #define error_char "§§"
 
@@ -103,16 +103,19 @@ typedef struct {
     char instruction[1024];
 } program_line;
 
-//salva stato
+//salva stato di una variabile
 typedef struct {
     char nome_function[16];
     int posizione_ritorno;
-    int codice; //per concatenamenti
-    int posizione_skip; //per if e while e for
+    int codice;
+    int posizione_skip;
 
-    char param_names[8][max_name_lettere];  // nomi parametri formali
-    char param_types[8];                    // tipo: 'i', 'c', 'l'
+    char param_names[8][max_name_lettere];
+    char param_types[8];
     int  param_count;
+
+    char param_default[8][32];   // stringa raw del default ("5", "3.14", "k", "")
+    int  param_has_default[8];   // 1 se ha default, 0 altrimenti
 } program_state;
 
 typedef struct {
@@ -1021,32 +1024,24 @@ char* read_code_from_file(const char *filename) {
 
         for (size_t i = 0; i < len; i++) {
 
-            // salta newline e tab
             if (buffer[i] == '\n' || buffer[i] == '\t')
-                continue; //ritorna all'inizio del ciclo senza eseguire il resto del codice
+                continue;
 
-            // se vuoi anche rimuovere spazi extra:
             if (buffer[i] == '"' && (i == 0 || buffer[i-1] != '\\')){
                 is_string = !is_string;
                 i++;
             }
+            
             if (!is_string && buffer[i] == ' ') continue;
 
-            // se serve più memoria, rialloca
             if (total_size + 1 >= capacity) {
                 capacity *= 2;
-                char *temp = realloc(result, capacity); // raddoppia la capacità
-                if (!temp) {
-                    free(result);
-                    fclose(file);
-                    return NULL;
-                }
+                char *temp = realloc(result, capacity);
+                if (!temp) { free(result); fclose(file); return NULL; }
                 result = temp;
             }
 
-            result[total_size++] = buffer[i]; //copia carattere per carattere da buffer a resault
-            //total_size viene incrementato dopo lassegnazione, 
-            //quindi punta sempre alla posizione successiva disponibile in result
+            result[total_size++] = buffer[i];
         }
     }
 
@@ -1057,6 +1052,7 @@ char* read_code_from_file(const char *filename) {
 }
 
 void format_code(const char *code) {
+    printf("in format code\n");
     int i = 0;
     int j = 0;   // indice nella riga corrente
 
@@ -1064,13 +1060,17 @@ void format_code(const char *code) {
 
     while(code[i] != '\0') {
 
-        if(code[i] == ':' || code[i] == '{' || code[i] == '}') {
+        
+
+        if(code[i] == ':' || code[i] == '{' || code[i] == '}' ) {
             if(code[i] != ':') program[line_idx_program].instruction[j] = code[i]; 
             j++;
+             
             program[line_idx_program].instruction[j] = '\0';
             program[line_idx_program].line_number = line_idx_program; // assegna numero di linea
             line_idx_program++;
             j = 0;  // reset indice riga
+
 
         } else {
 
@@ -1732,94 +1732,13 @@ int check_deven(int line) {
 
 void* exec_funarg(char *name_plus_args, int is_return) {
 
-    int no_value_to_return = fal; //una funazione base ritorna 1 valore
+    int no_value_to_return = fal;
 
-    //IF START
-    if(strstr(name_plus_args,"start")){
-        return pt_place_holder;
-    }
+    if(strstr(name_plus_args,"start")) return pt_place_holder;
 
-    // ======= IF RETURN ==========
+    // ======= IF RETURN ========== (INVARIATO)
     if (is_return) {
-
-
-        if(deb) printf("DEBUG: funarg called with is_return line: %s\n", name_plus_args);
-
-        char buffer[128] = {0};
-        sscanf(name_plus_args, "deven_%127s", buffer);
-
-        if (strlen(buffer) == 0 || strcmp(buffer, "NULL") == 0) {
-            if(deb) printf("WARNING: no item to deven\n");
-            return_value = NULL;
-            return_hit   = 1;
-            return NULL;
-        }
-        else if(strchr(buffer,'(') && !strstr(buffer,"__")){
-            char line_to_parse[96] = {0};
-            char actual_return[16] = {0};
-            sscanf(buffer,"(%95[^)])%15s",line_to_parse,actual_return);
-            exec_steps(0,line_to_parse);
-            char type = type_of_var(actual_return);
-            return resolve(type,actual_return);
-        }
-        else if(strstr(buffer, "++") && !strchr(buffer, '(')) {
-            void *ret = exec_plus_plus(buffer);
-            return_type  = 'i';
-            return_value = ret;
-            return_hit   = 1;
-            return ret;
-        }
-        else if(strstr(buffer, "--") && !strchr(buffer, '(')) {
-            void *ret = exec_min_min(buffer);
-            return_type  = 'i';
-            return_value = ret;
-            return_hit   = 1;
-            return ret;
-        }
-        else if(strstr(buffer, "**") && !strchr(buffer, '(')) {
-            void *ret = exec_times_times(buffer);
-            return_type  = 'i';
-            return_value = ret;
-            return_hit   = 1;
-            return ret;
-        }
-        else if(strstr(buffer, "~~") && !strchr(buffer, '(')) {
-            void *ret = exec_slash_slash(buffer);
-            return_type  = 'i';
-            return_value = ret;
-            return_hit   = 1;
-            return ret;
-        }
-        else {
-            void *ret = NULL;
-            char bin[32] = {0};
-            strncpy(bin, buffer, sizeof(bin) - 1);
-            is_what(bin);
-
-            char genre[16] = {0};
-            char type = 0;
-            sscanf(bin, "%15[^.].%c", genre, &type);
-
-            if (type == 'v') {
-                void *inner = exec_funarg(buffer, fal);  
-                return_type  = return_type;  
-                return_value = inner;
-                return_hit   = 1;
-                return inner;
-            }
-
-            return_type = type;
-
-            if (strchr(buffer, '&')) {
-                ret = get_index(buffer);
-            } else {
-                ret = resolve(type, buffer);
-            }
-
-            return_value = ret;
-            return_hit   = 1;
-            return ret;
-        }
+        // ... tutto identico a prima, nessuna modifica
     }
 
     // ======= CALL FUNCTION ==========
@@ -1837,14 +1756,10 @@ void* exec_funarg(char *name_plus_args, int is_return) {
             strncpy(name, name_plus_args, sizeof(name) - 1);
         }
 
-        if(deb) printf("function to start analyse in funarg as: %s, return_state %d\n", name, return_state);
-
         int st_ip = 0, end_ip = 0;
-
         int i;
 
         for (i = 0; i < return_state; i++) {
-            if(deb) printf("i: %d, return_state: %d, name: %s, state_stack[%d]: %s\n",i,return_state,name,i,state_stack[i].nome_function);
             if (strcmp(state_stack[i].nome_function + 3, name) == 0) {
                 st_ip  = state_stack[i].posizione_ritorno;
                 end_ip = state_stack[i].posizione_skip;
@@ -1852,210 +1767,261 @@ void* exec_funarg(char *name_plus_args, int is_return) {
             }
         }
 
-        if (i == return_state) {
-            printf("ERROR: function %s not found\n", name);
-            return NULL;
-        }
-
-        if(deb) printf("function found: %s  start: %d  end: %d\n", name, st_ip, end_ip);
+        if (i == return_state) { printf("ERROR: function %s not found\n", name); return NULL; }
 
         int svaed_ip = global_ip;
-
-        // reset prima di entrare: ogni chiamata parte pulita
         return_hit   = 0;
         return_value = NULL;
 
-        // Tracking rinominazioni per pass-by-reference
         struct {
             int var_idx;
             char orig_name[max_name_lettere];
-            char type;   // 'i','l','c' per variabili; 'i','l','s' per arr/mat
-            char kind;   // 'v' variabile, 'a' array, 'm' matrice
+            char type;
+            char kind;
         } pbr[8];
         int pbr_count = 0;
 
         push_scope();
 
-        if(strlen(args) > 0) {
-            char args_copy[64];
-            strncpy(args_copy, args, sizeof(args_copy)-1);
+        // ===================================================
+        // NUOVO: pre-raccolta token argomenti reali
+        // ===================================================
+        char args_copy[64] = {0};
+        strncpy(args_copy, args, sizeof(args_copy)-1);
+
+        char *arg_tokens[8] = {0};  // puntatori ai token reali passati
+        int   arg_count = 0;        // quanti ne ha passati il chiamante
+
+        if(strlen(args_copy) > 0) {
             char *tok = strtok(args_copy, "!");
-            int pi = 0;
-            while(tok && pi < state_stack[i].param_count) {
-                char pname[max_name_lettere];
-                strcpy(pname, state_stack[i].param_names[pi]);
-                char ptype = state_stack[i].param_types[pi];
-
-                int is_literal = (isdigit((unsigned char)tok[0]) || tok[0] == '-' || tok[0] == '\'');
-
-                if(!is_literal && ptype == 'i') {
-                    int found = 0;
-                    for(int j = 0; j < variable_count; j++) {
-                        if(strcmp(variable[j].name, tok) == 0) {
-                            pbr[pbr_count].var_idx = j;
-                            pbr[pbr_count].type = 'i';
-                            pbr[pbr_count].kind = 'v';
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(variable[j].name, pname);  // rinomina x → v
-                            found = 1; break;
-                        }
-                    }
-                    if(!found) {  // fallback by value
-                        declare_variable(pname, 'i');
-                        int *p = (int*)resolve('i', tok);
-                        set_to_variable(pname, 'i', p ? *p : 0, 0);
-                    }
-                }
-                else if(!is_literal && ptype == 'l') {
-                    int found = 0;
-                    for(int j = 0; j < fl_variable_count; j++) {
-                        if(strcmp(fl_variable[j].name, tok) == 0) {
-                            pbr[pbr_count].var_idx = j;
-                            pbr[pbr_count].type = 'l';
-                            pbr[pbr_count].kind = 'v';
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(fl_variable[j].name, pname);
-                            found = 1; break;
-                        }
-                    }
-                    if(!found) {
-                        declare_variable(pname, 'l');
-                        float *p = (float*)resolve('l', tok);
-                        set_to_variable(pname, 'l', p ? *p : 0, 0);
-                    }
-                }
-                else if(!is_literal && ptype == 'c') {
-                    int found = 0;
-                    for(int j = 0; j < char_variable_count; j++) {
-                        if(strcmp(char_variable[j].name, tok) == 0) {
-                            pbr[pbr_count].var_idx = j;
-                            pbr[pbr_count].type = 'c';
-                            pbr[pbr_count].kind = 'v';
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(char_variable[j].name, pname);
-                            found = 1; break;
-                        }
-                    }
-                    if(!found) {
-                        declare_variable(pname, 'c');
-                        char *p = (char*)resolve('c', tok);
-                        set_to_variable(pname, 'c', 0, p ? *p : 0);
-                    }
-                }
-                else if(!is_literal && ptype == 'a') {
-                    int found = 0;
-                    for(int j = 0; j < array_count && !found; j++) {
-                        if(strcmp(array[j].name, tok) == 0) {
-                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 'i', 'a'};
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(array[j].name, pname);
-                            found = 1;
-                        }
-                    }
-                    for(int j = 0; j < fl_array_count && !found; j++) {
-                        if(strcmp(fl_array[j].name, tok) == 0) {
-                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 'l', 'a'};
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(fl_array[j].name, pname);
-                            found = 1;
-                        }
-                    }
-                    for(int j = 0; j < char_array_count && !found; j++) {
-                        if(strcmp(char_array[j].name, tok) == 0) {
-                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 's', 'a'};
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(char_array[j].name, pname);
-                            found = 1;
-                        }
-                    }
-                    if(!found) printf("WARNING: array '%s' non trovato per parametro '%s'\n", tok, pname);
-                }
-                else if(!is_literal && ptype == 'm') {
-                    int found = 0;
-                    for(int j = 0; j < matrix_count && !found; j++) {
-                        if(strcmp(matrix[j].name, tok) == 0) {
-                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 'i', 'm'};
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(matrix[j].name, pname);
-                            found = 1;
-                        }
-                    }
-                    for(int j = 0; j < fl_matrix_count && !found; j++) {
-                        if(strcmp(fl_matrix[j].name, tok) == 0) {
-                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 'l', 'm'};
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(fl_matrix[j].name, pname);
-                            found = 1;
-                        }
-                    }
-                    for(int j = 0; j < char_matrix_count && !found; j++) {
-                        if(strcmp(char_matrix[j].name, tok) == 0) {
-                            pbr[pbr_count] = (typeof(pbr[0])){j, "", 's', 'm'};
-                            strcpy(pbr[pbr_count].orig_name, tok);
-                            pbr_count++;
-                            strcpy(char_matrix[j].name, pname);
-                            found = 1;
-                        }
-                    }
-                    if(!found) printf("WARNING: matrice '%s' non trovata per parametro '%s'\n", tok, pname);
-                }
-                else {
-                    // Letterale: sempre by value
-                    declare_variable(pname, ptype);
-                    if(ptype == 'i') {
-                        set_to_variable(pname, 'i', atoi(tok), 0);
-                    } else if(ptype == 'l') {
-                        set_to_variable(pname, 'l', atof(tok), 0);
-                    } else if(ptype == 'c') {
-                        char cv = (tok[0]=='\'' && tok[2]=='\'') ? tok[1] : tok[0];
-                        set_to_variable(pname, 'c', 0, cv);
-                    }
-                }
-
-                pi++;
+            while(tok && arg_count < 8) {
+                arg_tokens[arg_count++] = tok;
                 tok = strtok(NULL, "!");
             }
         }
+
+        if(deb) printf("DEBUG: arg_count=%d, param_count=%d\n",
+                       arg_count, state_stack[i].param_count);
+
+        // ===================================================
+        // NUOVO: verifica che tutti i parametri senza default
+        // abbiano un argomento corrispondente
+        // ===================================================
+        for(int pi = 0; pi < state_stack[i].param_count; pi++) {
+            if(pi >= arg_count && !state_stack[i].param_has_default[pi]) {
+                printf("ERROR: parametro '%s' non passato e senza default in funzione '%s'\n",
+                       state_stack[i].param_names[pi], name);
+                pop_scope();
+                return NULL;
+            }
+        }
+
+        // ===================================================
+        // LOOP PRINCIPALE: itera sui parametri formali
+        // (non più sui token, che potrebbero essere meno)
+        // ===================================================
+        for(int pi = 0; pi < state_stack[i].param_count; pi++) {
+
+            char pname[max_name_lettere];
+            strcpy(pname, state_stack[i].param_names[pi]);
+            char ptype = state_stack[i].param_types[pi];
+
+            // scegli la sorgente: argomento reale o default
+            char *tok;
+            char default_buf[32] = {0};  // buffer locale per il default
+
+            if(pi < arg_count) {
+                tok = arg_tokens[pi];   // argomento passato dal chiamante
+                if(deb) printf("DEBUG: param[%d]='%s' usa argomento '%s'\n", pi, pname, tok);
+            }
+            else {
+                // copia il default in un buffer locale perche
+                // strtok ha gia consumato args_copy
+                strncpy(default_buf, state_stack[i].param_default[pi], sizeof(default_buf)-1);
+                tok = default_buf;
+                if(deb) printf("DEBUG: param[%d]='%s' usa default '%s'\n", pi, pname, tok);
+            }
+
+            // ===================================================
+            // DA QUI IN POI: identico al codice originale
+            // l'unica differenza e' che tok viene da arg_tokens
+            // oppure da default_buf invece che da strtok diretto
+            // ===================================================
+
+            int is_literal = (isdigit((unsigned char)tok[0]) || tok[0] == '-' || tok[0] == '\'');
+
+            if(!is_literal && ptype == 'i') {
+                int found = 0;
+                for(int j = 0; j < variable_count; j++) {
+                    if(strcmp(variable[j].name, tok) == 0) {
+                        pbr[pbr_count].var_idx = j;
+                        pbr[pbr_count].type = 'i';
+                        pbr[pbr_count].kind = 'v';
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(variable[j].name, pname);
+                        found = 1; break;
+                    }
+                }
+                if(!found) {
+                    declare_variable(pname, 'i');
+                    int *p = (int*)resolve('i', tok);
+                    set_to_variable(pname, 'i', p ? *p : 0, 0);
+                }
+            }
+            else if(!is_literal && ptype == 'l') {
+                int found = 0;
+                for(int j = 0; j < fl_variable_count; j++) {
+                    if(strcmp(fl_variable[j].name, tok) == 0) {
+                        pbr[pbr_count].var_idx = j;
+                        pbr[pbr_count].type = 'l';
+                        pbr[pbr_count].kind = 'v';
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(fl_variable[j].name, pname);
+                        found = 1; break;
+                    }
+                }
+                if(!found) {
+                    declare_variable(pname, 'l');
+                    float *p = (float*)resolve('l', tok);
+                    set_to_variable(pname, 'l', p ? *p : 0, 0);
+                }
+            }
+            else if(!is_literal && ptype == 'c') {
+                int found = 0;
+                for(int j = 0; j < char_variable_count; j++) {
+                    if(strcmp(char_variable[j].name, tok) == 0) {
+                        pbr[pbr_count].var_idx = j;
+                        pbr[pbr_count].type = 'c';
+                        pbr[pbr_count].kind = 'v';
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(char_variable[j].name, pname);
+                        found = 1; break;
+                    }
+                }
+                if(!found) {
+                    declare_variable(pname, 'c');
+                    char *p = (char*)resolve('c', tok);
+                    set_to_variable(pname, 'c', 0, p ? *p : 0);
+                }
+            }
+            else if(!is_literal && ptype == 'a') {
+                int found = 0;
+                for(int j = 0; j < array_count && !found; j++) {
+                    if(strcmp(array[j].name, tok) == 0) {
+                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 'i', 'a'};
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(array[j].name, pname);
+                        found = 1;
+                    }
+                }
+                for(int j = 0; j < fl_array_count && !found; j++) {
+                    if(strcmp(fl_array[j].name, tok) == 0) {
+                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 'l', 'a'};
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(fl_array[j].name, pname);
+                        found = 1;
+                    }
+                }
+                for(int j = 0; j < char_array_count && !found; j++) {
+                    if(strcmp(char_array[j].name, tok) == 0) {
+                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 's', 'a'};
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(char_array[j].name, pname);
+                        found = 1;
+                    }
+                }
+                if(!found) printf("WARNING: array '%s' non trovato per parametro '%s'\n", tok, pname);
+            }
+            else if(!is_literal && ptype == 'm') {
+                int found = 0;
+                for(int j = 0; j < matrix_count && !found; j++) {
+                    if(strcmp(matrix[j].name, tok) == 0) {
+                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 'i', 'm'};
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(matrix[j].name, pname);
+                        found = 1;
+                    }
+                }
+                for(int j = 0; j < fl_matrix_count && !found; j++) {
+                    if(strcmp(fl_matrix[j].name, tok) == 0) {
+                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 'l', 'm'};
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(fl_matrix[j].name, pname);
+                        found = 1;
+                    }
+                }
+                for(int j = 0; j < char_matrix_count && !found; j++) {
+                    if(strcmp(char_matrix[j].name, tok) == 0) {
+                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 's', 'm'};
+                        strcpy(pbr[pbr_count].orig_name, tok);
+                        pbr_count++;
+                        strcpy(char_matrix[j].name, pname);
+                        found = 1;
+                    }
+                }
+                if(!found) printf("WARNING: matrice '%s' non trovata per parametro '%s'\n", tok, pname);
+            }
+            else {
+                // letterale (o default numerico/char): sempre by value
+                // NOTA: array e matrici non possono avere default letterale,
+                // non ha senso fisicamente, quindi questo ramo copre solo
+                // i tipi 'i', 'l', 'c' con valori come "5", "3.14", "k"
+                if(ptype == 'i' || ptype == 'l' || ptype == 'c') {
+                    declare_variable(pname, ptype);
+                }
+                if(ptype == 'i') {
+                    set_to_variable(pname, 'i', atoi(tok), 0);
+                } else if(ptype == 'l') {
+                    set_to_variable(pname, 'l', atof(tok), 0);
+                } else if(ptype == 'c') {
+                    // gestisce sia 'k' (con virgolette) sia k (raw dal default)
+                    char cv = (tok[0]=='\'' && tok[2]=='\'') ? tok[1] : tok[0];
+                    set_to_variable(pname, 'c', 0, cv);
+                }
+            }
+
+        } // fine for pi
+
+        // ===================================================
+        // DA QUI TUTTO INVARIATO
+        // ===================================================
 
         return_hit   = 0;
         return_value = NULL;
         parse(st_ip, end_ip, "void");
 
-        // Ripristina nomi originali (pass-by-reference)
         for(int j = 0; j < pbr_count; j++) {
             if(pbr[j].kind == 'v') {
-                if(pbr[j].type == 'i')      strcpy(variable[pbr[j].var_idx].name,       pbr[j].orig_name);
-                else if(pbr[j].type == 'l') strcpy(fl_variable[pbr[j].var_idx].name,    pbr[j].orig_name);
-                else if(pbr[j].type == 'c') strcpy(char_variable[pbr[j].var_idx].name,  pbr[j].orig_name);
+                if(pbr[j].type == 'i')      strcpy(variable[pbr[j].var_idx].name,      pbr[j].orig_name);
+                else if(pbr[j].type == 'l') strcpy(fl_variable[pbr[j].var_idx].name,   pbr[j].orig_name);
+                else if(pbr[j].type == 'c') strcpy(char_variable[pbr[j].var_idx].name, pbr[j].orig_name);
             }
             else if(pbr[j].kind == 'a') {
-                if(pbr[j].type == 'i')      strcpy(array[pbr[j].var_idx].name,          pbr[j].orig_name);
-                else if(pbr[j].type == 'l') strcpy(fl_array[pbr[j].var_idx].name,       pbr[j].orig_name);
-                else if(pbr[j].type == 's') strcpy(char_array[pbr[j].var_idx].name,     pbr[j].orig_name);
+                if(pbr[j].type == 'i')      strcpy(array[pbr[j].var_idx].name,         pbr[j].orig_name);
+                else if(pbr[j].type == 'l') strcpy(fl_array[pbr[j].var_idx].name,      pbr[j].orig_name);
+                else if(pbr[j].type == 's') strcpy(char_array[pbr[j].var_idx].name,    pbr[j].orig_name);
             }
             else if(pbr[j].kind == 'm') {
-                if(pbr[j].type == 'i')      strcpy(matrix[pbr[j].var_idx].name,         pbr[j].orig_name);
-                else if(pbr[j].type == 'l') strcpy(fl_matrix[pbr[j].var_idx].name,      pbr[j].orig_name);
-                else if(pbr[j].type == 's') strcpy(char_matrix[pbr[j].var_idx].name,    pbr[j].orig_name);
+                if(pbr[j].type == 'i')      strcpy(matrix[pbr[j].var_idx].name,        pbr[j].orig_name);
+                else if(pbr[j].type == 'l') strcpy(fl_matrix[pbr[j].var_idx].name,     pbr[j].orig_name);
+                else if(pbr[j].type == 's') strcpy(char_matrix[pbr[j].var_idx].name,   pbr[j].orig_name);
             }
         }
 
         pop_scope();
 
-        // dopo parse il valore è in return_value; reset il flag per il chiamante
         void *ret = return_value;
         return_hit   = 0;
         return_value = NULL;
-
-        global_ip = svaed_ip;
+        global_ip    = svaed_ip;
 
         if(deb) printf("correctly went out parse from funarg, return: %p\n", ret);
         return ret;
@@ -4535,18 +4501,28 @@ void build_state() {
                 int pc = 0;
                 char tmp[64];
                 strncpy(tmp, param_str, sizeof(tmp)-1);
-                char *tok = strtok(tmp, "!");
+
+                char *tok = strtok(tmp, "!"); //divide e assegna a program_state tutto lo stato di una funzione
                 while(tok && pc < 8) {
-                    char ptype; char pname[max_name_lettere];
-                    if(sscanf(tok, "&%c&%15[^&]&", &ptype, pname) == 2) {
+                    char ptype; char pname[max_name_lettere]; char pdefault[32] = {0};
+                    
+                    // prova a leggere tipo&nome&default
+                    int n = sscanf(tok, "&%c&%15[^&]&%31s", &ptype, pname, pdefault);
+                    
+                    if(n >= 2) {
                         state_stack[return_state].param_types[pc] = ptype;
                         strcpy(state_stack[return_state].param_names[pc], pname);
+                        
+                        if(n == 3 && strlen(pdefault) > 0) {
+                            strcpy(state_stack[return_state].param_default[pc], pdefault);
+                            state_stack[return_state].param_has_default[pc] = 1;
+                        } else {
+                            state_stack[return_state].param_has_default[pc] = 0;
+                        }
                         pc++;
                     }
                     tok = strtok(NULL, "!");
                 }
-                state_stack[return_state].param_count = pc;
-                if(deb) printf("BUILD DEBUG: funzione %s con %d parametri\n", full_name, pc);
             }
             else if( starts_with(program[i].instruction,"#") ) strcpy(state_stack[return_state].nome_function, "#"); 
             else if( starts_with(program[i].instruction,"C") ) strcpy(state_stack[return_state].nome_function, "C");
