@@ -16,6 +16,7 @@
 #define base_memory 512
 #define error_int -99
 #define error_char "§§"
+#define max_parameters 16
 
 
 int line_idx_program = 0;
@@ -105,17 +106,17 @@ typedef struct {
 
 //salva stato di una variabile
 typedef struct {
-    char nome_function[16];
+    char nome_function[max_parameters];
     int posizione_ritorno;
     int codice;
     int posizione_skip;
 
-    char param_names[8][max_name_lettere];
-    char param_types[8];
+    char param_names[max_parameters][max_name_lettere];
+    char param_types[max_parameters];
     int  param_count;
 
-    char param_default[8][32];   // stringa raw del default ("5", "3.14", "k", "")
-    int  param_has_default[8];   // 1 se ha default, 0 altrimenti
+    char param_default[max_parameters][32];   // stringa raw del default ("5", "3.14", "k", "")
+    int  param_has_default[max_parameters];   // 1 se ha default, 0 altrimenti
 } program_state;
 
 typedef struct {
@@ -276,6 +277,8 @@ void pop_scope() {
 
 /* 1 int 2 char 3 float 0 not*/
 int is_var_(const char *name) {
+    if(deb) printf("is_var called with: %s\n",name);
+    if(deb) printf("variable_count: %d\n", variable_count);
     for (int i = 0; i < variable_count; i++) {
         if (strcmp(variable[i].name, name) == 0) {
             return 1; // è una variabile int
@@ -402,6 +405,7 @@ void is_what(char name_result[]) {
     if(deb) printf("is what generally called with: %s \n",name_result);
 
     if ((base_type = is_var_(name_result)) != 0) {
+        if(deb) printf("variable found: %s\n",name_result);
         if (base_type == 1) { strcpy(name_result, "variable.i"); return; }
         else if (base_type == 2) { strcpy(name_result, "variable.c"); return; }
         else if (base_type == 3) { strcpy(name_result, "variable.l"); return; }
@@ -1823,10 +1827,10 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         if(deb) printf("DEBUG: funarg chiamata con name+args: %s\n", name_plus_args);
 
         char name[32] = {0};
-        char args[64] = {0};
+        char args[128] = {0};
 
         if (strstr(name_plus_args, "__")) {
-            sscanf(name_plus_args, "__%31[^(](%63[^)])", name, args);
+            sscanf(name_plus_args, "__%31[^(](%127[^)])", name, args);
             no_value_to_return = tru;
         }
         else {
@@ -1855,20 +1859,20 @@ void* exec_funarg(char *name_plus_args, int is_return) {
             char orig_name[max_name_lettere];
             char type;
             char kind;
-        } pbr[8];
+        } pbr[max_parameters];
         int pbr_count = 0;
 
         push_scope();
 
-        char args_copy[64] = {0};
+        char args_copy[128] = {0};
         strncpy(args_copy, args, sizeof(args_copy)-1);
 
-        char *arg_tokens[8] = {0};  // puntatori ai token reali passati
+        char *arg_tokens[max_parameters] = {0};  // puntatori ai token reali passati
         int   arg_count = 0;        // quanti ne ha passati il chiamante
 
         if(strlen(args_copy) > 0) {
             char *tok = strtok(args_copy, "!");
-            while(tok && arg_count < 8) {
+            while(tok && arg_count < max_parameters) {
                 arg_tokens[arg_count++] = tok;
                 tok = strtok(NULL, "!");
             }
@@ -1894,6 +1898,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
 
             // scegli la sorgente: argomento reale o default
             char *tok;
+            int use_value;
             char default_buf[32] = {0};  // buffer locale per il default
 
             if(pi < arg_count) {
@@ -1901,10 +1906,47 @@ void* exec_funarg(char *name_plus_args, int is_return) {
                 if(deb) printf("DEBUG: param[%d]='%s' usa argomento '%s'\n", pi, pname, tok);
             }
             else {
-                // copia il default in un buffer locale perche
-                // strtok ha gia consumato args_copy
                 strncpy(default_buf, state_stack[i].param_default[pi], sizeof(default_buf)-1);
                 tok = default_buf;
+
+                // Se il default NON è un letterale, risolvilo e riscrivilo come stringa
+                int def_is_literal = (isdigit((unsigned char)tok[0])
+                                    || tok[0] == '-'
+                                    || tok[0] == '\'');
+
+                if(!def_is_literal && (ptype == 'i' || ptype == 'l' || ptype == 'c')) {
+
+                    char def_type = type_of_var(default_buf); // 'i','l','c','k','v',...
+
+                    if(def_type == 'i' || def_type == 'n') {
+                        int *p = (int *)resolve(def_type, default_buf);
+                        if(p) snprintf(default_buf, sizeof(default_buf), "%d", *p);
+                        else  printf("WARNING: default int '%s' non risolvibile per '%s'\n",
+                                    default_buf, pname);
+                    }
+                    else if(def_type == 'l') {
+                        float *p = (float *)resolve(def_type, default_buf);
+                        if(p) snprintf(default_buf, sizeof(default_buf), "%f", *p);
+                        else  printf("WARNING: default float '%s' non risolvibile per '%s'\n",
+                                    default_buf, pname);
+                    }
+                    else if(def_type == 'c' || def_type == 'k') {
+                        char *p = (char *)resolve(def_type, default_buf);
+                        if(p) snprintf(default_buf, sizeof(default_buf), "'%c'", *p);
+                        else  printf("WARNING: default char '%s' non risolvibile per '%s'\n",
+                                    default_buf, pname);
+                    }
+                    else if(def_type == 'v') {          // funzione come default
+                        void *ret = exec_funarg(default_buf, fal);
+                        char rt = return_type;
+                        if(ret) {
+                            if     (rt == 'i') snprintf(default_buf, sizeof(default_buf), "%d",   *(int   *)ret);
+                            else if(rt == 'l') snprintf(default_buf, sizeof(default_buf), "%f",   *(float *)ret);
+                            else if(rt == 'c') snprintf(default_buf, sizeof(default_buf), "'%c'", *(char  *)ret);
+                        }
+                    }
+                    // tok punta già a default_buf, che ora contiene il valore ("42", "3.14", "'k'")
+                }
                 if(deb) printf("DEBUG: param[%d]='%s' usa default '%s'\n", pi, pname, tok);
             }
 
@@ -2049,10 +2091,6 @@ void* exec_funarg(char *name_plus_args, int is_return) {
             }
 
         } // fine for pi
-
-        // ===================================================
-        // DA QUI TUTTO INVARIATO
-        // ===================================================
 
         return_hit   = 0;
         return_value = NULL;
@@ -4549,21 +4587,21 @@ void build_state() {
             else if( starts_with(program[i].instruction,"during") ) strcpy(state_stack[return_state].nome_function, "during");
             else if( starts_with(program[i].instruction,"od_") ){
                 char bin_name[16] = {0};
-                char param_str[64] = {0};
-                sscanf(program[i].instruction, "od_%15[^(](%63[^)])", bin_name, param_str);
+                char param_str[128] = {0};
+                sscanf(program[i].instruction, "od_%15[^(](%127[^)])", bin_name, param_str);
 
                 char full_name[24];
                 sprintf(full_name, "od_%s", bin_name);
                 strcpy(state_stack[return_state].nome_function, full_name);
 
                 // parsing parametri formali separati da !
-                // formato atteso: i&nome!c&nome2!l&nome3
+                // formato atteso: &i&nome!&c&nome2!&l&nome3
                 int pc = 0;
                 char tmp[64];
                 strncpy(tmp, param_str, sizeof(tmp)-1);
 
                 char *tok = strtok(tmp, "!"); //divide e assegna a program_state tutto lo stato di una funzione
-                while(tok && pc < 8) {
+                while(tok && pc < max_parameters) {
                     char ptype; char pname[max_name_lettere]; char pdefault[32] = {0};
                     
                     // prova a leggere tipo&nome&default
