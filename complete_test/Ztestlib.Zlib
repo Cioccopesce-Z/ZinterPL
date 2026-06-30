@@ -10,7 +10,7 @@ od_ printhello(){
 
 od_ retretunc(&i&pass&){
     deven_ __valueplus(pass):
-}
+} 
 
 od_ retfunc(){
     deven_ __differenza():
@@ -22,47 +22,47 @@ od_ valueplus(&i&inner&){
 }
 
 od_ somma(){
-    int_ &i&a&:
-    int_ &i&b&:
+    int a:
+    int b:
     a = 3:
     b = 5:
-    int_ &i&res&:
+    int res:
     res = a + b:
     deven_ res:
 }
 
 od_ differenza(){
-    int_ &i&a&:
-    int_ &i&b&:
+    int a:
+    int b:
     a = 10:
     b = 4:
-    int_ &i&res&:
+    int res:
     res = a - b:
     deven_ res:
 }
 
 od_ prodotto(){
-    int_ &i&a&:
-    int_ &i&b&:
+    int a:
+    int b:
     a = 6:
     b = 7&:
-    int_ &i&res&:
+    int res:
     res = a * b:
     deven_ res:
 }
 
 od_ divisione(){
-    int_ &i&a&:
-    int_ &i&b&:
+    int a:
+    int b:
     a = 20:
     b = 4:
-    int_ &i&res&:
+    int res:
     res = a / b:
     deven_ res:
 }
 
 od_ testargs(&i&a&!&i&b&){
-    int_&i&risultato&:
+    int risultato:
     risultato=a+b:
     deven_ risultato:
 }
@@ -73,7 +73,7 @@ od_ hello(){
 }
 
 od_ get_char(){
-    char_ &c&ch&:
+    char ch:
     ch = 'Z':
     deven_ ch:
 }

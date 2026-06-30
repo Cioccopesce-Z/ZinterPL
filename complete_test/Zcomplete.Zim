@@ -10,19 +10,20 @@ __start(){
     __printciao():
     __printhello():
 
-    int_  &i&v0&:
-    int_  &i&v1&:
-    int_  &i&v2&:
-    int_  &i&row&:
-    int_  &i&col&:
-    char_ &c&cv0&:
-    char_ &c&cv1&:
+    int v0:
+    int v1:
+    int v2:
+    int row:
+    int col:
 
-    int_  &i[5]&iarr&:
-    char_ &s[5]&sarr&:
+    char cv0:
+    char cv1:
 
-    int_  &i[3][3]&imat&:
-    char_ &s[3][3]&smat&:
+    int [5]iarr:
+    char [5]sarr:
+
+    int [3][3]imat:
+    char [3][3]smat:
 
     println_:
     //=== VOID FUNCTION ===:
@@ -103,8 +104,8 @@ __start(){
     //=== MATH IN VAR ===:
     println_ &s&"=== MATH IN VAR ==="&:
 
-    int_ &i&plusplus&:
-    int_ &i&mov&:
+    int plusplus:
+    int mov:
 
     mov = 2:
     plusplus = 3:
@@ -130,7 +131,7 @@ __start(){
 
     println_:
 
-    int_ &i[3]&parr&:
+    int [3]parr:
 
     [0]parr = 3:
     print_ [0]parr: println_ &s&" 3 - [0]parr"&:
@@ -149,7 +150,7 @@ __start(){
 
     println_:
 
-    char_ &s[5]&carr&:
+    char [5]carr:
 
     [0]carr = 'F':
     print_ [0]carr: println_ &s&" F - [0]carr"&:
@@ -231,7 +232,7 @@ __start(){
     println_ &s&"=== SWAP CVAR ==="&:
     cv0 = 'A':
     cv1 = 'B':
-    char_ &c&ctmp&:
+    char ctmp:
     ctmp = cv0:
     cv0 = cv1:
     cv1 = ctmp:
@@ -243,7 +244,7 @@ __start(){
     println_ &s&"=== SWAP ARR ==="&:
     [0]iarr = 100:
     [1]iarr = 200:
-    int_ &i&tmp&:
+    int tmp:
     tmp = [0]iarr:
     [0]iarr = [1]iarr:
     [1]iarr = tmp:
@@ -284,7 +285,7 @@ __start(){
     println_:
     //====== CONDITION TEST ============:
     println_ &s&"====== CONDITION TEST ============"&:
-    int_ &i&testif&:
+    int testif:
     testif = 1:
     println_ testif:
 
@@ -311,8 +312,8 @@ __start(){
     println_:
     //====== DURING TEST ============:
     println_ &s&"====== DURING TEST ============"&:
-    int_ &i&repetition&:
-    int_ &i[5]&tion&:
+    int repetition:
+    int [5]tion:
     [4]tion = 2:
     repetition = 3:
     println_ repetition:
@@ -359,8 +360,8 @@ __start(){
     //====== ARG ARRAY AND MATRICES TEST ============:
     println_ &s&"====== ARG ARRAY AND MATRICES TEST ============"&:
     
-    int_ &i[7]&argarray&:
-    int_ &i[7][7]&argmatris&:
+    int [7]argarray:
+    int [7][7]argmatris:
 
     __addseven(argarray ! 7):
     print_ [5]argarray: println_ &s&" if(novar ^= 7) 7 oth 6 __addseven(argarray, 7)"&:
