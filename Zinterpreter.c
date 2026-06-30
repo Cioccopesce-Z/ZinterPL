@@ -398,6 +398,61 @@ int is_function_(const char *name_or_declaration){
     return tru; // non è una function
 }
 
+void remove_variable(char *name, char type) {
+    if(type == 'i') {
+        for(int i = 0; i < variable_count; i++) {
+            if(strcmp(variable[i].name, name) == 0) {
+                for(int j = i; j < variable_count - 1; j++)
+                    variable[j] = variable[j+1];
+                variable_count--;
+                return;
+            }
+        }
+        printf("WARNING: remove_variable int '%s' non trovata\n", name);
+    }
+    else if(type == 'l') {
+        for(int i = 0; i < fl_variable_count; i++) {
+            if(strcmp(fl_variable[i].name, name) == 0) {
+                for(int j = i; j < fl_variable_count - 1; j++)
+                    fl_variable[j] = fl_variable[j+1];
+                fl_variable_count--;
+                return;
+            }
+        }
+        printf("WARNING: remove_variable float '%s' non trovata\n", name);
+    }
+    else if(type == 'c') {
+        for(int i = 0; i < char_variable_count; i++) {
+            if(strcmp(char_variable[i].name, name) == 0) {
+                for(int j = i; j < char_variable_count - 1; j++)
+                    char_variable[j] = char_variable[j+1];
+                char_variable_count--;
+                return;
+            }
+        }
+        printf("WARNING: remove_variable char '%s' non trovata\n", name);
+    }
+    else {
+        printf("ERROR: remove_variable tipo '%c' non valido\n", type);
+    }
+}
+
+void update_scope(int delta_i, int delta_l, int delta_c) {
+    if(scope_depth <= 0) {
+        printf("WARNING: update_scope chiamata con scope_depth <= 0\n");
+        return;
+    }
+    scope_stack[scope_depth-1].base_variable_idx      += delta_i;
+    scope_stack[scope_depth-1].base_fl_variable_idx   += delta_l;
+    scope_stack[scope_depth-1].base_char_variable_idx += delta_c;
+
+    if(deb) printf("[SCOPE] update -> depth=%d base_i=%d base_l=%d base_c=%d\n",
+        scope_depth,
+        scope_stack[scope_depth-1].base_variable_idx,
+        scope_stack[scope_depth-1].base_fl_variable_idx,
+        scope_stack[scope_depth-1].base_char_variable_idx);
+}
+
 /* variable array matrix function.v n c , n/i/l c/s/k*/
 void is_what(char name_result[]) {
 
@@ -713,23 +768,27 @@ void* resolve(char rtype, char *gname){
     type[0] = rtype;
     type[1] = '\0';
 
-    if(strchr(name,'[') && is_arr_(name) != 0){
+    if(!strchr(gname,'&')){
+        if(strchr(name,'[') && is_arr_(name) != 0){
         sscanf(name, "%[^]]]%s", junk, buffer);
         strcat(type, junk);
         strcat(type, "]");
         strcpy(name, buffer);  
+        }
+        else if(strchr(name,'[') && is_matrix_(name) != 0){
+            sscanf(name, "%[^]]]%s", junk, buffer);
+            strcat(type, junk);
+            strcat(type, "]");     
+            sscanf(buffer, "%[^]]]%s", junk, name);
+            strcat(type, junk);
+            strcat(type, "]");     
+        }
+        snprintf(buffer, sizeof(buffer), "&%s&%s&", type, name);
+        if(deb) printf("DEBUG: resolve resault: start: (%s),(%s) end: %s\n",type,gname,buffer);        
     }
-    else if(strchr(name,'[') && is_matrix_(name) != 0){
-        sscanf(name, "%[^]]]%s", junk, buffer);
-        strcat(type, junk);
-        strcat(type, "]");     
-        sscanf(buffer, "%[^]]]%s", junk, name);
-        strcat(type, junk);
-        strcat(type, "]");     
+    else{
+        strcpy(buffer,gname);
     }
-
-    snprintf(buffer, sizeof(buffer), "&%s&%s&", type, name);
-    if(deb) printf("DEBUG: resolve resault: start: (%s),(%s) end: %s\n",type,gname,buffer);
     
     if(strchr(type,'i') || strchr(type,'n'))
         return (int *)get_index(buffer);
@@ -1056,7 +1115,7 @@ char* read_code_from_file(const char *filename) {
 }
 
 void format_code(const char *code) {
-    printf("in format code\n");
+    if(deb) printf("in format code\n");
     int i = 0;
     int j = 0;   // indice nella riga corrente
 
@@ -1103,101 +1162,119 @@ int starts_with(const char *str, const char *prefix) {
 
 //funzioni di dichiarazione
 void exec_int(char *text){
-    char type[16];
-    char name[16];
+    char name[64] = {0};
+    char size1_str[16] = {0}, size2_str[16] = {0};
 
-    sscanf(text,"int_&%15[^&]&%15[^&]&",type,name);
-    if(strcmp(type,"i") == 0) declare_variable(name,'i');
-
-    char name_of_type[16];
-    char type_of_type;
-
-    if(strchr(type,'[')){
-
-        /* MATRICE: i[N][M] */
-        if(strstr(type,"][")){
-            char size1_str[16], size2_str[16];
-            if(sscanf(type,"%c[%15[^]]][%15[^]]]",&type_of_type,size1_str,size2_str) == 3 && type_of_type == 'i'){
-                int s1, s2;
-
-                if(sscanf(size1_str,"%d",&s1) != 1){
-                    int *p = get_index(size1_str);
-                    if(!p){ printf("ERROR: cannot resolve matrix size1 in: %s\n",text); return; }
-                    s1 = *p;
-                }
-                if(sscanf(size2_str,"%d",&s2) != 1){
-                    int *p = get_index(size2_str);
-                    if(!p){ printf("ERROR: cannot resolve matrix size2 in: %s\n",text); return; }
-                    s2 = *p;
-                }
-                declare_matrix(name,'i',s1,s2);
-            } else {
-                printf("ERROR: errore nella dichiarazione MATRIX INT nella riga: %s\n",text);
-            }
-        }
-        /* ARRAY: i[N] */
-        else if(sscanf(type,"%c[%15[^]]]",&type_of_type,name_of_type) == 2 && type_of_type == 'i'){
-            int size;
-            if(sscanf(name_of_type,"%d",&size) == 1){
-                declare_array(name,'i',size);
-            } else {
-                int *ptr0 = get_index(name_of_type);
-                if(!ptr0){ printf("ERROR: segmentation error for ptr0 in exec_int on line: %s\n",text); return; }
-                declare_array(name,'i',*ptr0);
-            }
-        } else {
-            printf("ERROR: errore nella dichiarazione INT nella riga: %s\n",text);
-        }
+    /* variabile: int var */
+    if(text[3] != '['){
+        declare_variable(text + 3, 'i');
+        return;
     }
+
+    /* matrice: int [N][M]matr */
+    if(sscanf(text+3,"[%15[^]]][%15[^]]]%63s",size1_str, size2_str, name) == 3){
+        
+        int s1 = 0, s2 = 0;
+
+        if(sscanf(size1_str, "%d", &s1) != 1){
+            int *p = resolve(type_of_var(size1_str), size1_str);
+            if(!p){
+                printf("ERROR: cannot resolve matrix size1 in: %s\n", text);
+                return;
+            }
+            s1 = *p;
+        }
+
+        if(sscanf(size2_str, "%d", &s2) != 1){
+            int *p = resolve(type_of_var(size2_str), size2_str);
+            if(!p){
+                printf("ERROR: cannot resolve matrix size2 in: %s\n", text);
+                return;
+            }
+            s2 = *p;
+        }
+
+        declare_matrix(name, 'i', s1, s2);
+        return;
+    }
+
+    /* array: int [N]arr */
+    if(sscanf(text+3,"[%15[^]]]%63s", size1_str, name) == 2){
+        
+
+        int size = 0;
+
+        if(sscanf(size1_str, "%d", &size) != 1){
+            int *p = resolve(type_of_var(size1_str), size1_str);
+            if(!p){
+                printf("ERROR: cannot resolve array size in: %s\n", text);
+                return;
+            }
+            size = *p;
+        }
+
+        declare_array(name, 'i', size);
+        return;
+    }
+
+    printf("ERROR: invalid int declaration: %s\n", text);
 }
 
 void exec_char(char *text){
-    char type[16];
-    char name[16];
+    char name[64] = {0};
+    char size1_str[16] = {0}, size2_str[16] = {0};
 
-    sscanf(text,"char_&%15[^&]&%15[^&]&",type,name);
-    if(strcmp(type,"c") == 0) declare_variable(name,'c');
-
-    char name_of_type[16];
-    char type_of_type;
-
-    if(strchr(type,'[')){
-
-        /* MATRICE: s[N][M] */
-        if(strstr(type,"][")){
-            char size1_str[16], size2_str[16];
-            if(sscanf(type,"%c[%15[^]]][%15[^]]]",&type_of_type,size1_str,size2_str) == 3 && type_of_type == 's'){
-                int s1, s2;
-
-                if(sscanf(size1_str,"%d",&s1) != 1){
-                    int *p = get_index(size1_str);
-                    if(!p){ printf("ERROR: cannot resolve matrix size1 in: %s\n",text); return; }
-                    s1 = *p;
-                }
-                if(sscanf(size2_str,"%d",&s2) != 1){
-                    int *p = get_index(size2_str);
-                    if(!p){ printf("ERROR: cannot resolve matrix size2 in: %s\n",text); return; }
-                    s2 = *p;
-                }
-                declare_matrix(name,'s',s1,s2);
-            } else {
-                printf("ERROR: errore nella dichiarazione MATRIX CHAR nella riga: %s\n",text);
-            }
-        }
-        /* ARRAY: s[N] */
-        else if(sscanf(type,"%c[%15[^]]]",&type_of_type,name_of_type) == 2 && type_of_type == 's'){
-            int size;
-            if(sscanf(name_of_type,"%d",&size) == 1){
-                declare_array(name,'s',size);
-            } else {
-                int *ptr0 = get_index(name_of_type);
-                if(!ptr0){ printf("ERROR: segmentation error for ptr0 in exec_char on line: %s\n",text); return; }
-                declare_array(name,'s',*ptr0);
-            }
-        } else {
-            printf("ERROR: errore nella dichiarazione CHAR nella riga: %s\n",text);
-        }
+    /* variabile: char var */
+    if(text[4] != '['){
+        declare_variable(text + 4, 'c');
+        return;
     }
+
+    /* matrice: char [N][M]matr */
+    if(sscanf(text+4,"[%15[^]]][%15[^]]]%63s",size1_str, size2_str, name) == 3){
+
+        int s1 = 0, s2 = 0;
+
+        if(sscanf(size1_str, "%d", &s1) != 1){
+            int *p = resolve(type_of_var(size1_str), size1_str);
+            if(!p){
+                printf("ERROR: cannot resolve matrix size1 in: %s\n", text);
+                return;
+            }
+            s1 = *p;
+        }
+
+        if(sscanf(size2_str, "%d", &s2) != 1){
+            int *p = resolve(type_of_var(size2_str), size2_str);
+            if(!p){
+                printf("ERROR: cannot resolve matrix size2 in: %s\n", text);
+                return;
+            }
+            s2 = *p;
+        }
+        declare_matrix(name, 's', s1, s2);
+        return;
+    }
+
+    /* array: char [N]arr */
+    if(sscanf(text+4,"[%15[^]]]%63s", size1_str, name) == 2){
+
+        int size = 0;
+
+        if(sscanf(size1_str, "%d", &size) != 1){
+            int *p = resolve(type_of_var(size1_str), size1_str);
+            if(!p){
+                printf("ERROR: cannot resolve array size in: %s\n", text);
+                return;
+            }
+            size = *p;
+        }
+
+        declare_array(name, 's', size);
+        return;
+    }
+
+    printf("ERROR: invalid char declaration: %s\n", text);
 }
 
 int get_array_size(char arr_name[], char type){
@@ -4479,8 +4556,8 @@ void parse(int start_line, int eventual_end_line, char direct_line[]){
         else if( strstr (direct_line, "->") ){ exec_change_var_name(direct_line); }
         else if( starts_with(direct_line, "od_") ){ }
         else if( starts_with(direct_line, "__") ){ exec_funarg(direct_line, fal); }
-        else if( starts_with(direct_line, "int_") ){ exec_int(direct_line); }
-        else if( starts_with(direct_line, "char_") ){ exec_char(direct_line); }
+        else if( starts_with(direct_line, "int") ){ exec_int(direct_line); }
+        else if( starts_with(direct_line, "char") ){ exec_char(direct_line); }
         else if( starts_with(direct_line, "othif") ){ }
         else if( starts_with(direct_line, "if") ){ exec_if(direct_line); }
         else if( starts_with(direct_line, "oth") ){ }
@@ -4521,8 +4598,8 @@ void parse(int start_line, int eventual_end_line, char direct_line[]){
         else if( strstr (program[global_ip].instruction, "->") ){ exec_change_var_name(program[global_ip].instruction); }
         else if( starts_with (program[global_ip].instruction, "od_") ){ }
         else if( starts_with (program[global_ip].instruction, "__") ){ exec_funarg(program[global_ip].instruction, fal); }
-        else if( starts_with (program[global_ip].instruction, "int_") ){ exec_int(program[global_ip].instruction); }
-        else if( starts_with (program[global_ip].instruction, "char_") ){ exec_char(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "int") ){ exec_int(program[global_ip].instruction); }
+        else if( starts_with (program[global_ip].instruction, "char") ){ exec_char(program[global_ip].instruction); }
         else if( starts_with (program[global_ip].instruction, "othif") ){ skip_to_end(); }
         else if( starts_with (program[global_ip].instruction, "if") ){ exec_if(program[global_ip].instruction); }
         else if( starts_with (program[global_ip].instruction, "oth") ){ skip_to_end(); }
