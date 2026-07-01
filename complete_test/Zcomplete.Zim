@@ -1,12 +1,12 @@
 #{
-    debug_ -df:
+    debug_ -dt:
     exec_:
 }
 
 __start(){
 
     //=== TEST LIB FUNCTION ===:
-    println_ &s&"=== TEST LIB FUNCTION ==="&:
+    println &s&"=== TEST LIB FUNCTION ==="&:
     __printciao():
     __printhello():
 
@@ -25,359 +25,491 @@ __start(){
     int [3][3]imat:
     char [3][3]smat:
 
-    println_:
+    println:
     //=== VOID FUNCTION ===:
-    println_ &s&"=== VOID FUNCTION ==="&:
+    println &s&"=== VOID FUNCTION ==="&:
     __hello():
 
-    println_:
+    println:
     //=== ARGS FUNCTION ===:
-    println_ &s&"=== ARGS FUNCTION ==="&:
-    print_ __testargs(10!20): println_ &s&" 30 - testargs(10!20)"&:
+    println &s&"=== ARGS FUNCTION ==="&:
+    print __testargs(10!20): println &s&" 30 - testargs(10!20)"&:
 
-    println_:
+    println:
     //=== CONCATENED FUNCTION ===:
-    println_ &s&"=== CONCATENED FUNCTION ==="&:
-    print_ __retretunc(5): println_ &s&" 6 - retretunc(5)-->valueplus(5)-->6"&:
+    println &s&"=== CONCATENED FUNCTION ==="&:
+    print __retretunc(5): println &s&" 6 - retretunc(5)-->valueplus(5)-->6"&:
 
-    println_:
+    println:
     //=== RETURN FUNCTION ===:
-    println_ &s&"=== RETURN FUNCTION ==="&:
-    print_ __retv(5): println_ &s&" 5 - retv(5)"&:
+    println &s&"=== RETURN FUNCTION ==="&:
+    print __retv(5): println &s&" 5 - retv(5)"&:
 
-    println_:
+    println:
     //=== MOVED VAR IN FUNCTION ===:
-    println_ &s&"=== MOVED VAR IN FUNCTION ==="&:
-    print_ __addone(5): println_ &s&" 8 - addone(5)-->5+1-->addtwo(6)-->6+2-->8"&:
+    println &s&"=== MOVED VAR IN FUNCTION ==="&:
+    print __addone(5): println &s&" 8 - addone(5)-->5+1-->addtwo(6)-->6+2-->8"&:
     
 
-    println_:
+    println:
     //=== FUNCTION IN VAR ===:
-    println_ &s&"=== FUNCTION IN VAR ==="&:
+    println &s&"=== FUNCTION IN VAR ==="&:
     v0 = __somma():
-    print_ v0: println_ &s&" 8 - somma() in var"&:
+    print v0: println &s&" 8 - somma() in var"&:
 
     v0 = __differenza():
-    print_ v0: println_ &s&" 6 - differenza() in var"&:
+    print v0: println &s&" 6 - differenza() in var"&:
 
     v0 = __prodotto():
-    print_ v0: println_ &s&" 42 - prodotto() in var"&:
+    print v0: println &s&" 42 - prodotto() in var"&:
 
     v0 = __divisione():
-    print_ v0: println_ &s&" 5 - divisione() in var"&:
+    print v0: println &s&" 5 - divisione() in var"&:
 
     cv0 = __get_char():
-    print_ cv0: println_ &s&" Z - get_char() in cvar"&:
+    print cv0: println &s&" Z - get_char() in cvar"&:
 
-    println_:
+    println:
     //=== FUNCTION IN ARR ===:
-    println_ &s&"=== FUNCTION IN ARR ==="&:
+    println &s&"=== FUNCTION IN ARR ==="&:
     [0]iarr = __somma():
-    print_ [0]iarr: println_ &s&" 8 - somma() in arr[0]"&:
+    print [0]iarr: println &s&" 8 - somma() in arr[0]"&:
 
     [1]iarr = __prodotto():
-    print_ [1]iarr: println_ &s&" 42 - prodotto() in arr[1]"&:
+    print [1]iarr: println &s&" 42 - prodotto() in arr[1]"&:
 
     [0]sarr = __get_char():
-    print_ [0]sarr: println_ &s&" Z - get_char() in sarr[0]"&:
+    print [0]sarr: println &s&" Z - get_char() in sarr[0]"&:
 
-    println_:
+    println:
     //=== FUNCTION IN FUNCTION ===:
-    println_ &s&"=== FUNCTION IN FUNCTION ==="&:
-    print_ __retfunc():
-    println_ &s&" 6 - differenza() in retfunc()"&:
+    println &s&"=== FUNCTION IN FUNCTION ==="&:
+    print __retfunc():
+    println &s&" 6 - differenza() in retfunc()"&:
 
 
-    println_:
+    println:
     //=== FUNCTION IN MATR ===:
-    println_ &s&"=== FUNCTION IN MATR ==="&:
+    println &s&"=== FUNCTION IN MATR ==="&:
     [0][0]imat = __somma():
-    print_ [0][0]imat: println_ &s&" 8 - somma() in imat[0][0]"&:
+    print [0][0]imat: println &s&" 8 - somma() in imat[0][0]"&:
 
     [1][2]imat = __prodotto():
-    print_ [1][2]imat: println_ &s&" 42 - prodotto() in imat[1][2]"&:
+    print [1][2]imat: println &s&" 42 - prodotto() in imat[1][2]"&:
 
     [0][0]smat = __get_char():
-    print_ [0][0]smat: println_ &s&" Z - get_char() in smat[0][0]"&:
+    print [0][0]smat: println &s&" Z - get_char() in smat[0][0]"&:
 
-    println_:
+    println:
     //=== MATH IN VAR ===:
-    println_ &s&"=== MATH IN VAR ==="&:
+    println &s&"=== MATH IN VAR ==="&:
 
     int plusplus:
     int mov:
 
     mov = 2:
     plusplus = 3:
-    print_ plusplus: println_ &s&" 3 - plusplus"&:
+    print plusplus: println " 3 - plusplus":
 
     plusplus++:
-    print_ plusplus: println_ &s&" 4 - plusplus++"&:
+    print plusplus: println &s&" 4 - plusplus++"&:
 
     plusplus--:
-    print_ plusplus: println_ &s&" 3 - plusplus--"&:
+    print plusplus: println &s&" 3 - plusplus--"&:
 
     plusplus++mov:
-    print_ plusplus: println_ &s&" 5 - plusplus++mov"&:
+    print plusplus: println &s&" 5 - plusplus++mov"&:
 
     plusplus--4:
-    print_ plusplus: println_ &s&" 1 - plusplus--4"&:
+    print plusplus: println &s&" 1 - plusplus--4"&:
 
     rett -> retv:
 
     plusplus++__rett(5):
-    print_ plusplus: println_ &s&" 6 - plusplus++__rett(5)"&:
+    print plusplus: println &s&" 6 - plusplus++__rett(5)"&:
 
 
-    println_:
+    println:
 
     int [3]parr:
 
     [0]parr = 3:
-    print_ [0]parr: println_ &s&" 3 - [0]parr"&:
+    print [0]parr: println &s&" 3 - [0]parr"&:
 
     [0]parr++:
-    print_ [0]parr: println_ &s&" 4 - [0]parr++"&:
+    print [0]parr: println &s&" 4 - [0]parr++"&:
 
     [0]parr--:
-    print_ [0]parr: println_ &s&" 3 - [0]parr--"&:
+    print [0]parr: println &s&" 3 - [0]parr--"&:
 
     [0]parr++2:
-    print_ [0]parr: println_ &s&" 5 - [0]parr++2"&:
+    print [0]parr: println &s&" 5 - [0]parr++2"&:
 
     [0]parr--4:
-    print_ [0]parr: println_ &s&" 1 - [0]parr--4"&:
+    print [0]parr: println &s&" 1 - [0]parr--4"&:
 
-    println_:
+    println:
 
     char [5]carr:
 
     [0]carr = 'F':
-    print_ [0]carr: println_ &s&" F - [0]carr"&:
+    print [0]carr: println &s&" F - [0]carr"&:
 
     [0]carr++:
-    print_ [1]carr: println_ &s&" F - [1]carr++"&:
+    print [1]carr: println &s&" F - [1]carr++"&:
 
     [1]carr++3:
-    print_ [4]carr: println_ &s&" F - [4]carr++"&:
+    print [4]carr: println &s&" F - [4]carr++"&:
     
-    println_:
+    println:
 
     v0 = 10:
     v1 = 3:
 
     v2 = v0 + v1:
-    print_ v2: println_ &s&" 13 - var+var in var"&:
+    print v2: println &s&" 13 - var+var in var"&:
 
     v2 = v0 - v1:
-    print_ v2: println_ &s&" 7 - var-var in var"&:
+    print v2: println &s&" 7 - var-var in var"&:
 
     v2 = v0 * v1:
-    print_ v2: println_ &s&" 30 - var*var in var"&:
+    print v2: println &s&" 30 - var*var in var"&:
 
     v2 = v0 / v1:
-    print_ v2: println_ &s&" 3 - var/var in var"&:
+    print v2: println &s&" 3 - var/var in var"&:
 
-    println_:
+    println:
     //=== MATH IN ARR ===:
-    println_ &s&"=== MATH IN ARR ==="&:
+    println &s&"=== MATH IN ARR ==="&:
     v0 = 4:
     v1 = 6:
 
     [2]iarr = v0 + v1:
-    print_ [2]iarr: println_ &s&" 10 - var+var in arr[2]"&:
+    print [2]iarr: println &s&" 10 - var+var in arr[2]"&:
 
     [3]iarr = v1 - v0:
-    print_ [3]iarr: println_ &s&" 2 - var-var in arr[3]"&:
+    print [3]iarr: println &s&" 2 - var-var in arr[3]"&:
 
     [4]iarr = v0 * v1:
-    print_ [4]iarr: println_ &s&" 24 - var*var in arr[4]"&:
+    print [4]iarr: println &s&" 24 - var*var in arr[4]"&:
 
     [0]iarr = 5 * v1:
-    print_ [0]iarr: println_ &s&" 30 - n*var in arr[0]"&:
+    print [0]iarr: println &s&" 30 - n*var in arr[0]"&:
 
-    println_:
+    println:
     //=== MATH IN MATR ===:
-    println_ &s&"=== MATH IN MATR ==="&:
+    println &s&"=== MATH IN MATR ==="&:
     v0 = 9:
     v1 = 3:
 
     [2][0]imat = v0 + v1:
-    print_ [2][0]imat: println_ &s&" 12 - var+var in imat[2][0]"&:
+    print [2][0]imat: println &s&" 12 - var+var in imat[2][0]"&:
 
     [2][1]imat = v0 - v1:
-    print_ [2][1]imat: println_ &s&" 6 - var-var in imat[2][1]"&:
+    print [2][1]imat: println &s&" 6 - var-var in imat[2][1]"&:
 
     [2][2]imat = v0 * v1:
-    print_ [2][2]imat: println_ &s&" 27 - var*var in imat[2][2]"&:
+    print [2][2]imat: println &s&" 27 - var*var in imat[2][2]"&:
 
     row = 1:
     col = 1:
     [row][col]imat = v0 / v1:
-    print_ [1][1]imat: println_ &s&" 3 - var/var in imat[row][col]"&:
+    print [1][1]imat: println &s&" 3 - var/var in imat[row][col]"&:
 
-    println_:
+    println:
     //=== SWAP VAR ===:
-    println_ &s&"=== SWAP VAR ==="&:
+    println &s&"=== SWAP VAR ==="&:
     v0 = 11:
     v1 = 22:
     v2 = v0:
     v0 = v1:
     v1 = v2:
-    print_ v0: println_ &s&" 22 - v0 dopo swap"&:
-    print_ v1: println_ &s&" 11 - v1 dopo swap"&:
+    print v0: println &s&" 22 - v0 dopo swap"&:
+    print v1: println &s&" 11 - v1 dopo swap"&:
 
-    println_:
+    println:
     //=== SWAP CVAR ===:
-    println_ &s&"=== SWAP CVAR ==="&:
+    println &s&"=== SWAP CVAR ==="&:
     cv0 = 'A':
     cv1 = 'B':
     char ctmp:
     ctmp = cv0:
     cv0 = cv1:
     cv1 = ctmp:
-    print_ cv0: println_ &s&" B - cv0 dopo swap"&:
-    print_ cv1: println_ &s&" A - cv1 dopo swap"&:
+    print cv0: println &s&" B - cv0 dopo swap"&:
+    print cv1: println &s&" A - cv1 dopo swap"&:
 
-    println_:
+    println:
     //=== SWAP ARR ELEMENTS ===:
-    println_ &s&"=== SWAP ARR ==="&:
+    println &s&"=== SWAP ARR ==="&:
     [0]iarr = 100:
     [1]iarr = 200:
     int tmp:
     tmp = [0]iarr:
     [0]iarr = [1]iarr:
     [1]iarr = tmp:
-    print_ [0]iarr: println_ &s&" 200 - arr[0] dopo swap"&:
-    print_ [1]iarr: println_ &s&" 100 - arr[1] dopo swap"&:
+    print [0]iarr: println &s&" 200 - arr[0] dopo swap"&:
+    print [1]iarr: println &s&" 100 - arr[1] dopo swap"&:
 
-    println_:
+    println:
     //=== SWAP MATR ELEMENTS ===:
-    println_ &s&"=== SWAP MATR ==="&:
+    println &s&"=== SWAP MATR ==="&:
     [0][0]imat = 77:
     [1][1]imat = 88:
     tmp = [0][0]imat:
     [0][0]imat = [1][1]imat:
     [1][1]imat = tmp:
-    print_ [0][0]imat: println_ &s&" 88 - imat[0][0] dopo swap"&:
-    print_ [1][1]imat: println_ &s&" 77 - imat[1][1] dopo swap"&:
+    print [0][0]imat: println &s&" 88 - imat[0][0] dopo swap"&:
+    print [1][1]imat: println &s&" 77 - imat[1][1] dopo swap"&:
 
-    println_:
+    println:
     //=== COPY ARR -> MATR ===:
-    println_ &s&"=== COPY ARR->MATR e MATR->ARR ==="&:
+    println &s&"=== COPY ARR->MATR e MATR->ARR ==="&:
     [0]iarr = 55:
     [0][2]imat = [0]iarr:
-    print_ [0][2]imat: println_ &s&" 55 - arr[0] in imat[0][2]"&:
+    print [0][2]imat: println &s&" 55 - arr[0] in imat[0][2]"&:
 
     [0]iarr = [0][2]imat:
-    print_ [0]iarr: println_ &s&" 55 - imat[0][2] in arr[0]"&:
+    print [0]iarr: println &s&" 55 - imat[0][2] in arr[0]"&:
 
-    println_:
+    println:
     //=== COPY SARR -> SMATR ===:
-    println_ &s&"=== COPY SARR->SMATR ==="&:
+    println &s&"=== COPY SARR->SMATR ==="&:
     [0]sarr = 'M':
     [1][1]smat = [0]sarr:
-    print_ [1][1]smat: println_ &s&" M - sarr[0] in smat[1][1]"&:
+    print [1][1]smat: println &s&" M - sarr[0] in smat[1][1]"&:
 
     [0]sarr = [1][1]smat:
-    print_ [0]sarr: println_ &s&" M - smat[1][1] in sarr[0]"&:
+    print [0]sarr: println &s&" M - smat[1][1] in sarr[0]"&:
 
-    println_:
+    println:
     //====== CONDITION TEST ============:
-    println_ &s&"====== CONDITION TEST ============"&:
+    println &s&"====== CONDITION TEST ============"&:
     int testif:
     testif = 1:
-    println_ testif:
+    println testif:
 
     oth if(testif == 9){
-        println_ &s&"non la devi vedere questa scritta oth if"&:
+        println &s&"non la devi vedere questa scritta oth if"&:
     }
     oth{
-        println_ &s&"non la devi vedere questa scritta oth"&:
+        println &s&"non la devi vedere questa scritta oth"&:
     }
 
     if(testif){
-        println_ &s&"testif è 1":
+        println &s&"testif è 1":
     }
     oth if(testif == 9){
-        println_ &s&"testif è 9"&:
+        println &s&"testif è 9"&:
     }
     oth if(testif == 7){
-        println_ &s&"testif è 7"&:
+        println &s&"testif è 7"&:
     }
     oth{
-        println_ &s&"testif non è 1 o 9 o 7"&:
+        println &s&"testif non è 1 o 9 o 7"&:
     }
 
-    println_:
+    println:
     //====== DURING TEST ============:
-    println_ &s&"====== DURING TEST ============"&:
+    println &s&"====== DURING TEST ============"&:
     int repetition:
     int [5]tion:
     [4]tion = 2:
     repetition = 3:
-    println_ repetition:
-    println_:
+    println repetition:
+    println:
 
     during(5){
-        println_ &s&"5 volte"&:
+        println &s&"5 volte"&:
     }
 
-    println_:
+    println:
 
     during(repetition){
-        println_ &s&"3 volte"&:
+        println &s&"3 volte"&:
     }
 
-    println_:
+    println:
 
     during([4]tion){
-        println_ &s&"2 volte"&:
+        println &s&"2 volte"&:
     }
 
-    println_:
+    println:
 
     during(repetition < 7 ! repetition++){
-        print_ repetition: println_ &s&" 4 volte"&: 
+        print repetition: println &s&" 4 volte"&: 
     }
 
-    println_:
+    println:
 
     repetition = 0:
     during(repetition < 6 ! repetition++2){
-        print_ repetition: println_ &s&" 3 volte"&:
+        print repetition: println &s&" 3 volte"&:
     }
 
-    println_:
+    println:
     //====== ERROR VAR TEST ============:
-    println_ &s&"====== ERROR VAR TEST ============"&:
+    println &s&"====== ERROR VAR TEST ============"&:
 
     b = 0: // non dovrebbe essere accessibile:
-    print_ b: println_ &s&"non dovrebbe essere accessibile"&:
+    print b: println &s&"non dovrebbe essere accessibile"&:
 
 
-    println_:
+    println:
     //====== ARG ARRAY AND MATRICES TEST ============:
-    println_ &s&"====== ARG ARRAY AND MATRICES TEST ============"&:
+    println &s&"====== ARG ARRAY AND MATRICES TEST ============"&:
     
     int [7]argarray:
     int [7][7]argmatris:
 
     __addseven(argarray ! 7):
-    print_ [5]argarray: println_ &s&" if(novar ^= 7) 7 oth 6 __addseven(argarray, 7)"&:
+    print [5]argarray: println &s&" if(novar ^= 7) 7 oth 6 __addseven(argarray, 7)"&:
 
     __addsix(argarray):
-    print_ [1]argarray: println_ &s&" 6 __addsix(argarray)"&:
+    print [1]argarray: println &s&" 6 __addsix(argarray)"&:
 
     __addnine(argmatris):
-    print_ [1][1]argmatris: println_ &s&" 9 __addnine(argmatris)"&:
+    print [1][1]argmatris: println &s&" 9 __addnine(argmatris)"&:
 
-    println_:
+
+
+    println:
+    //====== FLOAT MATH TEST ============:
+    println &s&"=== FLOAT MATH TEST ==="&:
+
+    float fa:
+    float fb:
+    float fres:
+    int ia:
+    int ib:
+    int ires:
+
+    fa = 3.14:
+    fb = 2.0:
+    ia = 10:
+    ib = 3:
+
+    fres = fa + fb:
+    print fres: println &s&" 5.14 - float+float in var"&:
+
+    fres = fa - fb:
+    print fres: println &s&" 1.14 - float-float in var"&:
+
+    fres = fa * fb:
+    print fres: println &s&" 6.28 - float*float in var"&:
+
+    fres = fa / fb:
+    print fres: println &s&" 1.57 - float/float in var"&:
+
+    ires = ia + ib:
+    print ires: println &s&" 13 - int+int in var (non regressione)"&:
+
+    println:
+    //=== FLOAT MATH IN ARRAY/MATRIX ===:
+
+    float [3]farr:
+    float [2][2]fmat:
+
+    [0]farr = fa + fb:
+    print [0]farr: println &s&" 5.14 - float+float in arr[0]"&:
+
+    [0][0]fmat = fa * fb:
+    print [0][0]fmat: println &s&" 6.28 - float*float in mat[0][0]"&:
+
+    println:
+    //=== CONF TEST ===:
+
+    if(fa > fb){
+        println &s&"OK fa(3.14) > fb(2.0)"&:
+    }
+    oth{
+        println &s&"FAIL conf float"&:
+    }
+
+    println:
+    //====== DYNAMIC VAR TEST ============:
+    println &s&"====== DYNAMIC VAR TEST ============"&:
+    
+    int $dvar:
+    $dvar = 5:
+    print $dvar: println &s&" 5 int $dvar = 5"&: println:
+    $dvar = 'k':
+    print $dvar: println &s&" k (int to char) "&:
+
+    $dvar = 5:
+    $dvar = 2.71:
+    print $dvar: println &s&" 2.71 (int to float)"&:
+    
+    println:
+    $dvar = 'j':
+    print $dvar: println &s&" j (float to char) "&:
+
+    $dvar = 2.71:
+    $dvar = 22:
+    print $dvar: println &s&" 22 (float to int)"&:
+    
+    $dvar = 'j':
+
+    println:
+    $dvar = 6:
+    print $dvar: println &s&" 6 (char to int)"&:
+
+    $dvar = 'o':
+    $dvar = 4.6:
+    print $dvar: println &s&" 4.6 (char to float)"&:
+    
+    println:
+    char $charvar:
+    $charvar = 'k':
+    print $charvar: println &s&" k $charvar = k "&:
+    $charvar = $dvar:
+    print $charvar: println &s&" 4.6 $charvar = $dvar(float) "&:
+    $charvar = 2 + 5:
+    print $charvar: println &s&" 7 $charvar = 2 + 5"&:
+
+    println:
+    int [5]$temp:
+    [4]$temp = 7:
+    print [4]$temp: println &s&" 7 [4]$temp = 7"&:
+    [4]$temp = 'u':
+    print [4]$temp: println &s&" u array(int to char)"&:
+    [3]$temp = 3.55:
+    print [3]$temp: println &s&" 3.55 array(char to float)"&:
+    print [4]$temp: println &s&" 0 array_float vuoto"&:
+    [1]$temp = $charvar:
+    print [1]$temp: println &s&" 7 array(float to int) -> $charvar"&:
+
+    println:
+    char [4]$vdarr:
+    [3]$vdarr = 'd':
+    print [3]$vdarr: println &s&" d char [3]$vdarr"&:
+    [3]$vdarr = [1]$temp:
+    print [3]$vdarr: println &s&" 7 array->array(char to int)"&:
+
+    println:
+    char [4][4]$vdar:
+    [3][3]$vdar = 'k':
+    print [3][3]$vdar: println &s&" k char [3][3]$vdar"&:
+    [3][3]$vdar = [3]$vdarr:
+    print [3][3]$vdar: println &s&" 7 matrix->array(char to int)"&:
+
+    println:
+    //===== TEST TO MAKE IF NOT CRASH WHEN NO OTH =====:
+    println &s&"===== TEST TO MAKE IF NOT CRASH WHEN NO OTH ====="&:
+
+    if( [3][3]$vdar == 7 ){
+        println &s&"GIUSTO!!!! "&:
+    }
+    oth{
+        println &s&"SBAGLIATO!!!! "&:
+    }
+
+    println:
     //====== MEMORY READ AND RESET TEST ============:
-    println_ &s&"====== MEMORY READ AND RESET TEST ============"&:
-    println_ &s&"start finito"&:
+    println &s&"====== MEMORY READ AND RESET TEST ============"&:
+    println &s&"start finito"&:
     status_ cls y:
     status_:
-    println_:
+    println:
 }
-
