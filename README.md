@@ -10,11 +10,13 @@ Source files use the `.Zim` extension. Library files use `.Zlib`.
 
 ## Features
 
-- Statically typed: `int`, `char`, `float`
+- Statically typed: `int`, `char`, `float` — unified declaration syntax for all three
 - Variables, 1D arrays, and 2D matrices for all types
+- **Dynamic variables** (`$name`) — type is set at declaration but switches automatically at runtime on assignment
+- Static type safety on regular (non-dynamic) variables — a mismatched-type assignment is a fatal error
 - Functions with arguments and return values — **typeless**: a function can return any scalar value (`int`, `char`, `float`)
 - Default values for scalar function arguments
-- `if / oth if / oth` branching — any number of `oth if` chains
+- `if / oth if / oth` branching — any number of `oth if` chains, and `if` alone (with no `oth`) is valid
 - `during` unified loop construct (count-style and condition-style) — both fully functional
 - Extended `deven_` return expressions: arithmetic, power, square root, and nested function calls
 - Function argument pass-by-reference: modifications made inside a called function are reflected back in the caller
@@ -105,32 +107,40 @@ The optional header block at the top of the file configures the execution enviro
 
 ### Variable Declarations
 
+Declarations no longer use the `&type&name&` token form. Each scalar type has its own keyword, followed directly by the variable name:
+
 ```
-int_  &i&varname&:
-char_ &c&varname&:
+int varname:
+char varname:
+float varname:
 ```
+
+`float` variables are now declared with the exact same form as `int` and `char` — there is no separate `float_` syntax to learn.
 
 #### Token format: `&TYPE&NAME&`
 
-> **Note:** the `&type&name&` token syntax is **not required** in most contexts. You can reference variables, arrays and matrices directly by name in assignments, print statements, and expressions. The token syntax is mainly used when passing values as arguments or in ambiguous positions.
+> **Note:** the `&type&name&` token syntax is **no longer used to declare** variables, arrays, or matrices — declarations use the plain form shown above (`int name:`, `char [5]name:`, etc.). The token syntax is still used for **function argument declarations** (see [Functions](#functions)) and for **literal values** — numbers, chars, strings — inside expressions, print statements, and function calls.
 
-| Prefix | Type |
-|--------|------|
-| `&i&name&` | integer variable |
-| `&c&name&` | char variable |
-| `&l&name&` | float variable |
-| `&n&value&` | numeric literal |
-| `&k&C&` | char literal (e.g. `'C'`) |
-| `&s&text&` | string literal |
-| `&f&file&` | file reference |
+| Token | Meaning | Used for |
+|-------|---------|----------|
+| `&i&name&` | integer | function arguments |
+| `&c&name&` | char | function arguments |
+| `&l&name&` | float | function arguments |
+| `&a&name&` | array | function arguments |
+| `&m&name&` | matrix | function arguments |
+| `&n&value&` | numeric literal | literals in expressions |
+| `&k&C&` | char literal (e.g. `'C'`) | literals in expressions |
+| `&s&text&` | string literal | literals in expressions / print |
+| `&f&file&` | file reference | literals in expressions |
 
 ---
 
 ### Arrays
 
 ```
-int_  &i[5]&arrname&:
-char_ &s[5]&arrname&:
+int  [5]arrname:
+char [5]arrname:
+float [5]arrname:
 ```
 
 Access:
@@ -149,8 +159,9 @@ Index can be a literal or an integer variable:
 ### Matrices (2D arrays)
 
 ```
-int_  &i[3][3]&matname&:
-char_ &s[3][3]&matname&:
+int   [3][3]matname:
+char  [3][3]matname:
+float [3][3]matname:
 ```
 
 Access:
@@ -159,6 +170,124 @@ Access:
 var = [1][2]matname:
 [row][col]matname = var:
 ```
+
+---
+
+### Type Safety
+
+Regular (non-dynamic) variables, array elements, and matrix elements are statically typed once declared. Assigning a value of a **different** type — `int` → `float`, `char` → `int`, and so on — is a **fatal error**: the interpreter reports it and execution stops immediately.
+
+```
+int a:
+a = 5:       // OK:
+a = 2.71:    // FATAL ERROR — a is int, 2.71 is a float; program stops:
+```
+
+This applies to array and matrix elements too, not just scalars. **Dynamic variables** are the one exception to this rule — see below.
+
+---
+
+### Dynamic Variables (`$`)
+
+A **dynamic variable** is any variable, array, or matrix whose name contains a `$`. By convention the `$` goes immediately before the name. Declaration uses the exact same syntax as a regular variable, array, or matrix — the `$` is simply part of the name:
+
+```
+int $dvar:
+char $charvar:
+int  [5]$temp:
+char [4]$vdarr:
+char [4][4]$vdar:
+```
+
+Access and assignment also use the same syntax as regular variables/arrays/matrices — nothing new there:
+
+```
+$dvar = 5:
+[4]$temp = 7:
+[3][3]$vdar = 'k':
+```
+
+#### Behavior
+
+The declared type of a dynamic variable is only its **starting** type. Unlike a regular variable, a dynamic variable — or a single element of a dynamic array/matrix — is allowed to change type at runtime instead of raising the fatal error described in [Type Safety](#type-safety):
+
+- Assigning a value of a different type does **not** error.
+- Instead, the variable (or the specific array/matrix element) is **reset** and its type switches to whatever type the new value requires.
+- Each element of a dynamic array or matrix tracks its own type independently — one slot can hold an `int` while another slot in the same array holds a `float`.
+
+This makes dynamic variables useful wherever a value's type can't be known ahead of time, or a single storage slot needs to hold different kinds of data at different points in the program.
+
+#### Example
+
+```
+//====== DYNAMIC VAR TEST ============:
+println &s&"====== DYNAMIC VAR TEST ============"&:
+
+int $dvar:
+$dvar = 5:
+print $dvar: println &s&" 5 int $dvar = 5"&: println:
+$dvar = 'k':
+print $dvar: println &s&" k (int to char) "&:
+
+$dvar = 5:
+$dvar = 2.71:
+print $dvar: println &s&" 2.71 (int to float)"&:
+
+println:
+$dvar = 'j':
+print $dvar: println &s&" j (float to char) "&:
+
+$dvar = 2.71:
+$dvar = 22:
+print $dvar: println &s&" 22 (float to int)"&:
+
+$dvar = 'j':
+
+println:
+$dvar = 6:
+print $dvar: println &s&" 6 (char to int)"&:
+
+$dvar = 'o':
+$dvar = 4.6:
+print $dvar: println &s&" 4.6 (char to float)"&:
+
+println:
+char $charvar:
+$charvar = 'k':
+print $charvar: println &s&" k $charvar = k "&:
+$charvar = $dvar:
+print $charvar: println &s&" 4.6 $charvar = $dvar(float) "&:
+$charvar = 2 + 5:
+print $charvar: println &s&" 7 $charvar = 2 + 5"&:
+
+println:
+int [5]$temp:
+[4]$temp = 7:
+print [4]$temp: println &s&" 7 [4]$temp = 7"&:
+[4]$temp = 'u':
+print [4]$temp: println &s&" u array(int to char)"&:
+[3]$temp = 3.55:
+print [3]$temp: println &s&" 3.55 array(char to float)"&:
+print [4]$temp: println &s&" 0 array_float vuoto"&:
+[1]$temp = $charvar:
+print [1]$temp: println &s&" 7 array(float to int) -> $charvar"&:
+
+println:
+char [4]$vdarr:
+[3]$vdarr = 'd':
+print [3]$vdarr: println &s&" d char [3]$vdarr"&:
+[3]$vdarr = [1]$temp:
+print [3]$vdarr: println &s&" 7 array->array(char to int)"&:
+
+println:
+char [4][4]$vdar:
+[3][3]$vdar = 'k':
+print [3][3]$vdar: println &s&" k char [3][3]$vdar"&:
+[3][3]$vdar = [3]$vdarr:
+print [3][3]$vdar: println &s&" 7 matrix->array(char to int)"&:
+```
+
+This walks a single dynamic scalar (`$dvar`) through int → char → float → char → int → char → float, a dynamic char scalar (`$charvar`) receiving values from another dynamic variable and from an expression, a dynamic array (`$temp`) with independently-typed elements, and cross-assignment between a dynamic array, a dynamic char array (`$vdarr`), and a dynamic char matrix (`$vdar`) — each read/write resolving to whatever type the source value actually is.
 
 ---
 
@@ -189,15 +318,15 @@ The standard comparison operators (`==`, `<`, `>`) work on scalar variables and 
 When `==` is applied to an **unindexed array or matrix name**, it compares their **declared size**, not the number of occupied slots:
 
 ```
-int_  &i[5]&arrA&:
-int_  &i[5]&arrB&:
-int_  &i[3]&arrC&:
+int [5]arrA:
+int [5]arrB:
+int [3]arrC:
 
 if(arrA == arrB){   // true  — both declared with size 5:
-    println_ &s&"same size"&:
+    println &s&"same size"&:
 }
 if(arrA == arrC){   // false — 5 != 3:
-    println_ &s&"same size"&:
+    println &s&"same size"&:
 }
 ```
 
@@ -220,7 +349,7 @@ varname--N:       // -N:
 **`N` can be a literal, a variable, or a function call:**
 
 ```
-int_ &i&step&:
+int step:
 step = 3:
 
 plusplus++step:            // increment by the value of a variable:
@@ -233,7 +362,7 @@ plusplus++__retv(5):       // increment by the return value of a function:
 - `[idx]arr++N` — copies the character at `[idx]` into `[idx+N]` only (not into every cell in between)
 
 ```
-char_ &s[10]&arr&:
+char [10]arr:
 [2]arr = 'F':
 [2]arr++:     // copies 'F' into [3] only:
 [2]arr++3:    // copies 'F' into [5] only  ([2] + 3 = [5]):
@@ -249,7 +378,7 @@ Declare with `od_` (open door):
 
 ```
 od_ funcname(){
-    int_ &i&res&:
+    int res:
     res = 3:
     deven_ res:
 }
@@ -262,11 +391,11 @@ Functions are **typeless**: there is no return-type declaration. A function can 
 
 #### Function with arguments
 
-Arguments separated by `!`:
+Function argument declarations keep the original `&type&name&` token form — this did **not** change:
 
 ```
 od_ testargs(&i&a& ! &i&b&){
-    int_ &i&risultato&:
+    int risultato:
     risultato = a + b:
     deven_ risultato:
 }
@@ -278,8 +407,8 @@ A scalar argument can be given a **default value** by placing the value after th
 
 ```
 od_ defaultest(&i&var0& 5){
-    print_ &s&" "&:
-    print_ var0:
+    print &s&" "&:
+    print var0:
     deven_:
 }
 
@@ -340,7 +469,7 @@ var = __funcname():
 
 Call with arguments (separated by `!`):
 ```
-print_ __testargs(10!20):
+print __testargs(10!20):
 ```
 
 Store return value in array or matrix:
@@ -383,8 +512,8 @@ od_ retretunc(&i&pass&){
 This makes it easy to build concise functional pipelines:
 
 ```
-print_ __retretunc(5):    // → valueplus(5) → 6:
-print_ __retfunc():       // → differenza() → 6:
+print __retretunc(5):    // → valueplus(5) → 6:
+print __retfunc():       // → differenza() → 6:
 ```
 
 ---
@@ -419,7 +548,7 @@ Calling `__addone(5)`:
 5. `deven_ value` returns `8`
 
 ```
-print_ __addone(5):   // prints 8:
+print __addone(5):   // prints 8:
 ```
 
 #### Array and matrix pass-by-reference
@@ -435,11 +564,11 @@ od_ fill(&a&arr&){
 }
 
 __start(){
-    int_ &i[5]&data&:
+    int [5]data:
     __fill(data):
-    println_ [0]data:    // prints 10:
-    println_ [1]data:    // prints 20:
-    println_ [2]data:    // prints 30:
+    println [0]data:    // prints 10:
+    println [1]data:    // prints 20:
+    println [2]data:    // prints 30:
 }
 ```
 
@@ -468,10 +597,10 @@ od_ sq(&i&n&){
 }
 
 __start(){
-    int_ &i&i&:
+    int i:
     i = 1:
     during(i < 9 ! i++){
-        print_ __sq(i):    // after sq(3): i becomes 9 in __start, loop breaks:
+        print __sq(i):    // after sq(3): i becomes 9 in __start, loop breaks:
     }
 }
 ```
@@ -480,7 +609,7 @@ __start(){
 
 ```
 od_ sq(&i&n&){
-    int_ &i&tmp&:
+    int tmp:
     tmp = n:        // copy the value into a local variable:
     tmp**:          // square the local copy — n (and the caller's variable) untouched:
     deven_ tmp:
@@ -510,31 +639,31 @@ newname -> originalfunc:           // function rename:
 #### Scalar variables
 
 ```
-int_ &i&score&:
+int score:
 score = 42:
 punti -> score:
-println_ punti:    // prints 42:
-println_ score:    // score no longer exists — returns 0:
+println punti:    // prints 42:
+println score:    // score no longer exists — returns 0:
 ```
 
 #### Arrays
 
 ```
-int_ &i[5]&data&:
+int [5]data:
 [0]data = 99:
 numeri -> data:
-println_ [0]numeri:    // prints 99:
-println_ [0]data:      // data no longer exists — returns 0:
+println [0]numeri:    // prints 99:
+println [0]data:      // data no longer exists — returns 0:
 ```
 
 #### Matrices
 
 ```
-int_ &i[3][3]&grid&:
+int [3][3]grid:
 [0][0]grid = 7:
 tavola -> grid:
-println_ [0][0]tavola:    // prints 7:
-println_ [0][0]grid:      // grid no longer exists — returns 0:
+println [0][0]tavola:    // prints 7:
+println [0][0]grid:      // grid no longer exists — returns 0:
 ```
 
 In all cases the rename is immediate and permanent for the remainder of the program's execution.
@@ -544,15 +673,23 @@ In all cases the rename is immediate and permanent for the remainder of the prog
 ### Output
 
 ```
-print_ value:           // print without newline:
-println_ value:         // print with newline:
-println_:               // print empty newline:
+print value:        // print without newline:
+println value:      // print with newline after the value:
+println:            // print empty newline:
+lnprintln value:     // print a newline, THEN the value, THEN another newline:
+```
+
+`lnprintln` is like `println`, but it also prints a leading newline before the value:
+
+```
+println value:      // → "value\n"
+lnprintln value:     // → "\nvalue\n"
 ```
 
 `value` can be a variable name, an `&s&string&` literal, an array element, a matrix element, or a direct function call:
 
 ```
-print_ __testargs(10!20):    // prints 30:
+print __testargs(10!20):    // prints 30:
 ```
 
 ---
@@ -586,6 +723,8 @@ Conditions support `==`, `<`, `>`. String comparison (`s==`) is planned.
 
 You can chain **any number of `oth if`** blocks before the final `oth`.
 
+An `if` block does **not** require any `oth` or `oth if` after it — a plain `if` on its own is completely valid and will not crash the program.
+
 **Standalone `oth` or `oth if` without a preceding `if`** are silently ignored — they do not crash or produce errors, they simply do not execute.
 
 ---
@@ -595,14 +734,14 @@ You can chain **any number of `oth if`** blocks before the final `oth`.
 **Spaces are ignored everywhere** in ZinterPL source code, **except inside double quotes** (`"..."`). This means indentation and spacing are purely cosmetic and have no effect on parsing.
 
 ```
-int_ &i&x&:        // same as:
-int_&i&x&:         // same as:
-int_   &i& x &:   // all equivalent:
+int x:          // canonical:
+int    x:       // extra spaces are ignored:
+int x   :       // trailing spaces before ':' are ignored too:
 ```
 
 Inside a string literal, spaces are preserved:
 ```
-println_ &s&"hello world"&:   // prints: hello world:
+println &s&"hello world"&:   // prints: hello world:
 ```
 
 ---
@@ -615,10 +754,10 @@ Variables declared inside `__start()` are **global**: they are accessible from a
 
 ```
 __start(){
-    int_ &i&counter&:    // global — visible to all functions called from here:
+    int counter:    // global — visible to all functions called from here:
     counter = 10:
     __increment():
-    println_ counter:    // prints 11:
+    println counter:    // prints 11:
 }
 
 od_ increment(){
@@ -631,14 +770,14 @@ Variables declared inside any other function (`od_`) are local to that function 
 
 ```
 od_ myfunc(){
-    int_ &i&local&:
+    int local:
     local = 42:
     deven_ local:
 }
 
 __start(){
     local = 0:       // 'local' not declared here — silently fails:
-    print_ local:    // prints 0:
+    print local:    // prints 0:
 }
 ```
 
@@ -675,7 +814,7 @@ C{
 To call it, use `__C(...)` passing variables, values, or arrays as arguments:
 
 ```
-int_ &i&result&:
+int result:
 result = __C(myvar, myarr, 10):
 ```
 
@@ -695,15 +834,15 @@ Repeats a fixed number of times. The argument can be a numeric literal, an integ
 
 ```
 during(5){
-    println_ &s&"ciao"&:
+    println &s&"ciao"&:
 }
 
 during(repetition){
-    println_ &s&"hello"&:
+    println &s&"hello"&:
 }
 
 during([4]tion){
-    println_ &s&"hi"&:
+    println &s&"hi"&:
 }
 ```
 
@@ -723,15 +862,15 @@ The condition uses the same syntax as `if` (`<`, `>`, `==`, etc.). Steps are typ
 
 ```
 during(repetition < 7 ! repetition++){
-    println_ &s&"bye"&:
+    println &s&"bye"&:
 }
 
 during(repetition < 6 ! repetition++2){
-    println_ &s&"tre"&:
+    println &s&"tre"&:
 }
 
 during(i < 10 ! i++ ! j-- ! k++2){
-    println_ i:
+    println i:
 }
 ```
 
@@ -783,6 +922,7 @@ The interpreter merges the library into the source before parsing.
 - **Arrays and matrices cannot be returned from functions** via `deven_`. Only scalar values (`int`, `char`, `float`) are returnable.
 - **Arrays and matrices cannot have default argument values.** Only scalar parameters support defaults.
 - **Maximum 16 arguments per function** (adjustable by changing the limit constant in the interpreter source).
+- **Regular (non-dynamic) variables, array elements, and matrix elements cannot change type after declaration** — assigning a mismatched type is a fatal error. Use a dynamic variable (`$name`) if the type needs to vary at runtime.
 
 ---
 
@@ -805,19 +945,19 @@ __start(){
 
 ```
 od_ somma(){
-    int_ &i&a&:
-    int_ &i&b&:
+    int a:
+    int b:
     a = 3:
     b = 5:
-    int_ &i&res&:
+    int res:
     res = a + b:
     deven_ res:
 }
 
 __start(){
-    int_ &i&result&:
+    int result:
     result = __somma():
-    println_ result:
+    println result:
 }
 ```
 
@@ -867,6 +1007,8 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Feature | Status |
 |---------|--------|
 | Variables (int, char, float) | Stable |
+| Dynamic variables (`$name`, runtime type switching) | Stable |
+| Static type-checking on non-dynamic assignments (fatal error on mismatch) | Stable |
 | Arrays (1D) | Stable |
 | Matrices (2D) | Stable |
 | Functions + return values | Stable |
@@ -880,9 +1022,10 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Extended `deven_` expressions (`++`, `--`, `**`, `~~`, function) | Stable |
 | `++N` / `--N` with variable or function as `N` | Stable |
 | Arithmetic expressions | Stable |
-| Conditionals (if/oth if/oth) | Stable |
+| Conditionals (if/oth if/oth, `if` alone is valid) | Stable |
 | String comparison (`s==`) | Planned |
 | Increment/Decrement | Stable |
+| Output (`print`, `println`, `lnprintln`) | Stable |
 | Library support (.Zlib) | Stable |
 | Build test suite | Stable |
 | `scan_` (input) | Partial |
@@ -899,12 +1042,14 @@ Measured by running `status_` on the actual interpreter (compiled with gcc, Ubun
 | State | RAM used |
 |-------|----------|
 | VM at startup, no variables | ~284 KB |
-| After declaring int/char variables | ~284 KB (no change — fixed-size slots) |
+| After declaring int/char/float variables | ~284 KB (no change) |
 | After small arrays (10–50 elements) | ~285–292 KB |
 | After large arrays (100–1000 elements) | ~292–300 KB |
 | After large matrices (100×100) | grows ~64 KB per matrix |
 
-The base VM footprint is **~284 KB**, which covers the full fixed structure: variable slots, array slots, matrix slots, the program buffer, the state stack, and the register file. Memory only grows beyond that when large arrays or matrices are dynamically allocated.
+The base VM footprint is **~284 KB**, determined by a set of fixed-size constants in the interpreter source (the program buffer, the state stack, the register file, and the maximum number of variable/array/matrix slots). These constants are **scalable**: they can be raised to support longer or more complex scripts — at the cost of a larger baseline footprint — or lowered to shrink it further for tighter targets like the ESP32.
+
+> **Note:** the "maximum variables" constant is only an **error threshold**, not a pre-allocation count. Reaching it triggers an error — it does **not** mean that many variables are pre-declared or reserved up front. Declaring fewer variables than the maximum does not cost extra memory.
 
 This makes ZinterPL suitable for constrained environments like the **ESP32**, where the entire VM lives inside a single `struct VM` and can be statically allocated.
 
