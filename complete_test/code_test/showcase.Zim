@@ -4,38 +4,37 @@
 }
 
 
-
 od_ sep(){
-    println_ &s&"+====================================+"&:
+    println &s&"+====================================+"&:
     deven_:
 }
 
 od_ blank(){
-    println_:
+    println:
     deven_:
 }
 
 od_ spaces(&i&n&){
-    int_ &i&j&:
+    int j:
     j = 0:
     during(j < n ! j++){
-        print_ &s&" "&:
+        print &s&" "&:
     }
     deven_:
 }
 
 od_ stars(&i&n&){
-    int_ &i&j&:
+    int j:
     j = 0:
     during(j < n ! j++){
-        print_ &s&"*"&:
+        print &s&"*"&:
     }
     deven_:
 }
 
 
 od_ sq(&i&n&){
-    int_ &i&tmp&:
+    int tmp:
     tmp = n:
     tmp**:
     deven_ tmp:
@@ -46,8 +45,8 @@ od_ succ(&i&n&){
 }
 
 od_ triangle(&i&n&){
-    int_ &i&tmp&:
-    int_ &i&res&:
+    int tmp:
+    int res:
     tmp = n + 1:
     res = n * tmp:
     res = res / 2:
@@ -64,12 +63,12 @@ od_ double_val(&i&v&){
 
 
 od_ show_fib(){
-    int_ &i[13]&f&:
-    int_ &i&i&:
-    int_ &i&a&:
-    int_ &i&b&:
-    int_ &i&va&:
-    int_ &i&vb&:
+    int [13]f:
+    int i:
+    int a:
+    int b:
+    int va:
+    int vb:
 
     [0]f = 0:
     [1]f = 1:
@@ -82,140 +81,140 @@ od_ show_fib(){
         [i]f = va + vb:
     }
 
-    println_ &s&"|  [ FIBONACCI - 13 terms ]          |"&:
+    println &s&"|  [ FIBONACCI - 13 terms ]          |"&:
     __sep():
-    print_ &s&"   "&:
+    print &s&"   "&:
     i = 0:
     during(i < 13 ! i++){
-        print_ [i]f:
-        print_ &s&" "&:
+        print [i]f:
+        print &s&" "&:
     }
-    println_:
+    println:
     deven_:
 }
 
 
 od_ show_powers(){
-    int_ &i&pow&:
-    int_ &i&i&:
+    int pow:
+    int i:
     pow = 1:
     i = 0:
-    println_ &s&"|  [ POWERS OF 2 - first 10 ]        |"&:
+    println &s&"|  [ POWERS OF 2 - first 10 ]        |"&:
     __sep():
-    print_ &s&"   "&:
+    print &s&"   "&:
     during(i < 10 ! i++){
         pow = pow * 2:
-        print_ pow:
-        print_ &s&" "&:
+        print pow:
+        print &s&" "&:
     }
-    println_:
+    println:
     deven_:
 }
 
 
 od_ show_pyramid(){
-    int_ &i&rows&:
-    int_ &i&i&:
-    int_ &i&sp&:
-    int_ &i&st&:
+    int rows:
+    int i:
+    int sp:
+    int st:
     rows = 7:
     i = 1:
-    println_ &s&"|  [ STAR PYRAMID ]                  |"&:
+    println &s&"|  [ STAR PYRAMID ]                  |"&:
     __sep():
     during(i < 8 ! i++){
-        print_ &s&"   "&:
+        print &s&"   "&:
         sp = rows - i:
         st = i * 2:
         st = st -1:
         __spaces(sp):
         __stars(st):
-        println_:
+        println:
     }
     deven_:
 }
 
 
 od_ show_byref(){
-    int_ &i&x&:
+    int x:
     x = 3:
-    println_ &s&"|  [ PASS-BY-REFERENCE ]             |"&:
+    println &s&"|  [ PASS-BY-REFERENCE ]             |"&:
     __sep():
-    print_ &s&"   x = "&:
-    println_ x:
+    print &s&"   x = "&:
+    println x:
     __double_val(x):
-    print_ &s&"   double_val(x)  ->  x = "&:
-    println_ x:
+    print &s&"   double_val(x)  ->  x = "&:
+    println x:
     __double_val(x):
-    print_ &s&"   double_val(x)  ->  x = "&:
-    println_ x:
+    print &s&"   double_val(x)  ->  x = "&:
+    println x:
     __double_val(x):
-    print_ &s&"   double_val(x)  ->  x = "&:
-    println_ x:
+    print &s&"   double_val(x)  ->  x = "&:
+    println x:
     deven_:
 }
 
 
 
 od_ show_math(){
-    int_ &i&i&:
+    int i:
 
-    println_ &s&"|  [ SQUARES  via  deven_ n** ]      |"&:
+    println &s&"|  [ SQUARES  via  deven n** ]      |"&:
     __sep():
-    print_ &s&"   "&:
+    print &s&"   "&:
     i = 1:
     during(i < 9 ! i++){
-        print_ __sq(i):
-        print_ &s&" "&:
+        print sq(i):
+        print &s&" "&:
     }
-    println_:
+    println:
 
     __blank():
 
-    println_ &s&"|  [ TRIANGLE NUMBERS ]              |"&:
+    println &s&"|  [ TRIANGLE NUMBERS ]              |"&:
     __sep():
-    print_ &s&"   "&:
+    print &s&"   "&:
     i = 1:
     during(i < 9 ! i++){
-        print_ __triangle(i):
-        print_ &s&" "&:
+        print __triangle(i):
+        print &s&" "&:
     }
-    println_:
+    println:
     deven_:
 }
 
 
 
 od_ countdown(){
-    int_ &i&n&:
+    int n:
     n = 10:
-    println_ &s&"|  [ COUNTDOWN ]                     |"&:
+    println &s&"|  [ COUNTDOWN ]                     |"&:
     __sep():
-    print_ &s&"   "&:
+    print &s&"   "&:
     during(n > 0 ! n--){
-        print_ n:
-        print_ &s&" "&:
+        print n:
+        print &s&" "&:
     }
-    print_ &s&"LAUNCH!"&:
-    println_:
+    print &s&"LAUNCH!"&:
+    println:
     deven_:
 }
 
 od_ defaultest(&i&time& ! &i&var0& var5){
-    print_ &s&"   "&:
+    print &s&"   "&:
     var0 = var0 * time:
-    print_ var0:
+    print var0:
     deven_:
 }
 
 
 
 __start(){
-    int_ &i&var5&:
+    int var5:
     var5 = 5:
 
     __sep():
-    println_ &s&"|         Z i n t e r P L           |"&:
-    println_ &s&"|           S H O W C A S E         |"&:
+    println &s&"|         Z i n t e r P L           |"&:
+    println &s&"|           S H O W C A S E         |"&:
     __sep():
     __blank():
 
@@ -235,19 +234,19 @@ __start(){
     __blank():
 
     lancio -> countdown:
-    println_ &s&"|  [ FUNCTION RENAME lancio ]        |"&:
+    println &s&"|  [ FUNCTION RENAME lancio ]        |"&:
     __sep():
     __blank():
     __lancio():
     __blank():
 
-    println_ &s&"|  [ DEFAULT VALUE ]                |"&:
+    println &s&"|  [ DEFAULT VALUE ]                |"&:
     __sep():
-    __defaultest(3): println_ &s&" 15 the default value is five"&:
-    __defaultest(2!10): println_ &s&" 20 the default value is changed to ten"&:
+    __defaultest(3): println &s&" 15 the default value is five"&:
+    __defaultest(2!10): println &s&" 20 the default value is changed to ten"&:
     __blank():
 
     __sep():
-    println_ &s&"|           -- FINE --               |"&:
+    println &s&"|           -- FINE --               |"&:
     __sep():
 }
