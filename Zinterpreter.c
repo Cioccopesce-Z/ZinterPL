@@ -4735,7 +4735,6 @@ void exec_if(char text[]){
 
     int current_ip = global_ip, i = 0, position_in_ret_state = 0;
 
-    
     while(i < return_state){
         if(state_stack[i].posizione_ritorno == current_ip){
             position_in_ret_state = i;
@@ -4743,8 +4742,7 @@ void exec_if(char text[]){
         }
         i++;
     }
-    
-    
+
     i = position_in_ret_state; if(i == 0){ printf("ERROR: condition in line %d: not found check for eventual misspelled in %s\n",global_ip,text); return;}
 
     if(deb) printf("DEBUG: condition: %s found with start: %d e end %d\n",
@@ -4754,12 +4752,14 @@ void exec_if(char text[]){
     int nex_st = 0;
     int nex_end = 0;
     int all_condition_end = 0;
+    int has_alt = fal;                 /* NEW: true solo se esiste un oth/othif adiacente valido */
     char nex_tx[64] = {0};
 
     int f = i; f++;
-    if(strcmp(state_stack[f].nome_function,"oth") == 0 
-        && (state_stack[f].posizione_ritorno == (state_stack[i].posizione_skip)+1) //f = i+1
-        &&  strcmp(state_stack[f+1].nome_function,"othif") == 0){               //f= i+2
+
+    if(f < return_state && strcmp(state_stack[f].nome_function,"oth") == 0 
+        && (state_stack[f].posizione_ritorno == (state_stack[i].posizione_skip)+1)
+        && (f+1) < return_state && strcmp(state_stack[f+1].nome_function,"othif") == 0){
 
             printf("ERROR: construction if/othif oth othif obscure %s %s %s with state_stack[%d]\n",
                 state_stack[i].nome_function,state_stack[f].nome_function,
@@ -4767,17 +4767,20 @@ void exec_if(char text[]){
             return;
     }
 
-    if(strcmp(state_stack[f].nome_function,"othif") == 0){
+    if(f < return_state && strcmp(state_stack[f].nome_function,"othif") == 0
+        && state_stack[f].posizione_ritorno == (state_stack[i].posizione_skip)+1){
         strcpy(nex_tx,program[state_stack[f].posizione_ritorno].instruction);
         nex_st = state_stack[f].posizione_ritorno;
         nex_end = state_stack[f].posizione_skip;
-
+        has_alt = tru;
     }
-    else if(strcmp(state_stack[f].nome_function,"oth") == 0){
+    else if(f < return_state && strcmp(state_stack[f].nome_function,"oth") == 0
+        && state_stack[f].posizione_ritorno == (state_stack[i].posizione_skip)+1){
         strcpy(nex_tx,program[state_stack[f].posizione_ritorno].instruction);
         nex_st = state_stack[f].posizione_ritorno;
         nex_end = state_stack[f].posizione_skip;
         all_condition_end = nex_end;
+        has_alt = tru;
     }
 
     //========CONTROLLA SE ESEGUIRE=========
@@ -4787,24 +4790,22 @@ void exec_if(char text[]){
 
         if(is_int(buffer)){
             if(deb) printf("DEBUG: condition is dirdata with state_stack[%d]\n",i);
-            //controlla contenutono se = 0 fal se =1 tru
-            int *value = (int*)resolve(type_of_var(condition),condition); //use resolve
+            int *value = (int*)resolve(type_of_var(condition),condition);
             if(value == NULL){ printf("ERROR: to find var %s for get_index in exec_if\n",condition); return;}
-            
-
-            //vedi se eseguire solo if e saltare l ultima condizione
 
             if(*value == 1){
-                //condizione vera
                 if(deb) printf("DEBUG: condizione dirdata %s vera\n",condition);
                 parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip,"void");
                 global_ip = state_stack[i].posizione_skip;
                 return;
-
             }
-
             else{
                 if(deb) printf("DEBUG: condizione %s falsa\n",condition);
+
+                if(!has_alt){
+                    global_ip = state_stack[i].posizione_skip;
+                    return;
+                }
 
                 if(strstr(nex_tx,"othif")){
                     global_ip = nex_st;
@@ -4818,10 +4819,8 @@ void exec_if(char text[]){
                 }
             }
         } 
-        //fa comparazioni or e and 
         else if(strstr(buffer,"adding")){
             if(deb) printf("DEBUG: ci sono adding in exec_if dirdata\n");
-            //contiene || o nd
         }
         else{
             if(deb) printf("ERROR: if cannot operate with type other than integer %s in %s\n",condition,text); return;
@@ -4834,7 +4833,6 @@ void exec_if(char text[]){
 
         if(strstr(buffer,"adding")){
             if(deb) printf("DEBUG: ci sono adding in exec_if complex conf\n");
-            //contiene || o nd
         }
         else{
             char op[3] = {0};
@@ -4842,17 +4840,17 @@ void exec_if(char text[]){
             if(deb) printf("DEBUG: condition in exex_if: %s e op: %s\n",condition,op);
             int res = exec_conf(condition,op);
             if(res){
-
-                //condizione
                 if(deb) printf("DEBUG: condizione conf %s vera\n",condition);
                 parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip,"void");
                 global_ip = state_stack[i].posizione_skip;
                 return;
-                
             }
             else{
-                
-                //condizione falsa
+                if(!has_alt){
+                    global_ip = state_stack[i].posizione_skip;
+                    return;
+                }
+
                 if(strstr(nex_tx,"othif")){
                     global_ip = nex_st;
                     exec_if(program[state_stack[f].posizione_ritorno].instruction);
