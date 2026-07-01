@@ -1,6 +1,6 @@
 # ZinterPL
 
-Alwayse refer to this file for sintax no other sintax file are updated before this.
+## Alwayse refer to this file for sintax no other sintax file are updated before this.
 
 **ZinterPL** is a lightweight, interpreted programming language written entirely in C, designed to run efficiently on constrained hardware — including the **ESP32** microcontroller. The interpreter is self-contained, low on memory footprint, and built with performance in mind.
 
