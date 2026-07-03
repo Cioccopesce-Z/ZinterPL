@@ -213,9 +213,8 @@ The declared type of a dynamic variable is only its **starting** type. Unlike a 
 
 - Assigning a value of a different type does **not** error.
 - Instead, the variable (or the specific array/matrix element) is **reset** and its type switches to whatever type the new value requires.
-- Each element of a dynamic array or matrix tracks its own type independently — one slot can hold an `int` while another slot in the same array holds a `float`.
 
-This makes dynamic variables useful wherever a value's type can't be known ahead of time, or a single storage slot needs to hold different kinds of data at different points in the program.
+This makes dynamic variables useful wherever a value's type can't be known ahead of time.
 
 #### Example
 
