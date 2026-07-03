@@ -286,7 +286,7 @@ print [3][3]$vdar: println &s&" k char [3][3]$vdar"&:
 print [3][3]$vdar: println &s&" 7 matrix->array(char to int)"&:
 ```
 
-This walks a single dynamic scalar (`$dvar`) through int → char → float → char → int → char → float, a dynamic char scalar (`$charvar`) receiving values from another dynamic variable and from an expression, a dynamic array (`$temp`) with independently-typed elements, and cross-assignment between a dynamic array, a dynamic char array (`$vdarr`), and a dynamic char matrix (`$vdar`) — each read/write resolving to whatever type the source value actually is.
+This walks a single dynamic scalar (`$dvar`) through int → char → float → char → int → char → float, a dynamic char scalar (`$charvar`) receiving values from another dynamic variable and from an expression, a dynamic array (`$temp`), and cross-assignment between a dynamic array, a dynamic char array (`$vdarr`), and a dynamic char matrix (`$vdar`) — each read/write resolving to whatever type the source value actually is.
 
 ---
 
@@ -312,7 +312,7 @@ v2 = v0 / v1:
 
 ### Comparison operators
 
-The standard comparison operators (`==`, `<`, `>`) work on scalar variables and on indexed array/matrix elements.
+The standard comparison operators (`==`, `<`, `>`,'^=') work on scalar variables and on indexed array/matrix elements.
 
 When `==` is applied to an **unindexed array or matrix name**, it compares their **declared size**, not the number of occupied slots:
 
