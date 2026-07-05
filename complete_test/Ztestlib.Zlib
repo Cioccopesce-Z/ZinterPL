@@ -1,10 +1,10 @@
 od_ printciao(){
-    println_ &s&"ciao"&:
+    println &s&"ciao"&:
     return_ NULL:
 }
 
 od_ printhello(){
-    println_ &s&"hello"&:
+    println &s&"hello"&:
     return_:
 }
 
@@ -17,7 +17,7 @@ od_ retfunc(){
 }
 
 od_ valueplus(&i&inner&){
-    print_ inner: println_ &s&" 5 - inner form valueplus"&:
+    print inner: println &s&" 5 - inner form valueplus"&:
     deven_ inner++:
 }
 
@@ -68,7 +68,7 @@ od_ testargs(&i&a&!&i&b&){
 }
 
 od_ hello(){
-    println_ &s&"hello from void function"&:
+    println &s&"hello from void function"&:
     deven_:
 }
 
@@ -112,4 +112,112 @@ od_ addsix(&a&arr&){
 od_ addnine(&m&matr&){
     [1][1]matr = 9:
     deven_:
+}
+
+od_ testpas(){
+    int vale:
+    vale = 11:
+    __testpassage():
+    print vale: println &s&" 11 vale non viene modificata da testpassage"&:
+    deven_:
+}
+
+od_ testpassage(){
+    vale = 16:
+    println &s&"qui ^^ ci dovrebbe essere errore: 
+    println perche questa variabile non deve conoscere var: vale"&:
+    deven_:
+}
+
+od_ test_pass(){
+    int var:
+    var = 78:
+    
+    char [5]$harr:
+    [4]$harr = 'f':
+
+    int [3][3]mall:
+    [0][1]mall = 96:
+
+    __pass_by_ref(var ! $harr ! mall ! mall):
+
+    print var: println &s&" 79 modified because ref"&:
+    print [4]$harr: println &s&" 55 if type change works"&:
+    print [0][1]mall: println &s&" 44 if if copy works a copy"&:
+
+    deven_:
+    
+}
+
+od_ pass_by_ref(&i&var& ! &a&$arr& ! &m&matrix& ! cp &m&mal& ){
+    var++:
+    print [4]$arr: println &s&" f passed by ref old $harr now arr"&:
+    [4]$arr = 55:
+    print [4]$arr: println &s&" 55 passed by ref old $harr now arr"&:
+    print [0][1]matrix: println &s&" 96 as ref"&:
+    [0][1]matrix = 44:
+    print [0][1]matrix: println &s&" 44 as ref"&:
+    
+    print [0][1]mal: println &s&" 96 as copy"&:
+    [0][1]mal = 66:
+    print [0][1]mal: println &s&" 66 as copy"&:
+    println:
+    
+    deven_:
+    
+}
+
+od_ test_rvc(){
+    int n:
+    n = 10:
+    char c:
+    c = 'A':
+    int [3]arr:
+    [1]arr = 20:
+    int [2][2]mat:
+    [0][1]mat = 30:
+
+    __ref_vs_copy(n ! n ! c ! c ! arr ! arr ! mat ! mat):
+    println:
+    println &s&"--- dopo la chiamata, valori ORIGINALI ---"&:
+    print n: println &s&" 11 - n modificata (passata per riferimento)"&:
+    print c: println &s&" Z - c modificata (passata per riferimento)"&:
+    print [1]arr: println &s&" 999 - arr[1] modificato (passato per riferimento)"&:
+    print [0][1]mat: println &s&" 777 - mat[0][1] modificato (passato per riferimento)"&:
+
+    deven_:
+}
+
+od_ ref_vs_copy(&i&rn& ! cp &i&cn& ! &c&rc& ! cp &c&cc& ! &a&rarr& ! cp &a&carr& ! &m&rmat& ! cp &m&cmat&){
+
+    rn++:
+    rc = 'Z':
+    [1]rarr = 999:
+    [0][1]rmat = 777:
+
+    cn = -1:
+    cc = 'Q':
+    [1]carr = -999:
+    [0][1]cmat = -777:
+
+    println &s&"--- dentro la funzione, copie LOCALI ---"&:
+    print cn: println &s&" -1 - copia int modificata (non deve toccare n)"&:
+    print cc: println &s&" Q - copia char modificata (non deve toccare c)"&:
+    print [1]carr: println &s&" -999 - copia array modificata (non deve toccare arr)"&:
+    print [0][1]cmat: println &s&" -777 - copia matrice modificata (non deve toccare mat)"&:
+
+    deven_:
+}
+
+od_ test_defaults(){
+    println:
+    print __with_default(5): println &s&" 15 - a passato esplicito (5), b usa il default (10)"&:
+    print __with_default(): println &s&" 22 - a e b usano entrambi il default (12+10)"&:
+    deven_:
+}
+
+od_ with_default(&i&a&12 ! &i&b&10){
+    int r:
+    r = a + b:
+    deven_ r:
 }

@@ -1,7 +1,9 @@
 #{
-    debug_ -dt:
+    debug_ -df:
     exec_:
 }
+
+
 
 __start(){
 
@@ -501,10 +503,27 @@ __start(){
     if( [3][3]$vdar == 7 ){
         println &s&"GIUSTO!!!! "&:
     }
-    oth{
-        println &s&"SBAGLIATO!!!! "&:
-    }
 
+    println:
+    //====== SCOPE TEST TEST ============:
+    println &s&"====== SCOPE TEST TEST ============"&:
+    __testpas():
+
+    println:
+
+    __test_pass():
+
+    println:
+    //====== REF VS COPY TEST ============:
+    println &s&"====== REF VS COPY TEST ============"&:
+    println:
+    __test_rvc():
+
+    println:
+    //====== DEFAULT VALUE TEST ============:
+    println &s&"====== DEFAULT VALUE TEST ============"&:
+    __test_defaults():
+    
     println:
     //====== MEMORY READ AND RESET TEST ============:
     println &s&"====== MEMORY READ AND RESET TEST ============"&:
