@@ -582,6 +582,30 @@ od_ zero_matrix(&m&mat&){
 }
 ```
 
+#### Planned: opt-in pass-by-copy (`cp`)
+
+> ⚠️ **Planned — not yet implemented.** This is the next objective for the pass-by-reference system.
+
+By default, every argument will keep working exactly as described above (passed by reference). A future version will let a per-argument override be declared by writing the keyword `cp` immediately before the argument's type token, **in the function declaration only** — never at the call site:
+
+```
+od_ ref_vs_copy(&i&rn& ! cp &i&cn& ! &c&rc& ! cp &c&cc& ! &a&rarr& ! cp &a&carr& ! &m&rmat& ! cp &m&cmat&){
+    // rn, rc, rarr, rmat  -> passed by reference (default, unchanged):
+    // cn, cc, carr, cmat  -> passed by copy (cp):
+}
+```
+
+- `cp` will work on scalars, arrays, and matrices alike.
+- `cp` only ever appears where the argument is **declared**. The caller doesn't write anything special — `__ref_vs_copy(a ! b ! c ! d ! e ! f ! g ! h)` looks the same regardless of which parameters are `cp` and which aren't.
+- No `cp` → same as today: the parameter is an alias, modifications propagate back to the caller.
+- `cp` → the parameter is an independent local copy: modifications inside the function stay local and are **not** reflected back in the caller.
+
+#### Planned: `$` required for modifiable pass-through
+
+Tied to the same objective: to pass a variable so it can be modified through the reference **including changing type**, the parameter name in the callee's declaration will need to contain `$`, the same marker used for [dynamic variables](#dynamic-variables-). Without `$` in the parameter name, a by-reference parameter can still be written to, but stays subject to the ordinary [static type-safety rule](#type-safety): writing a mismatched type through it is a fatal error, same as assigning it directly. Naming the parameter with `$` lifts that restriction, so the original variable can switch type through the call the same way a dynamic variable can on its own.
+
+> Note: this interaction between `cp`/ref and `$` is still being worked out — treat the exact rule above as a working draft to confirm once implemented, not a locked spec.
+
 #### ⚠️ Side-effect trap with `deven_` expressions
 
 Because all arguments are aliases, any `deven_` expression that modifies the argument in place **also modifies the original variable in the caller**. This is the most common source of bugs with pass-by-reference.
@@ -616,6 +640,18 @@ od_ sq(&i&n&){
 ```
 
 The rule is simple: if a `deven_` expression uses `**`, `~~`, `++`, or `--` on a parameter, always copy the parameter into a local variable first and operate on that.
+
+##### Planned interaction with `cp`
+
+Once `cp` (above) is implemented, it removes the need for the manual `tmp` workaround: declaring the parameter itself as `cp` makes it a genuine local copy, so a `deven_` expression using `**`, `~~`, `++`, or `--` on that parameter only touches the local copy — the caller's original variable stays untouched, with no extra `tmp` variable required.
+
+```
+od_ sq(cp &i&n&){
+    deven_ n**:     // n is cp — this changes only the local copy, caller's variable is untouched:
+}
+```
+
+By-reference parameters (no `cp`) keep today's behavior: `deven_` expressions still mutate them in place, since they remain aliases, so the manual `tmp` copy pattern is still needed for those.
 
 ---
 
@@ -1016,6 +1052,8 @@ Contains archived builds of older interpreter versions. All newer versions of Zi
 | Default argument values (scalars only) | Stable |
 | Pass-by-reference for function args (scalars) | Stable |
 | Pass-by-reference for function args (arrays/matrices) | Stable |
+| Opt-in pass-by-copy (`cp`) for function args | Planned — next objective |
+| `$` in param name required for modifiable/type-switching pass-through | Planned |
 | Renaming (`->`) — functions, variables, arrays, matrices | Stable |
 | Inline C (`C{ }`) | Planned |
 | Extended `deven_` expressions (`++`, `--`, `**`, `~~`, function) | Stable |
