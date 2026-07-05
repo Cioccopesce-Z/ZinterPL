@@ -4,7 +4,8 @@
 #include <math.h>
 #include <string.h>
 
-#define max_name_lettere 16
+#define max_name_lettere 64
+#define max_letter_name 64
 #define max_number_of_array 256
 #define max_number_of_var 256
 #define max_lenght_of_string 512
@@ -14,7 +15,7 @@
 #define fal 0
 #define max_lenght_of_a_program 1024
 #define error_int -99
-#define max_parameters 16
+#define max_parameters 64
 
 
 
@@ -115,23 +116,27 @@ typedef struct {
     char param_types[max_parameters];
     int  param_count;
 
-    char param_default[max_parameters][32];   // stringa raw del default ("5", "3.14", "k", "")
-    int  param_has_default[max_parameters];   // 1 se ha default, 0 altrimenti
+    char param_default[max_parameters][32];
+    int  param_has_default[max_parameters];
+    int  param_force_copy[max_parameters];   /* se dichiarato con prefisso cp */
 } program_state;
 
 typedef struct {
     int base_variable_idx;
     int base_fl_variable_idx;
     int base_char_variable_idx;
-
     int base_array_idx;
     int base_fl_array_idx;
     int base_char_array_idx;
-
     int base_matrix_idx;
     int base_fl_matrix_idx;
     int base_char_matrix_idx;
 
+    char alias_name[max_parameters][max_name_lettere];
+    char alias_kind[max_parameters];   // 'v' variabile, 'a' array, 'm' matrice
+    char alias_type[max_parameters];   // 'i','l','c' (variabili) / 'i','l','s' (array/matrici)
+    int  alias_idx[max_parameters];    // indice fisico reale
+    int  alias_count;
 } scope_frame;
 
 typedef struct {
@@ -258,28 +263,98 @@ static int resolve_index(const char *idx_str);
 void declare_variable(char name[], char type);
 int get_array_size(char arr_name[], char type);
 void declare_array(char name[], char type, int size);
-void remove_data(char *name, char type, char *dtype);
+void remove_data(char *name, char type, char *dtype, int *out_idx, char *out_name);
 void declare_matrix(char name[], char type, int s1, int s2);
 void fatal_mismatch(const char *msg);
+int get_matrix_size(char *name, char type, int *rows, int *cols);
 
+
+/* Dopo remove_data+declare_* su un dato che ha cambiato tipo, aggiorna
+ogni alias (in QUALSIASI frame attivo) che puntava alla vecchia posizione:
+- se puntava esattamente al dato spostato, lo aggancia alla nuova posizione
+    e ne aggiorna il tipo;
+- se puntava a un indice successivo (shiftato da remove_data), lo decrementa. */
+void fix_aliases_after_retype(char kind, char old_type, int removed_idx, char new_type, int new_idx) {
+    for (int d = 0; d < scope_depth; d++) {
+        scope_frame *f = &scope_stack[d];
+        for (int a = 0; a < f->alias_count; a++) {
+            if (f->alias_kind[a] != kind || f->alias_type[a] != old_type) continue;
+            if (f->alias_idx[a] == removed_idx) {
+                f->alias_idx[a]  = new_idx;
+                f->alias_type[a] = new_type;
+            } else if (f->alias_idx[a] > removed_idx) {
+                f->alias_idx[a]--;
+            }
+        }
+    }
+}
 
 void push_scope() {
     scope_stack[scope_depth].base_variable_idx      = variable_count;
     scope_stack[scope_depth].base_fl_variable_idx   = fl_variable_count;
     scope_stack[scope_depth].base_char_variable_idx = char_variable_count;
-
     scope_stack[scope_depth].base_array_idx      = array_count;
     scope_stack[scope_depth].base_fl_array_idx   = fl_array_count;
     scope_stack[scope_depth].base_char_array_idx = char_array_count;
-
     scope_stack[scope_depth].base_matrix_idx      = matrix_count;
     scope_stack[scope_depth].base_fl_matrix_idx   = fl_matrix_count;
     scope_stack[scope_depth].base_char_matrix_idx = char_matrix_count;
-    
+
+    scope_stack[scope_depth].alias_count = 0; 
 
     scope_depth++;
     if(deb) printf("[SCOPE] push -> depth=%d base_i=%d base_c=%d base_l=%d\n",
         scope_depth, variable_count, fl_variable_count, char_variable_count);
+}
+
+/* Cerca 'name': prima nella listina del frame corrente, poi in [floor,count)
+del proprio frame, su tutti e 9 i bucket (v/a/m x i/l/c-s).
+Ritorna 1 se trovato (scrive kind/type/idx), 0 altrimenti. */
+int resolve_slot(const char *name, char *out_kind, char *out_type, int *out_idx) {
+    if (scope_depth > 0) {
+        scope_frame *f = &scope_stack[scope_depth-1];
+        for (int a = 0; a < f->alias_count; a++) {
+            if (strcmp(f->alias_name[a], name) == 0) {
+                *out_kind = f->alias_kind[a];
+                *out_type = f->alias_type[a];
+                *out_idx  = f->alias_idx[a];
+                return 1;
+            }
+        }
+    }
+
+    int fv  = scope_depth>0 ? scope_stack[scope_depth-1].base_variable_idx      : 0;
+    int fcv = scope_depth>0 ? scope_stack[scope_depth-1].base_char_variable_idx : 0;
+    int ffv = scope_depth>0 ? scope_stack[scope_depth-1].base_fl_variable_idx   : 0;
+    int fa  = scope_depth>0 ? scope_stack[scope_depth-1].base_array_idx        : 0;
+    int fca = scope_depth>0 ? scope_stack[scope_depth-1].base_char_array_idx   : 0;
+    int ffa = scope_depth>0 ? scope_stack[scope_depth-1].base_fl_array_idx     : 0;
+    int fm  = scope_depth>0 ? scope_stack[scope_depth-1].base_matrix_idx       : 0;
+    int fcm = scope_depth>0 ? scope_stack[scope_depth-1].base_char_matrix_idx  : 0;
+    int ffm = scope_depth>0 ? scope_stack[scope_depth-1].base_fl_matrix_idx    : 0;
+
+    for (int i = fv; i < variable_count; i++)
+        if (strcmp(variable[i].name, name)==0) { *out_kind='v'; *out_type='i'; *out_idx=i; return 1; }
+    for (int i = fcv; i < char_variable_count; i++)
+        if (strcmp(char_variable[i].name, name)==0) { *out_kind='v'; *out_type='c'; *out_idx=i; return 1; }
+    for (int i = ffv; i < fl_variable_count; i++)
+        if (strcmp(fl_variable[i].name, name)==0) { *out_kind='v'; *out_type='l'; *out_idx=i; return 1; }
+
+    for (int i = fa; i < array_count; i++)
+        if (strcmp(array[i].name, name)==0) { *out_kind='a'; *out_type='i'; *out_idx=i; return 1; }
+    for (int i = fca; i < char_array_count; i++)
+        if (strcmp(char_array[i].name, name)==0) { *out_kind='a'; *out_type='s'; *out_idx=i; return 1; }
+    for (int i = ffa; i < fl_array_count; i++)
+        if (strcmp(fl_array[i].name, name)==0) { *out_kind='a'; *out_type='l'; *out_idx=i; return 1; }
+
+    for (int i = fm; i < matrix_count; i++)
+        if (strcmp(matrix[i].name, name)==0) { *out_kind='m'; *out_type='i'; *out_idx=i; return 1; }
+    for (int i = fcm; i < char_matrix_count; i++)
+        if (strcmp(char_matrix[i].name, name)==0) { *out_kind='m'; *out_type='s'; *out_idx=i; return 1; }
+    for (int i = ffm; i < fl_matrix_count; i++)
+        if (strcmp(fl_matrix[i].name, name)==0) { *out_kind='m'; *out_type='l'; *out_idx=i; return 1; }
+
+    return 0;
 }
 
 void pop_scope() {
@@ -304,103 +379,60 @@ void pop_scope() {
 
 /* 1 int 2 char 3 float 0 not*/
 int is_var_(const char *name) {
-    if(deb) printf("is_var called with: %s\n",name);
-    if(deb) printf("variable_count: %d\n", variable_count);
-    for (int i = 0; i < variable_count; i++) {
-        if (strcmp(variable[i].name, name) == 0) {
-            return 1; // è una variabile int
-        }
-    }
-    for (int i = 0; i < char_variable_count; i++) {
-        if (strcmp(char_variable[i].name, name) == 0) {
-            return 2; // è una variabile char
-        }
-    }
-    for (int i = 0; i < fl_variable_count; i++) {
-        if (strcmp(fl_variable[i].name, name) == 0) {
-            return 3; // è una variabile float
-        }
-    }
-    return 0; // non è una variabile
+    char kind, type; int idx;
+    if(!resolve_slot(name, &kind, &type, &idx) || kind != 'v') return 0;
+    if(type=='i') return 1;
+    if(type=='c') return 2;
+    if(type=='l') return 3;
+    return 0;
 }
-/* 1 int 2 char 3 float 0 not*/
+
 int is_arr_(const char *gname) {
-
-    char name[32];
-    strcpy(name,gname);
-    char junk[24];
-
+    char name[32]; strcpy(name, gname);
     if(strchr(name,'[')){
-        char buffer[24];
+        char junk[24], buffer[24];
         sscanf(name,"%[^]]]%s",junk,buffer);
         strcpy(name,buffer);
     }
-    if(deb) printf("DEBUG: is_arr name: %s\n",name);
-
-    for (int i = 0; i < array_count; i++) {
-        if (strcmp(array[i].name, name) == 0) {
-            return 1; // è una arr int
-        }
-    }
-    for (int i = 0; i < char_array_count; i++) {
-        if (strcmp(char_array[i].name, name) == 0) {
-            return 2; // è un arr char
-        }
-    }
-    for (int i = 0; i < fl_array_count; i++) {
-        if (strcmp(fl_array[i].name, name) == 0) {
-            return 3; // è un arr float
-        }
-    }
-    return 0; // non è un array
+    char kind, type; int idx;
+    if(!resolve_slot(name, &kind, &type, &idx) || kind != 'a') return 0;
+    if(type=='i') return 1;
+    if(type=='s') return 2;
+    if(type=='l') return 3;
+    return 0;
 }
-/* 1 int 2 char 3 float 0 not*/
-int is_matrix_(const char *gname) {
 
-    char name[32];
-    char junk[24];
-    strcpy(name,gname);
+int is_matrix_(const char *gname) {
+    char name[32]; strcpy(name, gname);
     if(strchr(name,'[')){
-        char buffer[24];
+        char junk[24], buffer[24];
         sscanf(name,"%[^]]]%s",junk,buffer);
         sscanf(buffer,"%[^]]]%s",junk,name);
     }
-    if(deb) ("DEBUG: is_matrix name: %s\n",name);
-
-    for (int i = 0; i < matrix_count; i++) {
-        if (strcmp(matrix[i].name, name) == 0) {
-            return 1; // è una matrice int
-        }
-    }
-    for (int i = 0; i < char_matrix_count; i++) {
-        if (strcmp(char_matrix[i].name, name) == 0) {
-            return 2; // è una matrice char
-        }
-    }
-    for (int i = 0; i < fl_matrix_count; i++) {
-        if (strcmp(fl_matrix[i].name, name) == 0) {
-            return 3; // è una matrice float
-        }
-    }
-    return 0; // non è una matrice
+    char kind, type; int idx;
+    if(!resolve_slot(name, &kind, &type, &idx) || kind != 'm') return 0;
+    if(type=='i') return 1;
+    if(type=='s') return 2;
+    if(type=='l') return 3;
+    return 0;
 }
 
 /* 1 yes 0 not*/
 int is_function_(const char *name_or_declaration){
 
     int i=0;
-    char name[16] = {0};
+    char name[64] = {0};
     char args[64] = {0};
     if(deb) printf("DEBUG: is function called with: %s \n",name_or_declaration);
 
     if(strstr(name_or_declaration,"od_")){ // od_ name(args){ } being declared 
-        sscanf(name_or_declaration,"od_%15[^(](%64[^)])",name,args); //name == "name"  args == "args" 
+        sscanf(name_or_declaration,"od_%63[^(](%63[^)])",name,args); //name == "name"  args == "args" 
     } 
         
 
     else if(starts_with(name_or_declaration,"__")){ //__name() being called
         if(deb) printf("found start with __ in is_function \n");
-        sscanf(name_or_declaration,"__%15[^(](%64[^)])",name,args); //name == "name"  args == "args"
+        sscanf(name_or_declaration,"__%63[^(](%64[^)])",name,args); //name == "name"  args == "args"
     } 
 
     else{
@@ -409,7 +441,7 @@ int is_function_(const char *name_or_declaration){
 
     if(deb) printf("name = %s, args = %s \n",name,args);  
 
-    char buffer[24];
+    char buffer[96];
     sprintf(buffer,"od_%s",name);
         
     if(deb) printf("DEBUG: name for function search: %s \n",buffer);
@@ -426,7 +458,7 @@ int is_function_(const char *name_or_declaration){
 }
 
 char get_dtype(char *name){
-    char buffer[16] = {0};
+    char buffer[64] = {0};
     strcpy(buffer,name);
     is_what(buffer);
     char dtype[12];
@@ -447,208 +479,84 @@ char get_dtype(char *name){
 
 }
 
-/* type: 'i' int, 'l' float, 's' char. Ritorna tru/fal (trovata/non trovata),
-   scrive le dimensioni in *rows e *cols tramite puntatore */
-int get_matrix_size(char *name, char type, int *rows, int *cols){
 
-    if(type == 'i'){
-        for(int i=0; i < matrix_count; i++){
-            if(strcmp(matrix[i].name,name) == 0){
-                *rows = matrix[i].size_first;
-                *cols = matrix[i].size_sec;
-                return tru;
-            }
-        }
-    }
-    else if(type == 'l'){
-        for(int i=0; i < fl_matrix_count; i++){
-            if(strcmp(fl_matrix[i].name,name) == 0){
-                *rows = fl_matrix[i].size_first;
-                *cols = fl_matrix[i].size_sec;
-                return tru;
-            }
-        }
-    }
-    else if(type == 's'){
-        for(int i=0; i < char_matrix_count; i++){
-            if(strcmp(char_matrix[i].name,name) == 0){
-                *rows = char_matrix[i].size_first;
-                *cols = char_matrix[i].size_sec;
-                return tru;
-            }
-        }
-    }
 
-    return fal;
-}
-
-//automatically remove and declare new data
 void change_var_type(char *name, char old_type, char new_type){
-    
     char data_type = get_dtype(name);
 
     if(new_type == 'k' && data_type != 'v') new_type = 's';
     if(new_type == 'k' && data_type == 'v') new_type = 'c';
     if(new_type == 'n') new_type = 'i';
-    
+
+    int removed_idx = -1, new_idx = -1;
+    char kind = (data_type=='v') ? 'v' : (data_type=='a') ? 'a' : (data_type=='m') ? 'm' : 0;
+    char real_name[max_name_lettere]; strcpy(real_name, name);
 
     switch (data_type){
-
         case 'v':
-        
-            remove_data(name,old_type,"var");
-            declare_variable(name,new_type);
-
+            remove_data(name, old_type, "var", &removed_idx, real_name);
+            if(new_type=='i') new_idx = variable_count;
+            else if(new_type=='l') new_idx = fl_variable_count;
+            else if(new_type=='c') new_idx = char_variable_count;
+            declare_variable(real_name,new_type);
             break;
 
-        case 'a':
-            
+        case 'a': {
             int size = get_array_size(name, old_type);
-            remove_data(name,old_type,"arr");
-            declare_array(name,new_type,size);
-
+            remove_data(name, old_type, "arr", &removed_idx, real_name);
+            if(new_type=='i') new_idx = array_count;
+            else if(new_type=='l') new_idx = fl_array_count;
+            else if(new_type=='s') new_idx = char_array_count;
+            declare_array(real_name,new_type,size);
             break;
+        }
 
-        case 'm':
-
+        case 'm': {
             int r = 0, c = 0;
             get_matrix_size(name,old_type,&r,&c);
-            remove_data(name,old_type,"matr");
-            declare_matrix(name,new_type,r,c);
-        
+            remove_data(name, old_type, "matr", &removed_idx, real_name);
+            if(new_type=='i') new_idx = matrix_count;
+            else if(new_type=='l') new_idx = fl_matrix_count;
+            else if(new_type=='s') new_idx = char_matrix_count;
+            declare_matrix(real_name,new_type,r,c);
             break;
+        }
 
         case 'f':
             printf("ERROR: function does not own a type\n");
-            break;
-        
+            return;
     }
+
+    if (removed_idx >= 0 && kind)
+        fix_aliases_after_retype(kind, old_type, removed_idx, new_type, new_idx);
 }
 
 //name , c i l s, var arr matr
-void remove_data(char *name, char type, char *dtype) {
-
-    /*VARIABLE REMOVE*/
-    if(strcmp(dtype,"var") == 0){
-
-        if(type == 'i') {
-            for(int i = 0; i < variable_count; i++) {
-                if(strcmp(variable[i].name, name) == 0) {
-                    for(int j = i; j < variable_count - 1; j++)
-                        variable[j] = variable[j+1];
-                    variable_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable int '%s' non trovata\n", name);
-        }
-        else if(type == 'l') {
-            for(int i = 0; i < fl_variable_count; i++) {
-                if(strcmp(fl_variable[i].name, name) == 0) {
-                    for(int j = i; j < fl_variable_count - 1; j++)
-                        fl_variable[j] = fl_variable[j+1];
-                    fl_variable_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable float '%s' non trovata\n", name);
-        }
-        else if(type == 'c') {
-            for(int i = 0; i < char_variable_count; i++) {
-                if(strcmp(char_variable[i].name, name) == 0) {
-                    for(int j = i; j < char_variable_count - 1; j++)
-                        char_variable[j] = char_variable[j+1];
-                    char_variable_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable char '%s' non trovata\n", name);
-        }
-        else {
-            printf("ERROR: remove_variable tipo '%c' non valido per var data type\n", type);
-        }
+void remove_data(char *name, char type, char *dtype, int *out_idx, char *out_name) {
+    char kind, rtype; int idx;
+    if (!resolve_slot(name, &kind, &rtype, &idx)) {
+        printf("WARNING: remove_data '%s' non trovata\n", name);
+        if (out_idx) *out_idx = -1;
+        return;
     }
-    /*ARRAY REMOVE*/
-    else if(strcmp(dtype,"arr") == 0){
-        
-        if(type == 'i') {
-            for(int i = 0; i < array_count; i++) {
-                if(strcmp(array[i].name, name) == 0) {
-                    for(int j = i; j < array_count - 1; j++)
-                        array[j] = array[j+1];
-                    array_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable arr int '%s' non trovata\n", name);
-        }
-        else if(type == 'l') {
-            for(int i = 0; i < fl_array_count; i++) {
-                if(strcmp(fl_array[i].name, name) == 0) {
-                    for(int j = i; j < fl_array_count - 1; j++)
-                        fl_array[j] = fl_array[j+1];
-                    fl_array_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable arr float '%s' non trovata\n", name);
-        }
-        else if(type == 's') {
-            for(int i = 0; i < char_array_count; i++) {
-                if(strcmp(char_array[i].name, name) == 0) {
-                    for(int j = i; j < char_array_count - 1; j++)
-                        char_array[j] = char_array[j+1];
-                    char_array_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable arr str '%s' non trovata\n", name);
-        }
-        else {
-            printf("ERROR: remove_variable tipo '%c' non valido per arr data type\n", type);
-        }
+    if (strcmp(dtype,"var")==0) {
+        if (type=='i') { if(out_name) strcpy(out_name, variable[idx].name); for(int j=idx;j<variable_count-1;j++) variable[j]=variable[j+1]; variable_count--; }
+        else if (type=='l') { if(out_name) strcpy(out_name, fl_variable[idx].name); for(int j=idx;j<fl_variable_count-1;j++) fl_variable[j]=fl_variable[j+1]; fl_variable_count--; }
+        else if (type=='c') { if(out_name) strcpy(out_name, char_variable[idx].name); for(int j=idx;j<char_variable_count-1;j++) char_variable[j]=char_variable[j+1]; char_variable_count--; }
     }
-    /*MATRIX REMOVE*/
-    else if(strcmp(dtype,"matr") == 0){
-        
-        if(type == 'i') {
-            for(int i = 0; i < matrix_count; i++) {
-                if(strcmp(matrix[i].name, name) == 0) {
-                    for(int j = i; j < matrix_count - 1; j++)
-                        matrix[j] = matrix[j+1];
-                    matrix_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable matrix int '%s' non trovata\n", name);
-        }
-        else if(type == 'l') {
-            for(int i = 0; i < fl_matrix_count; i++) {
-                if(strcmp(fl_matrix[i].name, name) == 0) {
-                    for(int j = i; j < fl_matrix_count - 1; j++)
-                        fl_matrix[j] = fl_matrix[j+1];
-                    fl_matrix_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable matrix float '%s' non trovata\n", name);
-        }
-        else if(type == 's') {
-            for(int i = 0; i < char_matrix_count; i++) {
-                if(strcmp(char_matrix[i].name, name) == 0) {
-                    for(int j = i; j < char_matrix_count - 1; j++)
-                        char_matrix[j] = char_matrix[j+1];
-                    char_matrix_count--;
-                    return;
-                }
-            }
-            printf("WARNING: remove_variable matrix str '%s' non trovata\n", name);
-        }
-        else {
-            printf("ERROR: remove_variable tipo '%c' non valido per matrix data type\n", type);
-        }
+    else if (strcmp(dtype,"arr")==0) {
+        if (type=='i') { if(out_name) strcpy(out_name, array[idx].name); for(int j=idx;j<array_count-1;j++) array[j]=array[j+1]; array_count--; }
+        else if (type=='l') { if(out_name) strcpy(out_name, fl_array[idx].name); for(int j=idx;j<fl_array_count-1;j++) fl_array[j]=fl_array[j+1]; fl_array_count--; }
+        else if (type=='s') { if(out_name) strcpy(out_name, char_array[idx].name); for(int j=idx;j<char_array_count-1;j++) char_array[j]=char_array[j+1]; char_array_count--; }
     }
+    else if (strcmp(dtype,"matr")==0) {
+        if (type=='i') { if(out_name) strcpy(out_name, matrix[idx].name); for(int j=idx;j<matrix_count-1;j++) matrix[j]=matrix[j+1]; matrix_count--; }
+        else if (type=='l') { if(out_name) strcpy(out_name, fl_matrix[idx].name); for(int j=idx;j<fl_matrix_count-1;j++) fl_matrix[j]=fl_matrix[j+1]; fl_matrix_count--; }
+        else if (type=='s') { if(out_name) strcpy(out_name, char_matrix[idx].name); for(int j=idx;j<char_matrix_count-1;j++) char_matrix[j]=char_matrix[j+1]; char_matrix_count--; }
+    }
+    if (out_idx) *out_idx = idx;
 }
+
 //var arr matr for data_type
 void update_scope(char old_type, char new_type, char data_type) {
     if(scope_depth <= 0) return; // decide da sola se serve
@@ -724,270 +632,122 @@ void is_what(char name_result[]) {
 //function to get the index of variable, array and matrix 
 void* get_index(char data_sruct_name[]) {
 
-    int borrow;
     char var_name[max_name_lettere];
-    char type;
-    char var_type;
-
+    char type, var_type;
     static int temp_int = 0;
     static char temp_char;
-    
-    
-    //NUMERO
-    if(sscanf(data_sruct_name, "&%c&%d&", &type, &temp_int) == 2 && type == 'n'){
-        return &temp_int; //serve ma non va modificato
-    }
-    //SE CARATTERE
-    else if(sscanf(data_sruct_name, "&%c&%c&", &type, &temp_char) == 2 && type == 'k'){
-        return &temp_char; //serve ma non va modificato
-    }
 
-    // MATRICE (es: &i[idx1][idx2]&name&)
+    if(sscanf(data_sruct_name, "&%c&%d&", &type, &temp_int) == 2 && type == 'n')
+        return &temp_int;
+    else if(sscanf(data_sruct_name, "&%c&%c&", &type, &temp_char) == 2 && type == 'k')
+        return &temp_char;
+
     else if (strstr(data_sruct_name, "][") != NULL) {
+        char mat_name[max_name_lettere], idx1_str[50], idx2_str[50], mat_type;
 
-        char mat_name[max_name_lettere];
-        char idx1_str[50];
-        char idx2_str[50];
-        char mat_type;
-
-        int parsed = sscanf(data_sruct_name,
-            "&%c[%49[^]]][%49[^]]]&%15[^&]&",
-            &mat_type, idx1_str, idx2_str, mat_name);
-
-        if(parsed != 4) {
+        if(sscanf(data_sruct_name, "&%c[%49[^]]][%49[^]]]&%15[^&]&",
+                &mat_type, idx1_str, idx2_str, mat_name) != 4) {
             printf("get_index: errore parsing matrice: %s\n", data_sruct_name);
             return NULL;
         }
 
-        if(deb) printf("get_index matrice %s [%s][%s] tipo %c\n",
-                    mat_name, idx1_str, idx2_str, mat_type);
-
-        // Risolvi idx1
-        int row = 0, col = 0;
+        int row=0, col=0;
         if(sscanf(idx1_str, "%d", &row) != 1) {
-            int *pr = (int *)get_index(idx1_str);
-            if(!pr) { printf("get_index: indice riga non risolto: %s\n", idx1_str); return NULL; }
+            int *pr = (int*)get_index(idx1_str);
+            if(!pr){ printf("get_index: indice riga non risolto: %s\n", idx1_str); return NULL; }
             row = *pr;
         }
-
-        // Risolvi idx2
         if(sscanf(idx2_str, "%d", &col) != 1) {
-            int *pc = (int *)get_index(idx2_str);
-            if(!pc) { printf("get_index: indice colonna non risolto: %s\n", idx2_str); return NULL; }
+            int *pc = (int*)get_index(idx2_str);
+            if(!pc){ printf("get_index: indice colonna non risolto: %s\n", idx2_str); return NULL; }
             col = *pc;
         }
 
-        if(mat_type == 'i') {
-            for(int i = 0; i < matrix_count; i++) {
-                if(strcmp(matrix[i].name, mat_name) == 0) {
-                    if(row >= 0 && row < matrix[i].size_first &&
-                    col >= 0 && col < matrix[i].size_sec)
-                        return &matrix[i].data[row * matrix[i].size_sec + col];
-                    printf("OUT OF BOUNDS matrice int '%s' [%d][%d]\n", mat_name, row, col);
-                    return NULL;
-                }
-            }
-        }
-        else if(mat_type == 'l') {
-            for(int i = 0; i < fl_matrix_count; i++) {
-                if(strcmp(fl_matrix[i].name, mat_name) == 0) {
-                    if(row >= 0 && row < fl_matrix[i].size_first &&
-                    col >= 0 && col < fl_matrix[i].size_sec)
-                        return &fl_matrix[i].data[row * fl_matrix[i].size_sec + col];   
-                    printf("OUT OF BOUNDS matrice float '%s' [%d][%d]\n", mat_name, row, col);
-                    return NULL;
-                }
-            }
-        }
-        else if(mat_type == 's') {
-            for(int i = 0; i < char_matrix_count; i++) {
-                if(strcmp(char_matrix[i].name, mat_name) == 0) {
-                    if(row >= 0 && row < char_matrix[i].size_first &&
-                    col >= 0 && col < char_matrix[i].size_sec)
-                        return &char_matrix[i].data[row * char_matrix[i].size_sec + col]; 
-                    printf("OUT OF BOUNDS matrice char '%s' [%d][%d]\n", mat_name, row, col);
-                    return NULL;
-                }
-            }
+        char kind, rtype; int idx;
+        if(!resolve_slot(mat_name, &kind, &rtype, &idx) || kind != 'm' || rtype != mat_type) {
+            printf("get_index: matrice '%s' non trovata\n", mat_name);
+            return NULL;
         }
 
-        printf("get_index: matrice '%s' non trovata\n", mat_name);
+        if(mat_type=='i' && row>=0 && row<matrix[idx].size_first && col>=0 && col<matrix[idx].size_sec)
+            return &matrix[idx].data[row*matrix[idx].size_sec+col];
+        if(mat_type=='l' && row>=0 && row<fl_matrix[idx].size_first && col>=0 && col<fl_matrix[idx].size_sec)
+            return &fl_matrix[idx].data[row*fl_matrix[idx].size_sec+col];
+        if(mat_type=='s' && row>=0 && row<char_matrix[idx].size_first && col>=0 && col<char_matrix[idx].size_sec)
+            return &char_matrix[idx].data[row*char_matrix[idx].size_sec+col];
+
+        printf("OUT OF BOUNDS matrice '%s' [%d][%d]\n", mat_name, row, col);
         return NULL;
     }
 
-
-    // ARRAY (esempio &i[something]&array& )
     else if (strchr(data_sruct_name, '[') != NULL) {
-
-        char arr_name[max_name_lettere];
-        char index_str[50];
-
+        char arr_name[max_name_lettere], index_str[50];
         int check_str_print = sscanf(data_sruct_name, "&%c[%15[^]]]&%15[^&]&", &type, index_str, arr_name);
-
-        if(deb) printf("get_index riconosciuto array %s, indice: %s \n", arr_name, index_str);
-
         int index = 0;
 
-        // Se l'indice è numero diretto
         if (sscanf(index_str, "%d", &index) == 1 && check_str_print == 3) {
-
-            
-
-            if(type =='s'){
-                for (int i = 0; i < char_array_count; i++) {
-                    if (strcmp(char_array[i].name, arr_name) == 0 && index >= 0 && index < char_array[i].size) {
-                        return &char_array[i].array_int[index]; 
-                    }
-                }
-                printf("OUT OF BOUNDS for char_array: %s, with delcaration: %s \n",arr_name,data_sruct_name);
-                    return NULL;
+            char kind, rtype; int idx;
+            if(!resolve_slot(arr_name,&kind,&rtype,&idx) || kind!='a' || rtype!=type){
+                printf("get_index: array '%s' non trovato\n", arr_name); return NULL;
             }
-
-            else if(type == 'i'){
-                for (int i = 0; i < array_count; i++) {
-                    if (strcmp(array[i].name, arr_name) == 0 && index >= 0 && index < array[i].size) {
-                        return &array[i].array_int[index];
-                    }
-                }
-                printf("OUT OF BOUNDS for int_array: %s, with delcaration: %s \n",arr_name,data_sruct_name);
-                        return NULL;
-            }
-
-            else if(type == 'l'){
-                for (int i = 0; i < fl_array_count; i++) {
-                    if (strcmp(fl_array[i].name, arr_name) == 0 && index >= 0 && index < fl_array[i].size) {
-                        return &fl_array[i].array_int[index];
-                    }
-                }
-                printf("OUT OF BOUNDS for fl_array: %s, with delcaration: %s\n",arr_name,data_sruct_name);
-                        return NULL;
-            }
-
-            
-                
-
-        }
-
-        // Se l'indice è una var (es: &i&var&)
-        else if (sscanf(index_str, "&%c&%15[^&]&", &var_type, var_name) == 2 && check_str_print == 3) {
-
-
-            if(is_var_(var_name)!=1){ 
-                printf("Errore: la variabile '%s' non è di tipo int. e non puo essere usata come indice per l'array %s\n", var_name, arr_name); 
-                return NULL; 
-            } // se la variabile non è un int, ritorna NULL
-            int *index_value = get_index(index_str); // Ottieni il valore della variabile;
-            
-            if (index_value == NULL)
-                return NULL;
-
-
-            
-            if(type =='s'){
-                for (int i = 0; i < char_array_count; i++) {
-                    if (strcmp(char_array[i].name, arr_name) == 0 && *index_value >= 0 && *index_value < char_array[i].size) {
-                        return &char_array[i].array_int[*index_value]; 
-                    }
-                }
-                printf("OUT OF BOUNDS for char_array: %s, with delcaration: %s",arr_name,data_sruct_name);
-                    return NULL;
-            }
-
-            else if(type == 'i'){
-                for (int i = 0; i < array_count; i++) {
-                    if (strcmp(array[i].name, arr_name) == 0 && *index_value >= 0 && *index_value < array[i].size) {
-                        return &array[i].array_int[*index_value];
-                    }
-                }
-                printf("OUT OF BOUNDS for int_array: %s, with delcaration: %s",arr_name,data_sruct_name);
-                return NULL;
-            }
-
-            else if(type == 'l'){
-                for (int i = 0; i < fl_array_count; i++) {
-                    if (strcmp(fl_array[i].name, arr_name) == 0 && *index_value >= 0 && *index_value < fl_array[i].size) {
-                        return &fl_array[i].array_int[*index_value];
-                    }
-                }
-                printf("OUT OF BOUNDS for fl_array: %s, with delcaration: %s",arr_name,data_sruct_name);
-                return NULL;
-            }
-                
-            
-        }
-
-        //se si vuole stampare l'intera stringa (indice vuoto)
-        else if (check_str_print == 2 && type == 's') {
-            for (int i = 0; i < char_array_count; i++) {
-                if (strcmp(char_array[i].name, arr_name) == 0) {
-                    return char_array[i].array_int; // ritorna puntatore al primo elemento
-                }
-            }
+            if(type=='s' && index>=0 && index<char_array[idx].size) return &char_array[idx].array_int[index];
+            if(type=='i' && index>=0 && index<array[idx].size)      return &array[idx].array_int[index];
+            if(type=='l' && index>=0 && index<fl_array[idx].size)   return &fl_array[idx].array_int[index];
+            printf("OUT OF BOUNDS for array: %s\n", arr_name);
             return NULL;
+        }
+        else if (sscanf(index_str, "&%c&%15[^&]&", &var_type, var_name) == 2 && check_str_print == 3) {
+            if(is_var_(var_name)!=1){
+                printf("Errore: la variabile '%s' non è di tipo int per l'array %s\n", var_name, arr_name);
+                return NULL;
+            }
+            int *index_value = get_index(index_str);
+            if (!index_value) return NULL;
+
+            char kind, rtype; int idx;
+            if(!resolve_slot(arr_name,&kind,&rtype,&idx) || kind!='a' || rtype!=type){
+                printf("get_index: array '%s' non trovato\n", arr_name); return NULL;
+            }
+            if(type=='s' && *index_value>=0 && *index_value<char_array[idx].size) return &char_array[idx].array_int[*index_value];
+            if(type=='i' && *index_value>=0 && *index_value<array[idx].size)      return &array[idx].array_int[*index_value];
+            if(type=='l' && *index_value>=0 && *index_value<fl_array[idx].size)   return &fl_array[idx].array_int[*index_value];
+            printf("OUT OF BOUNDS for array: %s\n", arr_name);
+            return NULL;
+        }
+        else if (check_str_print == 2 && type == 's') {
+            char kind, rtype; int idx;
+            if(!resolve_slot(arr_name,&kind,&rtype,&idx) || kind!='a' || rtype!='s') return NULL;
+            return char_array[idx].array_int;
         }
         else if (check_str_print == 3) {
             int plain_idx = resolve_index(index_str);
-            if(plain_idx < 0) {
-                printf("ERROR: indice '%s' non risolvibile in '%s'\n", index_str, arr_name);
-                return NULL;
+            if(plain_idx < 0) { printf("ERROR: indice '%s' non risolvibile in '%s'\n", index_str, arr_name); return NULL; }
+
+            char kind, rtype; int idx;
+            if(!resolve_slot(arr_name,&kind,&rtype,&idx) || kind!='a' || rtype!=type){
+                printf("get_index: array '%s' non trovato\n", arr_name); return NULL;
             }
-            if(type == 'i'){
-                for(int j = 0; j < array_count; j++)
-                    if(strcmp(array[j].name, arr_name) == 0 && plain_idx < array[j].size)
-                        return &array[j].array_int[plain_idx];
-                printf("OUT OF BOUNDS int_array '%s'[%d]\n", arr_name, plain_idx);
-            } else if(type == 'l'){
-                for(int j = 0; j < fl_array_count; j++)
-                    if(strcmp(fl_array[j].name, arr_name) == 0 && plain_idx < fl_array[j].size)
-                        return &fl_array[j].array_int[plain_idx];
-                printf("OUT OF BOUNDS fl_array '%s'[%d]\n", arr_name, plain_idx);
-            } else if(type == 's'){
-                for(int j = 0; j < char_array_count; j++)
-                    if(strcmp(char_array[j].name, arr_name) == 0 && plain_idx < char_array[j].size)
-                        return &char_array[j].array_int[plain_idx];
-                printf("OUT OF BOUNDS char_array '%s'[%d]\n", arr_name, plain_idx);
-            }
+            if(type=='i' && plain_idx<array[idx].size) return &array[idx].array_int[plain_idx];
+            if(type=='l' && plain_idx<fl_array[idx].size) return &fl_array[idx].array_int[plain_idx];
+            if(type=='s' && plain_idx<char_array[idx].size) return &char_array[idx].array_int[plain_idx];
+            printf("OUT OF BOUNDS array '%s'[%d]\n", arr_name, plain_idx);
             return NULL;
         }
     }
 
-    
-    //VARIABILE (es: &i&var&)
     else if(sscanf(data_sruct_name, "&%c&%15[^&]&",&type, var_name) == 2){
-        if(deb) printf("get_index variabile %s di tipo %c \n", var_name, type);
-
-        if(type =='c'){
-            for (int i = 0; i < char_variable_count; i++) {
-                if (strcmp(char_variable[i].name, var_name) == 0) {
-                    return &char_variable[i].value; 
-                }
-            }
-        }
-
-        if(type =='i'){
-            for (int i = 0; i < variable_count; i++) {
-                if (strcmp(variable[i].name, var_name) == 0) {
-                    
-                    return &variable[i].value;
-                }
-            }
-        }
-
-        if(type =='l'){
-            for (int i = 0; i < fl_variable_count; i++) {
-                if (strcmp(fl_variable[i].name, var_name) == 0) {
-                    
-                    return &fl_variable[i].value;
-                }
-            }
-        }
+        char kind, rtype; int idx;
+        if(!resolve_slot(var_name,&kind,&rtype,&idx) || kind!='v') return NULL;
+        if(type=='c' && rtype=='c') return &char_variable[idx].value;
+        if(type=='i' && rtype=='i') return &variable[idx].value;
+        if(type=='l' && rtype=='l') return &fl_variable[idx].value;
+        return NULL;
     }
 
-    else if(strstr(data_sruct_name,"__") || starts_with(data_sruct_name,"od_")){
+    else if(strstr(data_sruct_name,"__") || starts_with(data_sruct_name,"od_"))
         return exec_funarg(data_sruct_name,fal);
-    }
 
-    return NULL; // numero immediato o errore
+    return NULL;
 }
 
 void* resolve(char rtype, char *gname){
@@ -1153,59 +913,6 @@ void clean_memory() {
     char_array_count = 0;
 }
 
-//add to array and variable
-void set_to_array(char name[], char type, int index, float value, char cvalue) {
-
-    if(type =='i') {
-        for (int i = 0; i < array_count; i++) {
-
-            if (strcmp(array[i].name, name) == 0) {
-
-                if (index >= 0 && index < array[i].size) {
-                    array[i].array_int[index] = value;
-            }
-                else {
-                printf("Errore: indice fuori dai limiti per l'array '%s'.\n", name);
-                }
-                return;
-            }
-        }
-    }
-
-    if(type =='l') {
-        for (int i = 0; i < fl_array_count; i++) {
-
-            if (strcmp(fl_array[i].name, name) == 0) {
-
-                if (index >= 0 && index < fl_array[i].size) {
-                    fl_array[i].array_int[index] = value;
-            }
-                else {
-                printf("Errore: indice fuori dai limiti per l'fl_array '%s'.\n", name);
-                }
-                return;
-            }
-        }
-    }
-
-    if(type =='s') {
-        for (int i = 0; i < char_array_count; i++) {
-
-            if (strcmp(char_array[i].name, name) == 0) {
-
-                if (index >= 0 && index < char_array[i].size) {
-                    char_array[i].array_int[index] = cvalue;
-                }
-                else {
-                printf("Errore: indice fuori dai limiti per l'char_array '%s'.\n", name);
-                }
-                return;
-            }
-        }
-    }
-    printf("Errore: array '%s' non trovato.\n", name);
-}
-
 void set_to_variable(char name[], char type, float value, char cvalue) {
 
     char buffer[64];
@@ -1243,51 +950,44 @@ void set_to_variable(char name[], char type, float value, char cvalue) {
     }
 }
 
+//add to array and variable
+void set_to_array(char name[], char type, int index, float value, char cvalue) {
+    char kind, rtype; int idx;
+    if (!resolve_slot(name, &kind, &rtype, &idx) || kind != 'a' || rtype != type) {
+        printf("Errore: array '%s' non trovato.\n", name);
+        return;
+    }
+    if(type=='i') {
+        if (index>=0 && index<array[idx].size) array[idx].array_int[index]=(int)value;
+        else printf("Errore: indice fuori dai limiti per l'array '%s'.\n", name);
+    } else if(type=='l') {
+        if (index>=0 && index<fl_array[idx].size) fl_array[idx].array_int[index]=value;
+        else printf("Errore: indice fuori dai limiti per l'fl_array '%s'.\n", name);
+    } else if(type=='s') {
+        if (index>=0 && index<char_array[idx].size) char_array[idx].array_int[index]=cvalue;
+        else printf("Errore: indice fuori dai limiti per l'char_array '%s'.\n", name);
+    }
+}
+
 void set_to_matrix(char name[], char type, int row, int col, float value, char cvalue) {
-
-    if(type == 'i') {
-        for(int i = 0; i < matrix_count; i++) {
-            if(strcmp(matrix[i].name, name) == 0) {
-                if(row >= 0 && row < matrix[i].size_first &&
-                col >= 0 && col < matrix[i].size_sec) {
-                    matrix[i].data[row * matrix[i].size_sec + col] = (int)value;
-                } else {
-                    printf("Errore: indici [%d][%d] fuori dai limiti per la matrice int '%s'.\n", row, col, name);
-                }
-                return;
-            }
-        }
+    char kind, rtype; int idx;
+    if (!resolve_slot(name, &kind, &rtype, &idx) || kind != 'm' || rtype != type) {
+        printf("Errore: matrice '%s' non trovata.\n", name);
+        return;
     }
-
-    else if(type == 'l') {
-        for(int i = 0; i < fl_matrix_count; i++) {
-            if(strcmp(fl_matrix[i].name, name) == 0) {
-                if(row >= 0 && row < fl_matrix[i].size_first &&
-                col >= 0 && col < fl_matrix[i].size_sec) {
-                    fl_matrix[i].data[row * fl_matrix[i].size_sec + col] = value;   
-                } else {
-                    printf("Errore: indici [%d][%d] fuori dai limiti per la matrice float '%s'.\n", row, col, name);
-                }
-                return;
-            }
-        }
+    if(type=='i') {
+        if(row>=0 && row<matrix[idx].size_first && col>=0 && col<matrix[idx].size_sec)
+            matrix[idx].data[row*matrix[idx].size_sec+col] = (int)value;
+        else printf("Errore: indici [%d][%d] fuori dai limiti matrice int '%s'.\n", row, col, name);
+    } else if(type=='l') {
+        if(row>=0 && row<fl_matrix[idx].size_first && col>=0 && col<fl_matrix[idx].size_sec)
+            fl_matrix[idx].data[row*fl_matrix[idx].size_sec+col] = value;
+        else printf("Errore: indici [%d][%d] fuori dai limiti matrice float '%s'.\n", row, col, name);
+    } else if(type=='s') {
+        if(row>=0 && row<char_matrix[idx].size_first && col>=0 && col<char_matrix[idx].size_sec)
+            char_matrix[idx].data[row*char_matrix[idx].size_sec+col] = cvalue;
+        else printf("Errore: indici [%d][%d] fuori dai limiti matrice char '%s'.\n", row, col, name);
     }
-
-    else if(type == 's') {
-        for(int i = 0; i < char_matrix_count; i++) {
-            if(strcmp(char_matrix[i].name, name) == 0) {
-                if(row >= 0 && row < char_matrix[i].size_first &&
-                col >= 0 && col < char_matrix[i].size_sec) {
-                    char_matrix[i].data[row * char_matrix[i].size_sec + col] = cvalue;   
-                } else {
-                    printf("Errore: indici [%d][%d] fuori dai limiti per la matrice char '%s'.\n", row, col, name);
-                }
-                return;
-            }
-        }
-    }
-
-    printf("Errore: matrice '%s' non trovata.\n", name);
 }
 
 //read code from file
@@ -1356,7 +1056,7 @@ void format_code(const char *code) {
         if(code[i] == ':' || code[i] == '{' || code[i] == '}' ) {
             if(code[i] != ':') program[line_idx_program].instruction[j] = code[i]; 
             j++;
-             
+            
             program[line_idx_program].instruction[j] = '\0';
             program[line_idx_program].line_number = line_idx_program; // assegna numero di linea
             line_idx_program++;
@@ -1391,7 +1091,7 @@ int starts_with(const char *str, const char *prefix) {
 //funzioni di dichiarazione
 void exec_float(char *text){
     char name[64] = {0};
-    char size1_str[16] = {0}, size2_str[16] = {0};
+    char size1_str[64] = {0}, size2_str[64] = {0};
 
     /* variabile: int var */
     if(text[5] != '['){
@@ -1450,7 +1150,7 @@ void exec_float(char *text){
 
 void exec_int(char *text){
     char name[64] = {0};
-    char size1_str[16] = {0}, size2_str[16] = {0};
+    char size1_str[64] = {0}, size2_str[64] = {0};
 
     /* variabile: int var */
     if(text[3] != '['){
@@ -1509,7 +1209,7 @@ void exec_int(char *text){
 
 void exec_char(char *text){
     char name[64] = {0};
-    char size1_str[16] = {0}, size2_str[16] = {0};
+    char size1_str[64] = {0}, size2_str[64] = {0};
 
     /* variabile: char var */
     if(text[4] != '['){
@@ -1565,26 +1265,22 @@ void exec_char(char *text){
 }
 
 int get_array_size(char arr_name[], char type){
-
-    if(type == 's')
-    for(int i=0; i < char_array_count; i++){
-        if(strcmp(char_array[i].name,arr_name) == 0)
-        return char_array[i].size;
-    }
-
-    else if(type == 'i')
-    for(int i=0; i < array_count; i++){
-        if(strcmp(array[i].name,arr_name) == 0)
-        return array[i].size;
-    }
-
-    else if(type == 'l')
-    for(int i=0; i < fl_array_count; i++){
-        if(strcmp(fl_array[i].name,arr_name) == 0)
-        return fl_array[i].size;
-    }
-
+    char kind, rtype; int idx;
+    if (!resolve_slot(arr_name, &kind, &rtype, &idx) || kind != 'a' || rtype != type) return -1;
+    if (type=='s') return char_array[idx].size;
+    if (type=='i') return array[idx].size;
+    if (type=='l') return fl_array[idx].size;
     return -1;
+}
+/* type: 'i' int, 'l' float, 's' char. Ritorna tru/fal (trovata/non trovata),
+scrive le dimensioni in *rows e *cols tramite puntatore */
+int get_matrix_size(char *name, char type, int *rows, int *cols){
+    char kind, rtype; int idx;
+    if (!resolve_slot(name, &kind, &rtype, &idx) || kind != 'm' || rtype != type) return fal;
+    if (type=='i') { *rows=matrix[idx].size_first; *cols=matrix[idx].size_sec; return tru; }
+    if (type=='l') { *rows=fl_matrix[idx].size_first; *cols=fl_matrix[idx].size_sec; return tru; }
+    if (type=='s') { *rows=char_matrix[idx].size_first; *cols=char_matrix[idx].size_sec; return tru; }
+    return fal;
 }
 
 //funzion input output
@@ -1861,7 +1557,7 @@ int system_setup(){
     while(st_ip < end_ip){
 
         restart: ;
-        char function[16] = {0};
+        char function[64] = {0};
         char arguments[50] = {0};
 
         int n = sscanf(program[st_ip].instruction,"%15[^_]_%49s",function,arguments);
@@ -2088,9 +1784,9 @@ void exec_set_to(char *text){
 static int resolve_index(const char *idx_str) {
     int val;
     if (sscanf(idx_str, "%d", &val) == 1) return val;
-    
-    for (int i = 0; i < variable_count; i++)
-        if (strcmp(variable[i].name, idx_str) == 0) return variable[i].value;
+    char kind, type; int idx;
+    if(resolve_slot(idx_str, &kind, &type, &idx) && kind=='v' && type=='i')
+        return variable[idx].value;
     printf("ERROR: cannot resolve index '%s'\n", idx_str);
     return -1;
 }
@@ -2131,7 +1827,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         }
         else if(strchr(buffer,'(') && !strstr(buffer,"__")){
             char line_to_parse[96] = {0};
-            char actual_return[16] = {0};
+            char actual_return[64] = {0};
             sscanf(buffer,"(%95[^)])%15s",line_to_parse,actual_return);
             exec_steps(0,line_to_parse);
             char type = type_of_var(actual_return);
@@ -2171,7 +1867,7 @@ void* exec_funarg(char *name_plus_args, int is_return) {
             strncpy(bin, buffer, sizeof(bin) - 1);
             is_what(bin);
 
-            char genre[16] = {0};
+            char genre[64] = {0};
             char type = 0;
             sscanf(bin, "%15[^.].%c", genre, &type);
 
@@ -2199,22 +1895,17 @@ void* exec_funarg(char *name_plus_args, int is_return) {
 
     // ======= CALL FUNCTION ==========
     else {
-        if(deb) printf("DEBUG: funarg chiamata con name+args: %s\n", name_plus_args);
-
         char name[32] = {0};
         char args[128] = {0};
 
         if (strstr(name_plus_args, "__")) {
             sscanf(name_plus_args, "__%31[^(](%127[^)])", name, args);
-            no_value_to_return = tru;
-        }
-        else {
+        } else {
             strncpy(name, name_plus_args, sizeof(name) - 1);
         }
 
         int st_ip = 0, end_ip = 0;
         int i;
-
         for (i = 0; i < return_state; i++) {
             if (strcmp(state_stack[i].nome_function + 3, name) == 0) {
                 st_ip  = state_stack[i].posizione_ritorno;
@@ -2222,29 +1913,16 @@ void* exec_funarg(char *name_plus_args, int is_return) {
                 break;
             }
         }
-
         if (i == return_state) { printf("ERROR: function %s not found\n", name); return NULL; }
 
         int svaed_ip = global_ip;
         return_hit   = 0;
         return_value = NULL;
 
-        struct {
-            int var_idx;
-            char orig_name[max_name_lettere];
-            char type;
-            char kind;
-        } pbr[max_parameters];
-        int pbr_count = 0;
-
-        push_scope();
-
         char args_copy[128] = {0};
         strncpy(args_copy, args, sizeof(args_copy)-1);
-
-        char *arg_tokens[max_parameters] = {0};  // puntatori ai token reali passati
-        int   arg_count = 0;        // quanti ne ha passati il chiamante
-
+        char *arg_tokens[max_parameters] = {0};
+        int   arg_count = 0;
         if(strlen(args_copy) > 0) {
             char *tok = strtok(args_copy, "!");
             while(tok && arg_count < max_parameters) {
@@ -2253,241 +1931,142 @@ void* exec_funarg(char *name_plus_args, int is_return) {
             }
         }
 
-        if(deb) printf("DEBUG: arg_count=%d, param_count=%d\n",
-                       arg_count, state_stack[i].param_count);
-
         for(int pi = 0; pi < state_stack[i].param_count; pi++) {
             if(pi >= arg_count && !state_stack[i].param_has_default[pi]) {
                 printf("ERROR: parametro '%s' non passato e senza default in funzione '%s'\n",
-                       state_stack[i].param_names[pi], name);
-                pop_scope();
+                    state_stack[i].param_names[pi], name);
                 return NULL;
             }
         }
 
-        for(int pi = 0; pi < state_stack[i].param_count; pi++) {
+        /* ===== FASE 1: risolvi tutto nel contesto del CHIAMANTE, prima di aprire il frame ===== */
+        struct { char kind; char type; int idx; int ival; float fval; char cval;
+                int is_copy; int copy_size1; int copy_size2; void *copy_data; } src[max_parameters];
+        char toks[max_parameters][32];
 
+        for(int pi = 0; pi < state_stack[i].param_count; pi++) {
+            char ptype = state_stack[i].param_types[pi];
+            char *tok;
+            char default_buf[32] = {0};
+
+            if(pi < arg_count) {
+                tok = arg_tokens[pi];
+            } else {
+                strncpy(default_buf, state_stack[i].param_default[pi], sizeof(default_buf)-1);
+                tok = default_buf;
+                int def_is_literal = (isdigit((unsigned char)tok[0]) || tok[0]=='-' || tok[0]=='\'');
+                if(!def_is_literal && (ptype=='i'||ptype=='l'||ptype=='c')) {
+                    char def_type = type_of_var(default_buf);
+                    if(def_type=='i'||def_type=='n'){ int *p=(int*)resolve(def_type,default_buf); if(p) snprintf(default_buf,sizeof(default_buf),"%d",*p); }
+                    else if(def_type=='l'){ float *p=(float*)resolve(def_type,default_buf); if(p) snprintf(default_buf,sizeof(default_buf),"%f",*p); }
+                    else if(def_type=='c'||def_type=='k'){ char *p=(char*)resolve(def_type,default_buf); if(p) snprintf(default_buf,sizeof(default_buf),"'%c'",*p); }
+                    else if(def_type=='v'){
+                        void *ret=exec_funarg(default_buf,fal); char rt=return_type;
+                        if(ret){
+                            if(rt=='i') snprintf(default_buf,sizeof(default_buf),"%d",*(int*)ret);
+                            else if(rt=='l') snprintf(default_buf,sizeof(default_buf),"%f",*(float*)ret);
+                            else if(rt=='c') snprintf(default_buf,sizeof(default_buf),"'%c'",*(char*)ret);
+                        }
+                    }
+                }
+            }
+            strncpy(toks[pi], tok, sizeof(toks[pi])-1); toks[pi][sizeof(toks[pi])-1]='\0';
+
+            int is_literal  = (isdigit((unsigned char)tok[0]) || tok[0]=='-' || tok[0]=='\'');
+            int force_copy  = state_stack[i].param_force_copy[pi];
+            src[pi].kind    = 0;
+            src[pi].is_copy = 0;
+
+            if(!is_literal && !force_copy && (ptype=='i'||ptype=='l'||ptype=='c'||ptype=='a'||ptype=='m')) {
+                char kind, rtype; int idx;
+                if(resolve_slot(tok, &kind, &rtype, &idx)) {
+                    src[pi].kind = kind; src[pi].type = rtype; src[pi].idx = idx;
+                }
+            }
+
+            if(src[pi].kind == 0 && (ptype=='i'||ptype=='l'||ptype=='c')) {
+                if(is_literal) {
+                    if(ptype=='i') src[pi].ival = atoi(tok);
+                    else if(ptype=='l') src[pi].fval = atof(tok);
+                    else src[pi].cval = (tok[0]=='\'' && tok[2]=='\'') ? tok[1] : tok[0];
+                } else {
+                    if(ptype=='i'){ int *p=(int*)resolve('i',tok); src[pi].ival = p? *p : 0; }
+                    else if(ptype=='l'){ float *p=(float*)resolve('l',tok); src[pi].fval = p? *p : 0; }
+                    else { char *p=(char*)resolve('c',tok); src[pi].cval = p? *p : 0; }
+                }
+            }
+
+            /* cp su array/matrice: snapshot dei dati nel contesto del chiamante */
+            if(src[pi].kind == 0 && !is_literal && force_copy && (ptype=='a' || ptype=='m')) {
+                char kind, rtype; int idx;
+                if(resolve_slot(tok, &kind, &rtype, &idx)) {
+                    src[pi].is_copy = 1;
+                    src[pi].type    = rtype;
+                    if(kind=='a') {
+                        int size = get_array_size(tok, rtype);
+                        src[pi].copy_size1 = size;
+                        if(rtype=='i'){ src[pi].copy_data = malloc(size*sizeof(int));   memcpy(src[pi].copy_data, array[idx].array_int,      size*sizeof(int)); }
+                        else if(rtype=='l'){ src[pi].copy_data = malloc(size*sizeof(float)); memcpy(src[pi].copy_data, fl_array[idx].array_int,   size*sizeof(float)); }
+                        else if(rtype=='s'){ src[pi].copy_data = malloc(size*sizeof(char));  memcpy(src[pi].copy_data, char_array[idx].array_int,  size*sizeof(char)); }
+                    } else if(kind=='m') {
+                        int r=0,c=0; get_matrix_size(tok, rtype, &r, &c);
+                        src[pi].copy_size1 = r; src[pi].copy_size2 = c;
+                        int n = r*c;
+                        if(rtype=='i'){ src[pi].copy_data = malloc(n*sizeof(int));   memcpy(src[pi].copy_data, matrix[idx].data,      n*sizeof(int)); }
+                        else if(rtype=='l'){ src[pi].copy_data = malloc(n*sizeof(float)); memcpy(src[pi].copy_data, fl_matrix[idx].data,   n*sizeof(float)); }
+                        else if(rtype=='s'){ src[pi].copy_data = malloc(n*sizeof(char));  memcpy(src[pi].copy_data, char_matrix[idx].data,  n*sizeof(char)); }
+                    }
+                } else {
+                    printf("WARNING: '%s' non trovato per parametro '%s'\n", tok, state_stack[i].param_names[pi]);
+                }
+            }
+        }
+
+        /* ===== FASE 2: apri il frame e collega/dichiara ===== */
+        push_scope();
+
+        for(int pi = 0; pi < state_stack[i].param_count; pi++) {
             char pname[max_name_lettere];
             strcpy(pname, state_stack[i].param_names[pi]);
             char ptype = state_stack[i].param_types[pi];
 
-            // scegli la sorgente: argomento reale o default
-            char *tok;
-            int use_value;
-            char default_buf[32] = {0};  // buffer locale per il default
-
-            if(pi < arg_count) {
-                tok = arg_tokens[pi];   // argomento passato dal chiamante
-                if(deb) printf("DEBUG: param[%d]='%s' usa argomento '%s'\n", pi, pname, tok);
+            if(src[pi].kind) {
+                scope_frame *f = &scope_stack[scope_depth-1];
+                strcpy(f->alias_name[f->alias_count], pname);
+                f->alias_kind[f->alias_count] = src[pi].kind;
+                f->alias_type[f->alias_count] = src[pi].type;
+                f->alias_idx[f->alias_count]  = src[pi].idx;
+                f->alias_count++;
+            }
+            else if(ptype=='i' || ptype=='l' || ptype=='c') {
+                declare_variable(pname, ptype);
+                if(ptype=='i') set_to_variable(pname,'i', src[pi].ival, 0);
+                else if(ptype=='l') set_to_variable(pname,'l', src[pi].fval, 0);
+                else set_to_variable(pname,'c', 0, src[pi].cval);
+            }
+            else if(src[pi].is_copy && ptype=='a') {
+                declare_array(pname, src[pi].type, src[pi].copy_size1);
+                if(src[pi].type=='i')      memcpy(array[array_count-1].array_int,      src[pi].copy_data, src[pi].copy_size1*sizeof(int));
+                else if(src[pi].type=='l') memcpy(fl_array[fl_array_count-1].array_int, src[pi].copy_data, src[pi].copy_size1*sizeof(float));
+                else if(src[pi].type=='s') memcpy(char_array[char_array_count-1].array_int, src[pi].copy_data, src[pi].copy_size1*sizeof(char));
+                free(src[pi].copy_data);
+            }
+            else if(src[pi].is_copy && ptype=='m') {
+                declare_matrix(pname, src[pi].type, src[pi].copy_size1, src[pi].copy_size2);
+                int n = src[pi].copy_size1 * src[pi].copy_size2;
+                if(src[pi].type=='i')      memcpy(matrix[matrix_count-1].data,      src[pi].copy_data, n*sizeof(int));
+                else if(src[pi].type=='l') memcpy(fl_matrix[fl_matrix_count-1].data, src[pi].copy_data, n*sizeof(float));
+                else if(src[pi].type=='s') memcpy(char_matrix[char_matrix_count-1].data, src[pi].copy_data, n*sizeof(char));
+                free(src[pi].copy_data);
             }
             else {
-                strncpy(default_buf, state_stack[i].param_default[pi], sizeof(default_buf)-1);
-                tok = default_buf;
-
-                // Se il default NON è un letterale, risolvilo e riscrivilo come stringa
-                int def_is_literal = (isdigit((unsigned char)tok[0])
-                                    || tok[0] == '-'
-                                    || tok[0] == '\'');
-
-                if(!def_is_literal && (ptype == 'i' || ptype == 'l' || ptype == 'c')) {
-
-                    char def_type = type_of_var(default_buf); // 'i','l','c','k','v',...
-
-                    if(def_type == 'i' || def_type == 'n') {
-                        int *p = (int *)resolve(def_type, default_buf);
-                        if(p) snprintf(default_buf, sizeof(default_buf), "%d", *p);
-                        else  printf("WARNING: default int '%s' non risolvibile per '%s'\n",
-                                    default_buf, pname);
-                    }
-                    else if(def_type == 'l') {
-                        float *p = (float *)resolve(def_type, default_buf);
-                        if(p) snprintf(default_buf, sizeof(default_buf), "%f", *p);
-                        else  printf("WARNING: default float '%s' non risolvibile per '%s'\n",
-                                    default_buf, pname);
-                    }
-                    else if(def_type == 'c' || def_type == 'k') {
-                        char *p = (char *)resolve(def_type, default_buf);
-                        if(p) snprintf(default_buf, sizeof(default_buf), "'%c'", *p);
-                        else  printf("WARNING: default char '%s' non risolvibile per '%s'\n",
-                                    default_buf, pname);
-                    }
-                    else if(def_type == 'v') {          // funzione come default
-                        void *ret = exec_funarg(default_buf, fal);
-                        char rt = return_type;
-                        if(ret) {
-                            if     (rt == 'i') snprintf(default_buf, sizeof(default_buf), "%d",   *(int   *)ret);
-                            else if(rt == 'l') snprintf(default_buf, sizeof(default_buf), "%f",   *(float *)ret);
-                            else if(rt == 'c') snprintf(default_buf, sizeof(default_buf), "'%c'", *(char  *)ret);
-                        }
-                    }
-                    // tok punta già a default_buf, che ora contiene il valore ("42", "3.14", "'k'")
-                }
-                if(deb) printf("DEBUG: param[%d]='%s' usa default '%s'\n", pi, pname, tok);
+                printf("WARNING: '%s' non trovato per parametro '%s'\n", toks[pi], pname);
             }
-
-            int is_literal = (isdigit((unsigned char)tok[0]) || tok[0] == '-' || tok[0] == '\'');
-
-            if(!is_literal && ptype == 'i') {
-                int found = 0;
-                for(int j = 0; j < variable_count; j++) {
-                    if(strcmp(variable[j].name, tok) == 0) {
-                        pbr[pbr_count].var_idx = j;
-                        pbr[pbr_count].type = 'i';
-                        pbr[pbr_count].kind = 'v';
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(variable[j].name, pname);
-                        found = 1; break;
-                    }
-                }
-                if(!found) {
-                    declare_variable(pname, 'i');
-                    int *p = (int*)resolve('i', tok);
-                    set_to_variable(pname, 'i', p ? *p : 0, 0);
-                }
-            }
-            else if(!is_literal && ptype == 'l') {
-                int found = 0;
-                for(int j = 0; j < fl_variable_count; j++) {
-                    if(strcmp(fl_variable[j].name, tok) == 0) {
-                        pbr[pbr_count].var_idx = j;
-                        pbr[pbr_count].type = 'l';
-                        pbr[pbr_count].kind = 'v';
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(fl_variable[j].name, pname);
-                        found = 1; break;
-                    }
-                }
-                if(!found) {
-                    declare_variable(pname, 'l');
-                    float *p = (float*)resolve('l', tok);
-                    set_to_variable(pname, 'l', p ? *p : 0, 0);
-                }
-            }
-            else if(!is_literal && ptype == 'c') {
-                int found = 0;
-                for(int j = 0; j < char_variable_count; j++) {
-                    if(strcmp(char_variable[j].name, tok) == 0) {
-                        pbr[pbr_count].var_idx = j;
-                        pbr[pbr_count].type = 'c';
-                        pbr[pbr_count].kind = 'v';
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(char_variable[j].name, pname);
-                        found = 1; break;
-                    }
-                }
-                if(!found) {
-                    declare_variable(pname, 'c');
-                    char *p = (char*)resolve('c', tok);
-                    set_to_variable(pname, 'c', 0, p ? *p : 0);
-                }
-            }
-            else if(!is_literal && ptype == 'a') {
-                int found = 0;
-                for(int j = 0; j < array_count && !found; j++) {
-                    if(strcmp(array[j].name, tok) == 0) {
-                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 'i', 'a'};
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(array[j].name, pname);
-                        found = 1;
-                    }
-                }
-                for(int j = 0; j < fl_array_count && !found; j++) {
-                    if(strcmp(fl_array[j].name, tok) == 0) {
-                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 'l', 'a'};
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(fl_array[j].name, pname);
-                        found = 1;
-                    }
-                }
-                for(int j = 0; j < char_array_count && !found; j++) {
-                    if(strcmp(char_array[j].name, tok) == 0) {
-                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 's', 'a'};
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(char_array[j].name, pname);
-                        found = 1;
-                    }
-                }
-                if(!found) printf("WARNING: array '%s' non trovato per parametro '%s'\n", tok, pname);
-            }
-            else if(!is_literal && ptype == 'm') {
-                int found = 0;
-                for(int j = 0; j < matrix_count && !found; j++) {
-                    if(strcmp(matrix[j].name, tok) == 0) {
-                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 'i', 'm'};
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(matrix[j].name, pname);
-                        found = 1;
-                    }
-                }
-                for(int j = 0; j < fl_matrix_count && !found; j++) {
-                    if(strcmp(fl_matrix[j].name, tok) == 0) {
-                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 'l', 'm'};
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(fl_matrix[j].name, pname);
-                        found = 1;
-                    }
-                }
-                for(int j = 0; j < char_matrix_count && !found; j++) {
-                    if(strcmp(char_matrix[j].name, tok) == 0) {
-                        pbr[pbr_count] = (typeof(pbr[0])){j, "", 's', 'm'};
-                        strcpy(pbr[pbr_count].orig_name, tok);
-                        pbr_count++;
-                        strcpy(char_matrix[j].name, pname);
-                        found = 1;
-                    }
-                }
-                if(!found) printf("WARNING: matrice '%s' non trovata per parametro '%s'\n", tok, pname);
-            }
-            else {
-                // letterale (o default numerico/char): sempre by value
-                // NOTA: array e matrici non possono avere default letterale,
-                // non ha senso fisicamente, quindi questo ramo copre solo
-                // i tipi 'i', 'l', 'c' con valori come "5", "3.14", "k"
-                if(ptype == 'i' || ptype == 'l' || ptype == 'c') {
-                    declare_variable(pname, ptype);
-                }
-                if(ptype == 'i') {
-                    set_to_variable(pname, 'i', atoi(tok), 0);
-                } else if(ptype == 'l') {
-                    set_to_variable(pname, 'l', atof(tok), 0);
-                } else if(ptype == 'c') {
-                    // gestisce sia 'k' (con virgolette) sia k (raw dal default)
-                    char cv = (tok[0]=='\'' && tok[2]=='\'') ? tok[1] : tok[0];
-                    set_to_variable(pname, 'c', 0, cv);
-                }
-            }
-
-        } // fine for pi
+        }
 
         return_hit   = 0;
         return_value = NULL;
         parse(st_ip, end_ip, "void");
-
-        for(int j = 0; j < pbr_count; j++) {
-            if(pbr[j].kind == 'v') {
-                if(pbr[j].type == 'i')      strcpy(variable[pbr[j].var_idx].name,      pbr[j].orig_name);
-                else if(pbr[j].type == 'l') strcpy(fl_variable[pbr[j].var_idx].name,   pbr[j].orig_name);
-                else if(pbr[j].type == 'c') strcpy(char_variable[pbr[j].var_idx].name, pbr[j].orig_name);
-            }
-            else if(pbr[j].kind == 'a') {
-                if(pbr[j].type == 'i')      strcpy(array[pbr[j].var_idx].name,         pbr[j].orig_name);
-                else if(pbr[j].type == 'l') strcpy(fl_array[pbr[j].var_idx].name,      pbr[j].orig_name);
-                else if(pbr[j].type == 's') strcpy(char_array[pbr[j].var_idx].name,    pbr[j].orig_name);
-            }
-            else if(pbr[j].kind == 'm') {
-                if(pbr[j].type == 'i')      strcpy(matrix[pbr[j].var_idx].name,        pbr[j].orig_name);
-                else if(pbr[j].type == 'l') strcpy(fl_matrix[pbr[j].var_idx].name,     pbr[j].orig_name);
-                else if(pbr[j].type == 's') strcpy(char_matrix[pbr[j].var_idx].name,   pbr[j].orig_name);
-            }
-        }
 
         pop_scope();
 
@@ -2495,11 +2074,10 @@ void* exec_funarg(char *name_plus_args, int is_return) {
         return_hit   = 0;
         return_value = NULL;
         global_ip    = svaed_ip;
-
-        if(deb) printf("correctly went out parse from funarg, return: %p\n", ret);
         return ret;
     }
 }
+
 static char last_math_type = 'i';
 static float fmath_result = 0.0f;
 
@@ -2512,7 +2090,7 @@ int math_plus(char *operation, int called_by_parse) {
         printf("ERROR: failed parse in math_plus %s\n", operation); return error_int;
     }
 
-    char junk[16], ltype = 0, rtype = 0;
+    char junk[64], ltype = 0, rtype = 0;
     float lopv = 0, ropv = 0;
 
     if(strchr(lop,'&')) {
@@ -2701,15 +2279,14 @@ int math_slash(char *operation, int called_by_parse) {
 }
 
 int is_math(char *operand) {
-    if(deb) printf("DEBUG: is_math chiamata con %s\n", operand);
     last_math_type = 'i';
-
-    if(strchr(operand,'+')) return math_plus (operand, fal);
-    if(strchr(operand,'-')) return math_min  (operand, fal);
-    if(strchr(operand,'*')) return math_times(operand, fal);
-    if(strchr(operand,'/')) return math_slash(operand, fal);
-
-    return error_int;  // non è math
+    char *scan = operand;
+    if(*scan == '-') scan++;           // salta il segno di negazione
+    if(strchr(scan,'+')) return math_plus (operand, fal);
+    if(strchr(scan,'-')) return math_min  (operand, fal);
+    if(strchr(scan,'*')) return math_times(operand, fal);
+    if(strchr(scan,'/')) return math_slash(operand, fal);
+    return error_int;
 }
 
 // no_condition_or_data  ==/=/^=/</<</>/>>.has  dirdata
@@ -2889,14 +2466,14 @@ int exec_conf(char text[], char op_param[]){
         return error_int;
     }
     if(deb) printf("CONF DEBUG: text: %s op: %s, left: %s, right: %s\n",
-                   text, op, left_operand, right_operand);
+                text, op, left_operand, right_operand);
 
     char left_name[64]  = {0};
     char right_name[64] = {0};
-    char left_i[16]     = {0};
-    char right_i[16]    = {0};
-    char left_j[16]     = {0};
-    char right_j[16]    = {0};
+    char left_i[64]     = {0};
+    char right_i[64]    = {0};
+    char left_j[64]     = {0};
+    char right_j[64]    = {0};
 
     /* ------------------------------------------------------------------ */
     /*  MATRICE x MATRICE                                                  */
@@ -2909,7 +2486,7 @@ int exec_conf(char text[], char op_param[]){
             char ln[64]={0}, rn[64]={0};
             sscanf(left_operand,  "[][]%63s", ln);
             sscanf(right_operand, "[][]%63s", rn);
-            char bin[16]; char ltdata[16]={0}; char ltype=0;
+            char bin[16]; char ltdata[64]={0}; char ltype=0;
             strcpy(bin, ln); is_what(bin);
             sscanf(bin, "%15[^.].%c", ltdata, &ltype);
             if(strcmp(ltdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",ln); return error_int; }
@@ -2919,11 +2496,11 @@ int exec_conf(char text[], char op_param[]){
         sscanf(left_operand,  "[%[^]]][%[^]]]%63s", left_i,  left_j,  left_name);
         sscanf(right_operand, "[%[^]]][%[^]]]%63s", right_i, right_j, right_name);
         if(deb) printf("[CHECK] matr x matr | left: [%s][%s]%s | right: [%s][%s]%s\n",
-                       left_i, left_j, left_name, right_i, right_j, right_name);
+                    left_i, left_j, left_name, right_i, right_j, right_name);
 
-        char bin[16];
-        char ltdata[16]={0}; char ltype=0;
-        char rtdata[16]={0}; char rtype=0;
+        char bin[64];
+        char ltdata[64]={0}; char ltype=0;
+        char rtdata[64]={0}; char rtype=0;
 
         strcpy(bin, left_name);  is_what(bin);
         sscanf(bin, "%15[^.].%c", ltdata, &ltype);
@@ -2965,7 +2542,7 @@ int exec_conf(char text[], char op_param[]){
         sscanf(left_operand, "[%[^]]][%[^]]]%63s", left_i, left_j, left_name);
 
         char bin[16];
-        char ltdata[16]={0}; char ltype=0;
+        char ltdata[64]={0}; char ltype=0;
         strcpy(bin, left_name); is_what(bin);
         sscanf(bin, "%15[^.].%c", ltdata, &ltype);
         if (strcmp(ltdata,"matrix")!=0){ printf("ERROR: %s is not a matrix\n",left_name); return error_int; }
@@ -2980,7 +2557,7 @@ int exec_conf(char text[], char op_param[]){
         if (math_res != error_int || last_math_type == 'l') {                   /* matr x math */
             char mtype = last_math_type;
             if(deb) printf("[CHECK] matr x math(%c) | left: [%s][%s]%s | right: %s\n",
-                           mtype, left_i, left_j, left_name, right_operand);
+                        mtype, left_i, left_j, left_name, right_operand);
             if (ltype != mtype) { printf("ERROR: type mismatch matrix/math (%c vs %c)\n", ltype, mtype); return error_int; }
             if (mtype=='i'){
                 int *dest=(int*)get_index(lenc);
@@ -2994,7 +2571,7 @@ int exec_conf(char text[], char op_param[]){
         }
         else if (right_operand[0]=='\'') {                                      /* matr x k */
             if(deb) printf("[CHECK] matr x k | left: [%s][%s]%s | right: %s\n",
-                           left_i, left_j, left_name, right_operand);
+                        left_i, left_j, left_name, right_operand);
             if (!types_match(ltype,'k')){ fatal_mismatch("ERROR: type mismatch\n"); return error_int; }
             char *dest=(char*)get_index(lenc);
             if(!dest){ printf("ERROR: null pointer\n"); return error_int; }
@@ -3004,7 +2581,7 @@ int exec_conf(char text[], char op_param[]){
             int is_float_lit = (strchr(right_operand,'.') != NULL);
             char lit_type = is_float_lit ? 'l' : 'i';
             if(deb) printf("[CHECK] matr x %s | left: [%s][%s]%s | right: %s\n",
-                           is_float_lit ? "l" : "n", left_i, left_j, left_name, right_operand);
+                        is_float_lit ? "l" : "n", left_i, left_j, left_name, right_operand);
             if (ltype != lit_type) { printf("ERROR: type mismatch matrix/%s\n", is_float_lit ? "float" : "number"); return error_int; }
             if (ltype=='i'){
                 int *dest=(int*)get_index(lenc);
@@ -3019,9 +2596,9 @@ int exec_conf(char text[], char op_param[]){
         else if (strchr(right_operand,']')) {                                   /* matr x arr */
             sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
             if(deb) printf("[CHECK] matr x arr | left: [%s][%s]%s | right: [%s]%s\n",
-                           left_i, left_j, left_name, right_i, right_name);
+                        left_i, left_j, left_name, right_i, right_name);
 
-            char rtdata[16]={0}; char rtype=0;
+            char rtdata[64]={0}; char rtype=0;
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
             if (strcmp(rtdata,"array")!=0){ printf("ERROR: %s is not an array\n",right_name); return error_int; }
@@ -3048,7 +2625,7 @@ int exec_conf(char text[], char op_param[]){
         }
         else if (strstr(right_operand,"__")) {                                  /* matr x func */
             if(deb) printf("[CHECK] matr x func | left: [%s][%s]%s | right: %s\n",
-                           left_i, left_j, left_name, right_operand);
+                        left_i, left_j, left_name, right_operand);
 
             void *ret=get_index(right_operand);
             if(!ret){ printf("ERROR: null pointer from function\n"); return error_int; }
@@ -3070,9 +2647,9 @@ int exec_conf(char text[], char op_param[]){
         else {                                                                   /* matr x var */
             sscanf(right_operand, "%63s", right_name);
             if(deb) printf("[CHECK] matr x var | left: [%s][%s]%s | right: %s\n",
-                           left_i, left_j, left_name, right_name);
+                        left_i, left_j, left_name, right_name);
 
-            char rtdata[16]={0}; char rtype=0;
+            char rtdata[64]={0}; char rtype=0;
             strcpy(bin, right_name); is_what(bin);
             sscanf(bin, "%15[^.].%c", rtdata, &rtype);
             if (strcmp(rtdata,"variable")!=0){ printf("ERROR: %s is not a variable\n",right_name); return error_int; }
@@ -3114,7 +2691,7 @@ int exec_conf(char text[], char op_param[]){
         if (strchr(left_operand,']')) {                                         /* arr x matr */
             sscanf(left_operand, "[%[^]]]%63s", left_i, left_name);
             if(deb) printf("[CHECK] arr x matr | left: [%s]%s | right: [%s][%s]%s\n",
-                           left_i, left_name, right_i, right_j, right_name);
+                        left_i, left_name, right_i, right_j, right_name);
 
             char ltdata[16]={0}; char ltype=0;
             strcpy(bin, left_name); is_what(bin);
@@ -3144,7 +2721,7 @@ int exec_conf(char text[], char op_param[]){
         else {                                                                   /* var x matr */
             sscanf(left_operand, "%63s", left_name);
             if(deb) printf("[CHECK] var x matr | left: %s | right: [%s][%s]%s\n",
-                           left_name, right_i, right_j, right_name);
+                        left_name, right_i, right_j, right_name);
 
             char ltdata[16]={0}; char ltype=0;
             strcpy(bin, left_name); is_what(bin);
@@ -3189,7 +2766,7 @@ int exec_conf(char text[], char op_param[]){
         sscanf(left_operand,  "[%[^]]]%63s", left_i,  left_name);
         sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
         if(deb) printf("[CHECK] arr x arr | left: [%s]%s | right: [%s]%s\n",
-                       left_i, left_name, right_i, right_name);
+                    left_i, left_name, right_i, right_name);
 
         char bin[16];
         char ltdata[16]={0}; char ltype=0;
@@ -3248,7 +2825,7 @@ int exec_conf(char text[], char op_param[]){
         if (math_res != error_int || last_math_type == 'l') {                   /* arr x math */
             char mtype = last_math_type;
             if(deb) printf("[CHECK] arr x math(%c) | left: [%s]%s | right: %s\n",
-                           mtype, left_i, left_name, right_operand);
+                        mtype, left_i, left_name, right_operand);
             if (ltype != mtype) { printf("ERROR: type mismatch array/math (%c vs %c)\n", ltype, mtype); return error_int; }
             if (mtype=='i'){
                 int *dest=(int*)get_index(lenc);
@@ -3271,7 +2848,7 @@ int exec_conf(char text[], char op_param[]){
             int is_float_lit = (strchr(right_operand,'.') != NULL);
             char lit_type = is_float_lit ? 'l' : 'i';
             if(deb) printf("[CHECK] arr x %s | left: [%s]%s | right: %s\n",
-                           is_float_lit ? "l" : "n", left_i, left_name, right_operand);
+                        is_float_lit ? "l" : "n", left_i, left_name, right_operand);
             if (ltype != lit_type) { printf("ERROR: type mismatch array/%s\n", is_float_lit ? "float" : "number"); return error_int; }
             if (ltype=='i'){
                 int *dest=(int*)get_index(lenc);
@@ -3285,7 +2862,7 @@ int exec_conf(char text[], char op_param[]){
         }
         else if (strstr(right_operand,"__")) {                                  /* arr x func */
             if(deb) printf("[CHECK] arr x func | left: [%s]%s | right: %s\n",
-                           left_i, left_name, right_operand);
+                        left_i, left_name, right_operand);
 
             void *ret=get_index(right_operand);
             if(!ret){ printf("ERROR: null pointer from function\n"); return error_int; }
@@ -3337,7 +2914,7 @@ int exec_conf(char text[], char op_param[]){
         sscanf(left_operand,  "%63s",        left_name);
         sscanf(right_operand, "[%[^]]]%63s", right_i, right_name);
         if(deb) printf("[CHECK] var x arr | left: %s | right: [%s]%s\n",
-                       left_name, right_i, right_name);
+                    left_name, right_i, right_name);
 
         char bin[16];
         char ltdata[16]={0}; char ltype=0;
@@ -4968,10 +4545,10 @@ void exec_during(char text[]){
 
 void exec_change_var_name(char *text){
 
-    char new_name[16] = {0};
+    char new_name[max_letter_name] = {0};
     char data[28] = {0};
 
-    sscanf(text,"%15[^-]->%27s",new_name,data);
+    sscanf(text,"%63[^-]->%27s",new_name,data);
     int i = 0;
 
     char buffer[28] = {0};
@@ -5228,20 +4805,24 @@ void build_state() {
                 // parsing parametri formali separati da !
                 // formato atteso: &i&nome!&c&nome2!&l&nome3
                 int pc = 0;
-                char tmp[64];
+                char tmp[128];                       // stessa capacità di param_str
                 strncpy(tmp, param_str, sizeof(tmp)-1);
+                tmp[sizeof(tmp)-1] = '\0';           // garantisci sempre la terminazione
 
-                char *tok = strtok(tmp, "!"); //divide e assegna a program_state tutto lo stato di una funzione
+                char *tok = strtok(tmp, "!");
                 while(tok && pc < max_parameters) {
                     char ptype; char pname[max_name_lettere]; char pdefault[32] = {0};
-                    
-                    // prova a leggere tipo&nome&default
-                    int n = sscanf(tok, "&%c&%15[^&]&%31s", &ptype, pname, pdefault);
-                    
+                    int force_copy = 0;
+                    char *body = tok;
+
+                    if(strncmp(tok, "cp&", 3) == 0) { force_copy = 1; body = tok + 2; } /* salta "cp", lascia la '&' */
+
+                    int n = sscanf(body, "&%c&%15[^&]&%31s", &ptype, pname, pdefault);
                     if(n >= 2) {
                         state_stack[return_state].param_types[pc] = ptype;
                         strcpy(state_stack[return_state].param_names[pc], pname);
-                        
+                        state_stack[return_state].param_force_copy[pc] = force_copy;
+
                         if(n == 3 && strlen(pdefault) > 0) {
                             strcpy(state_stack[return_state].param_default[pc], pdefault);
                             state_stack[return_state].param_has_default[pc] = 1;
