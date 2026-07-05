@@ -971,6 +971,8 @@ The interpreter merges the library into the source before parsing.
 
 This section catalogs how `Zinterpreter.c` reacts to error conditions at runtime and at startup. Error handling is **not uniform** across the interpreter — some errors halt the program immediately, others silently skip a single instruction, and a few are known weak spots worth being aware of when writing or debugging `.Zim` code. The table below summarizes the severity levels used in the rest of this section, followed by the full message reference.
 
+> **General note on permissiveness:** `is_math()` and type coercion in general are deliberately permissive throughout the interpreter. Outside the fatal cases defined in [Type Safety](#type-safety), ZinterPL favors silently resolving a value over hard-failing. Where a caller needs to treat a failed sub-operation as an error condition rather than a valid result, the check is done by the caller (see point 2 below), not inside `exec_conf` itself.
+
 | Severity | Effect |
 |----------|--------|
 | **Fatal** | Execution halts immediately. |
@@ -996,16 +998,14 @@ These stop the interpreter immediately — the most common error class when writ
 
 ---
 
-### 2. Non-fatal type mismatches — ⚠️ known weak spot
+### 2. Non-fatal type mismatches — fixed
 
 | Message | Function(s) | Cause |
 |---------|-------------|-------|
 | `ERROR: type mismatch matrix/math (%c vs %c)` / `array/math` / `var/math` | `exec_conf` (math-comparison branches) | Comparison type ≠ the type returned by `is_math()` |
 | `ERROR: type mismatch matrix/number` / `array/number` / `var/number` (or `.../float`) | `exec_conf` (numeric-literal branches) | Numeric-literal type (`int` vs `float`) differs from the operand's declared type |
 
-**Effect:** silent skip — only a message is printed and `error_int` is returned; `fatal_mismatch` is **not** called, unlike the other `exec_conf` branches.
-
-> **Known issue:** in both rows above, the function returns `error_int` (`-99`). Since `if(-99)` is true in C, any caller of `exec_conf` (e.g. `exec_if`) treats a failed comparison as a **true** condition. This is a real asymmetry against the other `exec_conf` branches, which call `fatal_mismatch` instead. It's worth unifying the two paths, or having callers explicitly check `res == error_int` before treating the result as a boolean.
+**Effect:** silent skip — `exec_conf` still returns `error_int` (`-99`) in both rows above; it does **not** call `fatal_mismatch`, unlike the other `exec_conf` branches. This is intentional and no longer a bug: the asymmetry is resolved on the caller side instead. Callers of `exec_conf` (e.g. `exec_if`) explicitly check `res == error_int` before treating the result as a boolean, so a failed comparison is no longer misread as a **true** condition in C's truthiness. The check-at-the-caller approach is consistent with how permissive the rest of the language is — `exec_conf` keeps resolving what it can and lets the caller decide what an unresolved result means.
 
 ---
 
@@ -1053,7 +1053,7 @@ Returns `NULL`/`-1`; only the offending statement is skipped, execution continue
 |---------|----------|--------|
 | `ERROR: formato file non supportato` | `main` | **Abort** — immediate `return 0`, no line is read |
 | `ERROR: parsing error in system function #: %s` → then `ERROR: see preview error from system_setup` | `system_setup` → `main` | **Abort** — `system_setup` returns `-1`, `main` returns `0` without executing anything |
-| `ERROR: impossibile aprire il file: %s...` | `read_code_from_file` | ⚠️ **Likely crash** — the error is printed but there is **no `return`**; execution continues to use a `NULL` `FILE*` in `fgets` |
+| `ERROR: impossibile aprire il file: %s...` | `read_code_from_file` | **Abort — fixed.** A failed `fopen` now `return`s immediately after printing the message; the function no longer falls through to use a `NULL` `FILE*` in `fgets`. |
 
 ---
 
@@ -1080,9 +1080,9 @@ Returns `NULL`/`-1`; only the offending statement is skipped, execution continue
 
 ---
 
-### 8. Silent arithmetic fallback — another spot to watch
+### 8. Silent arithmetic fallback — fixed
 
-`WARNING: cant operate arithmetically with char %s` is printed by `math_plus`/`min`/`times`/`slash`, but there's **no `return`** after it — execution continues using `lopv`/`ropv = 0` as a default. The calculation then produces a numerically wrong result (`0`) instead of stopping or raising a real error. Same flavor as the `is_math()` / unary-minus issue noted elsewhere: a cosmetic error message masking bad data instead of blocking it.
+`WARNING: cant operate arithmetically with char %s` is printed by `math_plus`/`min`/`times`/`slash`. The function now `return`s immediately after printing the warning instead of falling through — it no longer continues with `lopv`/`ropv = 0` as a default, so a bad char operand aborts the calculation instead of silently producing a numerically wrong result (`0`).
 
 ---
 
