@@ -312,7 +312,7 @@ v2 = v0 / v1:
 
 ### Comparison operators
 
-The standard comparison operators (`==`, `<`, `>`,'^=') work on scalar variables and on indexed array/matrix elements.
+The standard comparison operators (`==`, `<`, `>`,`^=`,`>>`(>=),`<<`(<=)) work on scalar variables and on indexed array/matrix elements.
 
 When `==` is applied to an **unindexed array or matrix name**, it compares their **declared size**, not the number of occupied slots:
 
