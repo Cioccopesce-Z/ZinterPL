@@ -996,7 +996,7 @@ char* read_code_from_file(const char *filename) {
     int is_string = fal; // tru = 1 fal = 0
 
     FILE *file = fopen(filename, "r");
-    if (!file){ printf("ERROR: impossibile aprire il file: %s, possibile che non esista",filename); }
+    if (!file){ printf("ERROR: impossibile aprire il file: %s, possibile che non esista",filename); return NULL; }
 
     
     size_t total_size = 0;
@@ -4416,6 +4416,7 @@ void exec_if(char text[]){
             sscanf(buffer,"%2[^.].",op);
             if(deb) printf("DEBUG: condition in exex_if: %s e op: %s\n",condition,op);
             int res = exec_conf(condition,op);
+            if(res == error_int) res = fal;
             if(res){
                 if(deb) printf("DEBUG: condizione conf %s vera\n",condition);
                 parse(state_stack[i].posizione_ritorno+1,state_stack[i].posizione_skip,"void");
@@ -4500,6 +4501,7 @@ void exec_during(char text[]){
         if(deb) printf("DEBUG DURING (while-style): st:%d end:%d\n",st,end);
 
         int stop_exec = exec_conf(condition,"idk");
+        if(stop_exec == error_int) stop_exec = fal;
         while(stop_exec && !fatal_type_mismatch){
             parse(st+1,end-1,"void");      /*corpo del ciclo*/
             exec_steps(st, steps);     /*tutti gli step in sequenza*/
